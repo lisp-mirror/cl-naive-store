@@ -25,7 +25,9 @@ within the directories used to persist the data. These files helps with the lazy
 loading of stuff.
 
 Outstanding stuff (in order of priority):
+- Change to vectors for internal storage for speed's sake.
 - Do some file locking to protect against basic corruption.
+- Add getx to get at values of items.
 - Code to redistribute the files of a collection if you change your mind about
 how the data should be partitioned/bucketed.
 - Data field type checking, is non existant, will only put in stubs for this
