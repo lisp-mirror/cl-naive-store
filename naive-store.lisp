@@ -96,6 +96,7 @@
   bucket-key
   values
   changes
+  versions
   persisted-p)
 
 (defun write-to-file (file object &key (if-exists :append))
@@ -258,18 +259,80 @@
     (when (equalp key-values (key-values bucket))
       (return-from get-bucket-from-keys bucket))))
 
+(defgeneric index-keys (fields-source item-values))
 
-(defun lookup-or-create-item (collection bucket item-values)
-  (let ((item (lookup-index collection item-values)))
-	(if item
-	    (setf (item-values item) item-values)
-	    (let ((hash (sxhash (index-keys collection item-values))))	  
-	      (setf item (make-item :hash hash 
-				    :bucket-key (key-values bucket) 
-				    :values item-values))
-	      (setf (gethash hash (index collection)) item)
-	      (push item (items bucket))))	
-	item))
+(defmethod index-keys ((collection collection) item-values)  
+  (index-keys (get-data-type (store collection) 
+			     (data-type collection))
+	      item-values))
+
+(defmethod index-keys ((data-type data-type) item-values)
+  (index-keys (fields data-type) item-values))
+
+(defmethod index-keys ((fields list) item-values)
+  (let ((keys))
+    (dolist (field fields)
+      (when (key-p field)
+	(push (getf item-values (name field)) keys)))
+    (reverse keys)))
+
+(defun remove-item (collection bucket item)
+  (flet ((rem-item (item-struct)
+	   (equalp (item-hash item) (item-hash item-struct))))
+    (remove-from-index collection item)
+    (setf (items bucket) (remove-if #'rem-item (items bucket)))))
+
+
+
+(defun add-index (collection item)
+  (let* ((keys (index-keys (get-data-type 
+			   (store collection)
+			   (data-type collection))
+			  (item-values item)))
+	(hash (sxhash keys)))    
+    (setf (gethash hash (index collection)) item)))
+
+(defun lookup-index (collection item-values)
+  (let ((keys (index-keys (get-data-type 
+			   (store collection)
+			   (data-type collection))
+			  item-values)))    
+    (gethash (sxhash keys) (index collection))))
+
+(defun remove-from-index (collection item)
+  (remhash (item-hash item) (index collection)))
+
+(defun make-item* (collection bucket item-values)
+  
+  (let* ((item (lookup-index collection item-values))
+	 (keys (index-keys (get-data-type 
+			    (store collection)
+			    (data-type collection))
+			   item-values))
+	 (hash (sxhash keys)))    
+    
+    (unless (getf item-values :deleted%)
+      (when item
+	(unless (equalp (item-values item) item-values)
+	  (push (item-values item) (item-versions item))
+	  (setf (item-values item) item-values)
+	  ;;??????????
+	  (setf (item-changes item) nil)
+	  ))
+      
+      (unless item
+	(setf item (make-item :hash hash 
+			      :bucket-key (key-values bucket) 
+			      :values item-values))
+	(setf (item-values item) item-values)
+	(add-index collection item)
+	(push item (items bucket))))
+    
+    (when (getf item-values :deleted%)
+      (when item
+	(setf (item-values item) item-values)
+	(remove-item collection bucket item)))    
+    item))
 
 (defvar *bucket-keys*)
 
@@ -303,31 +366,32 @@
 					      bucket-key)
 					     bucket-key)))
 		  (setf (gethash bucket-key *bucket-keys*) bucket)
-		  (lookup-or-create-item collection bucket val))))
+		  (make-item* collection bucket val))))
 
-	  (lookup-or-create-item (collection bucket) bucket val)))))
+	  (make-item* (collection bucket) bucket val)))))
 
 
 
 (defun load-item-from-values (collection bucket item-values)
   (when item-values
-    (let ((*bucket-keys* (make-hash-table :test 'equalp)))
-      (dolist (field (fields (get-data-type (store collection)
-					    (data-type collection))))
-	
-	(when (or (and (equalp (getf (type-def field) :type) :item)
-		       (getf (type-def field) :collection))
-		  (and (equalp (getf (type-def field) :type) :list)
-		       (equalp (getf (type-def field) :list-type) :item)
-		       (getf (type-def field) :collection)))
-	  (let ((sub-val (getf item-values (name field))))
-	    (when sub-val
-	      (if (listp (first sub-val))
-		  (dolist (val sub-val)
-		    (load-hash-val collection field val))
-		  (load-hash-val collection field sub-val)))))))
-    
-    (lookup-or-create-item collection bucket item-values)))
+    (when (not (getf item-values :deleted%))
+      (let ((*bucket-keys* (make-hash-table :test 'equalp)))
+	(dolist (field (fields (get-data-type (store collection)
+					      (data-type collection))))
+	  
+	  (when (or (and (equalp (getf (type-def field) :type) :item)
+			 (getf (type-def field) :collection))
+		    (and (equalp (getf (type-def field) :type) :list)
+			 (equalp (getf (type-def field) :list-type) :item)
+			 (getf (type-def field) :collection)))
+	    (let ((sub-val (getf item-values (name field))))
+	      (when sub-val
+		(if (listp (first sub-val))
+		    (dolist (val sub-val)
+		      (load-hash-val collection field val))
+		    (load-hash-val collection field sub-val))))))))
+    (make-item* collection bucket item-values)))
+
 
 (defun load-items (collection bucket filename)
   (with-open-file (in filename :if-does-not-exist :create)
@@ -338,7 +402,6 @@
 	    do (load-item-from-values collection bucket line) )
 	 (close in))))
   bucket)
-
 
 (defmethod add-bucket ((collection collection) location key-values)  
   (let ((bucket (make-instance 'bucket 
@@ -356,29 +419,6 @@
 (defun change-in-item-p (item)
   (not (equalp (item-values item) (item-changes item))))
 
-(defgeneric index-keys (fields-source item-values))
-
-(defmethod index-keys ((collection collection) item-values)  
-  (index-keys (get-data-type (store collection) 
-			     (data-type collection))
-	      item-values))
-
-(defmethod index-keys ((data-type data-type) item-values)
-  (index-keys (fields data-type) item-values))
-
-(defmethod index-keys ((fields list) item-values)
-  (let ((keys))
-    (dolist (field fields)
-      (when (key-p field)
-	(push (getf item-values (name field)) keys)))
-    (reverse keys)))
-
-(defun lookup-index (collection item-values)
-  (let ((keys (index-keys (get-data-type 
-			   (store collection)
-			   (data-type collection))
-			  item-values)))    
-    (gethash (sxhash keys) (index collection))))
 
 (defun item-val-reference (collection val)
   (let ((item (lookup-index collection val))
@@ -410,9 +450,7 @@
 	    (dolist (list-val val)
 	      (setf reference 
 		    (append reference
-			    (list (item-val-reference sub-collection list-val)))))
-	    
-	    )
+			    (list (item-val-reference sub-collection list-val))))))
 	  (unless (listp (first val))
 	    (setf reference (item-val-reference sub-collection val)))
 	  
@@ -423,113 +461,74 @@
 (defun parse-item-values-tree (collection item-values)
   (let ((fields (fields (get-data-type (store collection) 
 				       (data-type collection))))
-	(paresed-item-values))
+	(parsed-item-values))
     (dolist (field fields)
       (if (or (equalp (getf (type-def field) :type) :item)
 	      (and (equalp (getf (type-def field) :type) :list)
 		   (equalp (getf (type-def field) :list-type) :item)
-		   (getf (type-def field) :collection)
-		   ))
-	  (setf paresed-item-values 
+		   (getf (type-def field) :collection)))
+	  (setf parsed-item-values 
 		(append
-		 paresed-item-values
+		 parsed-item-values
 		 (list (name field)
 		       (coerce-val-to-item-ref collection
 					       field
 					       (getf item-values (name field))))))
 	
-	  (setf paresed-item-values 
+	  (setf parsed-item-values 
 		(append
-		 paresed-item-values
+		 parsed-item-values
 		 (list (name field)
 			     (getf item-values (name field)))))))
-    paresed-item-values))
+    (when (getf item-values :deleted%)
+      (setf parsed-item-values (append parsed-item-values (list :deleted% t))))
+    parsed-item-values))
 
-(defun parse-and-perist (collection bucket bucket-location item values)
-  (let ((parsed-values (parse-item-values-tree collection values)))
-    
-    (setf (item-values item) parsed-values)
-    (persist item :file bucket-location)
-    (setf (item-bucket-key item) (key-values bucket))
-    (setf (item-changes item) nil)
+(defun parse-and-perist (collection bucket values)
+  (let* ((parsed-values (parse-item-values-tree collection values))
+	(item (make-item* collection bucket parsed-values)))
+  
+    (setf (item-persisted-p item) nil)	  
+    (persist item :file (location bucket))
     (setf (item-persisted-p item) t)
-    
-    ))
+    item))
 
-(defun add-item* (collection bucket bucket-location item)  
+(defun make-item-perist* (collection bucket item)  
   
   (when (equalp (type-of item) 'item)
-    (when (change-in-item-p item)
-      (setf (item-persisted-p item) nil)
+    (when (change-in-item-p item)     
       (unless (equalp (sxhash (index-keys collection (item-values item)))
 		      (sxhash (index-keys collection (item-changes item))))
+	(setf (item-persisted-p item) nil)
 	;;TODO: implement cascading changes
 	(error (format nil "Cant change key values~%~A~%~A" 
 		       (item-values item)
 		       (item-changes item))))
-      (setf item (parse-and-perist collection bucket bucket-location 
-				   item (item-changes item))))
-    
-    (unless (change-in-item-p item)
-      (unless (item-persisted-p item)	
-	(unless (lookup-index collection (item-values item))
-	  (let ((hash (sxhash (index-keys collection (item-values item)))))
-	    
-	    (setf item (parse-and-perist collection bucket bucket-location 
-					 item (item-values item)))
-	    (pushnew item (items bucket))
-	    (setf (gethash hash (index collection)) item)	    
-	    item)))))
+      (setf item (parse-and-perist collection bucket (item-changes item)))))
   
-  (unless (equalp (type-of item) 'item)      
-    (let ((existing-item (lookup-index collection item))
-	  (parsed-values (parse-item-values-tree collection item)))
-      
-      (when existing-item
-	(unless (equalp (item-values existing-item) parsed-values)
-	  (setf (item-values existing-item) parsed-values)
-	  (persist existing-item :file bucket-location)))
-      
-      (unless existing-item
-	(let* ((hash (sxhash (index-keys collection parsed-values)))
-	      (item-item (make-item :hash hash
-				    :values parsed-values
-				    :persisted-p nil)))
-	  
-	  (pushnew item-item (items bucket))
-	 
-	  (setf (gethash hash (index collection))
-		item-item)
-	  (setf (item-persisted-p item-item) nil)	  
-	  (persist item-item :file bucket-location)
-	  (setf (item-bucket-key item-item) (key-values bucket))
-	  (setf (item-persisted-p item-item) t)
-	  item-item)))))
+  (unless (equalp (type-of item) 'item) 
+    (setf item (parse-and-perist collection bucket item))))
 
 (defmethod persist-item ((collection collection) item)
-  (when (bucket-keys collection)      
-    (let* ((key-values (get-key-values (bucket-keys collection) 
-				       (if (equalp (type-of item) 'item)
-					   (item-values item)
-					   item)))
-	   (bucket (get-bucket-from-keys collection key-values))
-	   (bucket-location (get-bucket-key-val-location
-			     collection
-			     key-values)))
+  (let* ((key-values (if (bucket-keys collection)
+			   (get-key-values (bucket-keys collection) 
+					   (if (equalp (type-of item) 'item)
+					       (item-values item)
+					       item))))
+	   (bucket (if (bucket-keys collection)
+		       (get-bucket-from-keys collection key-values)
+		       (first (buckets collection))))
+	   (bucket-location (if (bucket-keys collection)
+				(get-bucket-key-val-location
+				 collection
+				 key-values)
+				(format nil "~A/~A.log" 
+				   (location collection)
+				   (name collection)))))
       (unless bucket
 	(setf bucket (add-bucket collection bucket-location key-values)))
             
-      (add-item* collection bucket bucket-location item)))
-  
-  (unless (bucket-keys collection)
-    (let ((bucket (first (buckets collection)))
-	  (bucket-location (format nil "~A/~A.log" 
-				   (location collection)
-				   (name collection))))      
-      (unless bucket
-	(setf bucket (add-bucket collection bucket-location nil)))
-      
-      (add-item* collection bucket bucket-location item))))
+      (make-item-perist* collection bucket item)))
 
 (defun get-collection-from-def (store collection-name)
   (let ((filename (format nil "~A~A.col" (location store) collection-name))

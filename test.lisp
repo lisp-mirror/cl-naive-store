@@ -33,7 +33,7 @@
 				    :key-p nil
 				    :type-def (list :type :item
 						    :item-type "one-deap"
-						    :store "link-stuff"
+						   ;; :store "link-stuff"
 						    :collection "one-deaps"))
 		     (make-instance 'field 
 				    :name :link-one-links
@@ -41,7 +41,7 @@
 				    :type-def (list :type :list
 						    :list-type :item
 						    :data-type "one-deap"
-						    :store "link-stuff"
+						    ;;:store "link-stuff"
 						    :collection "one-deaps")))))
     
     (add-data-type 
@@ -125,6 +125,29 @@
 						    :link-one-stuff "uouyloehoenhoooo")
 					      (list :link-one-key "some-key-1" 
 						    :link-one-stuff "arstarsarstarst"))))
+    ;;testing change mech
+    (persist-item link-one-col
+		  (list :link-one-key "some-key-2" 
+			:link-one-stuff "this is new changed values"))
+    
+    (persist-item link-one-col
+		  (list :link-one-key "some-key-4" 
+			:link-one-stuff "Setting up for delete 1"))
+    (persist-item link-one-col
+		  (list :link-one-key "some-key-4" 
+			:link-one-stuff "Setting up for delete 2"))
+    (persist-item link-one-col
+		  (list :link-one-key "some-key-4" 
+			:link-one-stuff "Setting up for delete 3"))
+    (persist-item link-one-col
+		  (list :link-one-key "some-key-4" 
+			:link-one-stuff "Setting up for delete 4"))
+    (persist-item link-one-col
+		  (list 
+		   :deleted% t
+		   :link-one-key "some-key-4" 
+		   :link-one-stuff "Setting up for delete 5"))
+    
     universe))
 
 (defun test-create-lots (stores-count collections-count items-count bucket-keys-count)
