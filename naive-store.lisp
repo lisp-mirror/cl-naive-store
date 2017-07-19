@@ -99,6 +99,17 @@
   versions
   persisted-p)
 
+(defun getx (item field-name)
+  (getf (item-values item) field-name))
+
+(defun (setf getx) (value item field-name &key (change-control-p t))
+  (when change-control-p
+      (unless (item-changes item)
+	(setf (item-changes item) (copy-list (item-values item))))  
+      (setf (getf (item-changes item) field-name) value))
+  (unless change-control-p
+    (setf (getf (item-values item) field-name) value)))
+
 (defun write-to-file (file object &key (if-exists :append))
   (with-open-file (out file
 		       :direction :output
@@ -314,7 +325,7 @@
     (unless (getf item-values :deleted%)
       (when item
 	(unless (equalp (item-values item) item-values)
-	  (push (item-values item) (item-versions item))
+	  (pushnew (item-values item) (item-versions item))
 	  (setf (item-values item) item-values)
 	  ;;??????????
 	  (setf (item-changes item) nil)

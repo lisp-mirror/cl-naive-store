@@ -262,8 +262,7 @@
 		       :test (lambda (item)
 			       (equalp  (getf (item-values item) :link-two-stuff)
 					"MMMMMMMMMMMMMMM" )))
-	  link-store
-	  )))
+	  link-store)))
 
 (defun test-fetch-col-sig ()
   (let* ((universe (make-instance 
@@ -290,3 +289,8 @@
 			       (equalp  (getf (item-values item) :link-two-stuff)
 					"MMMMMMMMMMMMMMM" )))
 	  link-store)))
+
+(defun test-change-control ()
+  (let ((item (make-item :values (list :blah "blah"))))
+       (setf (getx item :blah) "shit")
+       item))
