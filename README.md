@@ -24,12 +24,14 @@ The defenitions of stores, collections and data-types are stored in their own fi
 within the directories used to persist the data. These files helps with the lazy 
 loading of stuff.
 
-Majour outstanding stuff:
+Outstanding stuff (in order of priority):
+- Do some file locking to protect against basic corruption.
 - Code to redistribute the files of a collection if you change your mind about
 how the data should be partitioned/bucketed.
-- Data field type checking, is non existant.
+- Data field type checking, is non existant, will only put in stubs for this
+and leave the rest up to the user.
 - Implement comms with external data stores, maybe as an additonal package or
-something
+something.
 
 In summary this db is relatively fast and small in memory (if used right) but 
 extremely dangerous so use it at your own peril!
