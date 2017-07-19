@@ -237,16 +237,16 @@
 					  (random 10000)
 					  (format nil "~A" (random 10)))))))
 		(persist-item collection item)))))))
-    (setf *universe* universe)))
+    universe))
 
 
-(defun test-load-hierarchy ()
+(defun test-load-hierarchy (load-hash-items-p)
   (let* ((universe (make-instance 
 		   'universe
 		   :location "~/data-universe/"))
 	(link-store (add-store universe (make-instance 'store :name "link-stuff"))))
   
-    (load-store link-store)
+    (load-store link-store load-hash-items-p)
     link-store))
 
 
@@ -256,13 +256,21 @@
 		   :location "~/data-universe/"))
 	(link-store (add-store universe (make-instance 'store :name "link-stuff"))))
   
-    (list (fetch-items link-store :collection-name "one-deaps")
-	  (fetch-items link-store :collection-name "two-deaps")
-	  (fetch-items link-store :collection-name "two-deaps" 
-		       :test (lambda (item)
-			       (equalp  (getf (item-values item) :link-two-stuff)
-					"MMMMMMMMMMMMMMM" )))
-	  link-store)))
+    (list
+     
+     (fetch-items link-store :collection-name "one-deaps")
+     "---------------------------------------------------------"
+     (fetch-items link-store :collection-name "two-deaps")
+
+     "---------------------------------------------------------"
+
+      (fetch-items link-store :collection-name "two-deaps" 
+		  :test (lambda (item)
+			  (equalp  (getf (item-values item) :link-two-stuff)
+				   "MMMMMMMMMMMMMMM" )))
+     "---------------------------------------------------------"
+    
+     link-store)))
 
 (defun test-fetch-col-sig ()
   (let* ((universe (make-instance 
@@ -288,9 +296,28 @@
 		       :test (lambda (item)
 			       (equalp  (getf (item-values item) :link-two-stuff)
 					"MMMMMMMMMMMMMMM" )))
+	  "---------------------------------------------------------"
 	  link-store)))
 
 (defun test-change-control ()
   (let ((item (make-item :values (list :blah "blah"))))
        (setf (getx item :blah) "shit")
        item))
+
+
+(defun test-getx-with-resolve ()
+  (let ((universe (make-instance 
+		   'universe
+		   :location "~/data-universe/"))
+	(item (make-item 
+	       :values (list :blah "blah" 
+			      :ref-test 
+			      (list 
+			       :store "link-stuff" 
+			       :collection "one-deaps" 
+			       :hash% 2828978527713628513 
+			       :bucket-key nil)))))
+    (list
+     (getx item :ref-test)
+     "---------------------------------------------------------"
+     (getx item :ref-test :resolve-universe universe))))
