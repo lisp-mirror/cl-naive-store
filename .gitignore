@@ -1,17 +1,15 @@
-*.FASL
+$ cat .gitignore
+
+# Can ignore specific files
+#.DS_Store
+
+# Use wildcards as well
+*~
 *.fasl
-*.lisp-temp
-*.dfsl
-*.pfsl
-*.d64fsl
-*.p64fsl
-*.lx64fsl
-*.lx32fsl
-*.dx64fsl
-*.dx32fsl
-*.fx64fsl
-*.fx32fsl
-*.sx64fsl
-*.sx32fsl
-*.wx64fsl
-*.wx32fsl
+*#
+*.#
+.#*
+
+# Can also ignore all directories and files in a directory.
+#xdb2/
+
