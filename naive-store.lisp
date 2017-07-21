@@ -34,6 +34,9 @@
 	  :initform nil)
    (name :initarg :name
 	 :accessor name)
+   (name-space :initarg :name-space
+	       :accessor name-space
+	       :initform nil)
    (bucket-keys :initarg :bucket-keys
 	       :accessor bucket-keys
 	       :initform nil)
@@ -101,7 +104,7 @@
 
 (defun getx (item field-name &key resolve-universe)
   (let* ((val (getf (item-values item) field-name))
-	(final-val val))
+	 (final-val val))
     (when (getf val :hash%)
       (when resolve-universe	     
 	(let ((bucket (load-hash-bucket-from-val resolve-universe t val)))
@@ -205,6 +208,7 @@
 			   (name collection))
 		   (list 
 		    :name (name collection)
+		    :name-space (name-space collection)
 		    :location (location collection)
 		    :data-type (data-type collection)
 		    :bucket-keys (bucket-keys collection))
@@ -582,8 +586,7 @@
 (defun get-collection-from-def (store collection-name)
   (let ((filename (format nil "~A~A.col" (location store) collection-name))
 	(collection))    
-    
-    (with-open-file (in filename :if-does-not-exist :create)
+     (with-open-file (in filename :if-does-not-exist :create)
       (with-standard-io-syntax              
 	(when in
 	  (setf collection (read in nil))
@@ -615,7 +618,6 @@
 						       :name (getf field :name)
 						       :key-p (getf field :key-p)
 						       :type-def (getf field :type-def))))))
-		  
 		  (add-data-type 
 		   store 
 		   (make-instance 'data-type
@@ -640,8 +642,6 @@
 			    :name (getf file-contents :name)
 			    :location (getf file-contents :location)
 			    :data-type (getf file-contents :data-type))))))))
-
-
 
 (defun load-collection-items (collection load-hash-items-p)  
   (let ((files (directory (format nil "~A/**/*.log" (location collection))))
@@ -670,8 +670,7 @@
 	   (add-bucket collection 
 		       (namestring file) 
 		       (reverse final-bucket-key)
-		       load-hash-items-p
-		       )
+		       load-hash-items-p)
 	   buckets))
 	
 	(unless bucket-key
@@ -700,10 +699,10 @@
 	       (dolist (key bucket-key)
 		 (setf file-path (format nil "~A/~A" file-path key)))
 	       (setf bucket (add-bucket collection 
-					(format nil "~A/~A.log" file-path (name collection)) 
+					(format nil "~A/~A.log" file-path 
+						(name collection)) 
 					bucket-key
-					load-hash-items-p
-					))))
+					load-hash-items-p))))
 	   
 	   (pushnew bucket buckets))))
     
@@ -714,7 +713,8 @@
 	(unless bucket
 	  (setf bucket
 		(add-bucket collection 
-			    (format nil "~A/~A.log" (location collection) (name collection)) 
+			    (format nil "~A/~A.log" (location collection) 
+				    (name collection)) 
 			    nil load-hash-items-p)))
 	(pushnew bucket buckets)))
     
@@ -741,13 +741,26 @@
 		:test-args test-args
 		:bucket-keys bucket-keys 
 		:return-type return-type
+		:load-hash-items-p load-hash-items-p))
+
+(defmethod fetch-item ((collection collection) 
+			&key test test-args
+			  bucket-keys 
+			  load-hash-items-p)
+  (fetch-items* (store collection) collection
+		:test test
+		:test-args test-args
+		:bucket-keys bucket-keys 
+		:return-type nil
 		:load-hash-items-p load-hash-items-p
+		:find-first-item-p t
 		))
 
 (defun fetch-items* (store collection
 		    &key test test-args 
 		      bucket-keys (return-type 'list)
-		      load-hash-items-p)
+		      load-hash-items-p
+		      find-first-item-p)
   (let ((items)) 
     (unless (data-types store)
       (load-store-data-types store))
@@ -764,11 +777,12 @@
 		   (if test
 			(map return-type
 			     (lambda (item)
-			       (and (apply test item test-args) item))
+			       (if find-first-item-p
+				   (when (apply test item test-args)
+				     (return-from fetch-items* item))
+				   (and (apply test item test-args) item)))
 			     (items bucket))
-			(items bucket))))))
-	
-	))
+			(items bucket))))))))
 
     (remove-if #'not items)))
 
@@ -782,17 +796,14 @@
       (setf collection (get-collection-from-def 
 			store
 			collection-name))
-      (add-collection store collection)
-      
-      )
+      (add-collection store collection))
     
     (fetch-items* store collection 
 		  :test test
 		  :test-args test-args
 		  :bucket-keys bucket-keys 
 		  :return-type return-type
-		  :load-hash-items-p load-hash-items-p
-		  )))
+		  :load-hash-items-p load-hash-items-p)))
 
 
 
