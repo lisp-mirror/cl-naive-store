@@ -32,16 +32,17 @@
 				    :name :link-one-link
 				    :key-p nil
 				    :type-def (list :type :item
+						    :complex-type :collection
 						    :item-type "one-deap"
-						   ;; :store "link-stuff"
+						 
 						    :collection "one-deaps"))
 		     (make-instance 'field 
 				    :name :link-one-links
 				    :key-p nil
 				    :type-def (list :type :list
-						    :list-type :item
+						    :complex-type :collection-items
 						    :data-type "one-deap"
-						    ;;:store "link-stuff"
+						 
 						    :collection "one-deaps")))))
     
     (add-data-type 
@@ -63,7 +64,7 @@
 					    :name :no-links
 					    :key-p nil
 					    :type-def (list :type :list
-							    :list-type :item
+							    :complex-type :collection
 							    :data-type "one-deap"
 							    :store "link-stuff")))))
     
@@ -246,7 +247,7 @@
 		   :location "~/data-universe/"))
 	(link-store (add-store universe (make-instance 'store :name "link-stuff"))))
   
-    (load-store link-store load-hash-items-p)
+    (load-store  link-store load-hash-items-p)
     link-store))
 
 
@@ -259,16 +260,16 @@
     (list
      
      (fetch-items link-store :collection-name "one-deaps")
-     "---------------------------------------------------------"
+     "x---------------------------------------------------------"
      (fetch-items link-store :collection-name "two-deaps")
 
-     "---------------------------------------------------------"
+     "xx---------------------------------------------------------"
 
       (fetch-items link-store :collection-name "two-deaps" 
 		  :test (lambda (item)
 			  (equalp  (getf (item-values item) :link-two-stuff)
 				   "MMMMMMMMMMMMMMM" )))
-     "---------------------------------------------------------"
+     "xxx---------------------------------------------------------"
     
      link-store)))
 
