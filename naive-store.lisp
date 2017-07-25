@@ -625,7 +625,7 @@
 (defun parse-item-values-tree (collection item-values new-values)
   (let ((fields (fields (get-data-type (store collection) 
 				       (data-type collection))))
-	(parsed-item-values (check-structs item-values)))
+	(parsed-item-values item-values))
     
     (dolist (field fields)
       (let ((val (if (equalp (type-of (getf new-values (name field)))
@@ -644,12 +644,16 @@
 						 val))
 		  
 		  )
-	      (break "~A" shit)
+	     ;; (break "~A" shit)
 		  (setf (getf parsed-item-values (name field))
 		    shit)
 	      )
-	    (setf (getf parsed-item-values (name field))
-		    val))))
+	    (progn 
+	      (when val
+	;;	(break "~A~%~A" (name field) val)
+		)
+	      (setf (getf parsed-item-values (name field))
+		    val)))))
 
     parsed-item-values))
 
@@ -775,7 +779,7 @@
 	(if (and val (listp val))
 	    (let (children)
 	      (dolist (it val)
-		(setf children (append children (list key (struct-to-val it)))))
+		(setf children (append children (list (struct-to-val it)))))
 	      (if children
 		  (setf final (append final (list key children)))))
 	    (setf final (append final (list key (struct-to-val val)))))
@@ -804,6 +808,7 @@
 (defmethod persist ((item item) &key collection file &allow-other-keys)
   (let ((derived-file))
     (setf (item-persisted-p item) nil)
+  ;;  (break "~A" (check-item-structs item))
     (setf item (check-item-structs item))
     (unless file
       (setf item (check-location item :collection collection))
