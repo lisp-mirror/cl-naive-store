@@ -123,7 +123,9 @@
 (defgeneric get-collection (store collection-name))
 
 (defmethod get-collection ((store store) collection-name)
+  
   (dolist (collection (collections store))
+   
     (when (string-equal collection-name (name collection))
       (return-from get-collection collection))))
 
@@ -299,6 +301,20 @@
 
 
 (defun write-to-file (file object &key (if-exists :append))
+  (when (equalp (type-of object) 'item)
+#|
+    (break "~S~%~A" (list
+		 :store (name (item-store object))
+		 :collection (name (item-collection object))
+		 :bucket-key (item-bucket-key object)
+		 :hash (item-hash object)
+		 :deleted-p (item-deleted-p object)
+		 :values (item-values object))
+	   (check-structs object)
+	   )
+ |#
+
+    )
   (with-open-file (out file
 		       :direction :output
 		       :if-exists if-exists
@@ -486,8 +502,7 @@
     
     (let* ((item (parse-line-to-item universe item-def))
 	   (lookup-item (lookup-index (item-collection item) (item-values item))))
-      (unless lookup-item
-	
+      (unless lookup-item	
 	(when load-hash-items-p
 	  (let ((*bucket-keys* (make-hash-table :test 'equalp)))
 	    (dolist (field (fields (get-data-type (store (item-collection item))
@@ -568,66 +583,79 @@
      :bucket-key (item-bucket-key item))))
 
 (defun coerce-val-to-item-ref (collection field val)
+  
   (let ((sub-p (if (listp (first val))
-		   (not (getf (first val) :hash%))
-		   (not (getf val :hash%)))))
-    
-    (if sub-p
-	(let* ((sub-store (if (getf (type-def field) :store)
-			      (get-store* (universe (store collection))
-					 (getf (type-def field) :store))
-			      (store collection)))
-	       (sub-collection (or (get-collection*  
-				    sub-store
-				    (getf (type-def field) :collection))
-				   collection)) ;;praying its a self ref
-	       (reference))
-	  
-	  
-	  (when sub-collection
-	    (when (listp (first val))
-	      (dolist (list-val val)
-		(setf reference 
-		      (append reference
-			      (list (item-val-reference sub-collection list-val))))))
-	    (unless (listp (first val))
-	      (setf reference (item-val-reference sub-collection val)))	 
-	    (list (name field) reference))
-	  
-	  ;;Most likely a major fuck up what??
-	  (unless sub-collection
-	    (warn (format nil "Cant find the field collection at this time ~A" field))
-	    (setf reference val))
-	  
-	  (list (name field)
-	      reference))
-	(list (name field)
-	      val))))
+		       (not (getf (first val) :hash%))
+		       (not (getf val :hash%))))
+	(final-val))
+	
+	(if sub-p
+	    (let* ((sub-store (if (getf (type-def field) :store)
+				  (get-store* (universe (store collection))
+					      (getf (type-def field) :store))
+				  (store collection)))
+		   (sub-collection (or (get-collection*  
+					sub-store
+					(getf (type-def field) :collection))
+				       collection)) ;;praying its a self ref
+		   (reference))
+	      
+	      
+	      (when sub-collection
+		(when (listp (first val))
+		  (dolist (list-val val)
+		    (setf reference 
+			  (append reference
+				  (list (item-val-reference sub-collection list-val))))))
+		(unless (listp (first val))
+		  (setf reference (item-val-reference sub-collection val)))	 
+		(setf final-val (list (name field) reference)))
+	      
+	      ;;Most likely a major fuck up what??
+	      (unless sub-collection
+		(warn (format nil "Cant find the field collection at this time ~A" field))
+		(setf reference val))
+	      
+	      (setf final-val (list (name field)
+			    reference)))
+	    
+	    (setf final-val (list (name field)
+				  val)))))
 
 (defun parse-item-values-tree (collection item-values new-values)
   (let ((fields (fields (get-data-type (store collection) 
 				       (data-type collection))))
-	(parsed-item-values item-values))
-
+	(parsed-item-values (check-structs item-values)))
+    
     (dolist (field fields)
-      (if (or (equalp (getf (type-def field) :type) :item)
-	      (equalp (getf (type-def field) :complex-type) :collection)
-	      (equalp (getf (type-def field) :complex-type) :collection-items)
-	      (equalp (getf (type-def field) :complex-type) :list-items)
-	      (equalp (getf (type-def field) :complex-type) :contained-item)
-	      (equalp (getf (type-def field) :complex-type) :colletion-contained-item))
-	  (setf (getf parsed-item-values (name field))
-		(coerce-val-to-item-ref collection
-					field
-					(getf new-values (name field))))
-	  (setf (getf parsed-item-values (name field))
-		(getf new-values (name field)))))
+      (let ((val (if (equalp (type-of (getf new-values (name field)))
+			     'item)
+		     (item-values (getf new-values (name field)))
+		     (getf new-values (name field)))))
+	(if (or (equalp (getf (type-def field) :type) :item)
+		(equalp (getf (type-def field) :complex-type) :collection)
+		(equalp (getf (type-def field) :complex-type) :collection-items)
+		(equalp (getf (type-def field) :complex-type) :list-items)
+		(equalp (getf (type-def field) :complex-type) :contained-item)
+		(equalp (getf (type-def field) :complex-type) :colletion-contained-item))
+	    
+	    (let ((shit (coerce-val-to-item-ref collection
+						 field
+						 val))
+		  
+		  )
+	      (break "~A" shit)
+		  (setf (getf parsed-item-values (name field))
+		    shit)
+	      )
+	    (setf (getf parsed-item-values (name field))
+		    val))))
 
     parsed-item-values))
 
 (defmethod persist-item ((collection collection) item)
   (if (equalp (type-of item) 'item)
-      (persist item)
+      (persist item :collection collection)
       (persist (make-item 
 		:store (store collection)
 		:collection collection
@@ -644,10 +672,10 @@
     (let ((col (or collection (item-collection item))))
       (when col
 
-	(setf (item-store item) col)
+	(setf (item-store item) (store col))
 	(unless (store col)
 	  (error (format nil "Dont know which store to use to persist item ~S" item)))
-	(setf (item-store item) (store col))
+	(setf (item-collection item) col)
 	(setf (item-bucket-key item) 
 	      (get-key-values (bucket-keys col) 
 			      (item-values item))))))
@@ -685,10 +713,11 @@
 	(when (item-changes item)
 	    (let ((new-hash (sxhash (index-keys (item-collection item) 
 						(item-changes item)))))
-	      (unless (equalp new-hash (item-hash item))
-		(error (format nil "Cant change key values~%~A~%~A" 
-		       (item-values item)
-		       (item-changes item)))))))
+	      (when (item-hash item)
+		(unless (equalp new-hash (item-hash item))
+		  (error (format nil "Cant change key values~%~A~%~A" 
+				 (item-values item)
+				 (item-changes item))))))))
     item))
 
 
@@ -711,13 +740,71 @@
     ;;Dont save crap twice
     (when lookup-item
       (when (equalp (item-values lookup-item) (item-values item))
-	(setf item nil))))
+	(setf item nil)))
+    
+    (unless lookup-item
+      (let ((bucket (get-bucket (item-collection item) (item-bucket-key item))))
+	
+	(push item (items bucket))
+	(add-index item))))
   
+  
+  item)
+
+(defun parse-item (item)
+  (loop for (a b) on item by #'cddr ;;while b 
+        :collect (list a b)))
+
+
+(defun struct-to-val (val)
+  (let ((final))
+    (when (equalp (type-of val) 'item)
+ ;;     (break "~A" val)
+      (let ((it (or (item-changes val) 
+		    (item-values val))))
+	(setf final (check-structs it))))
+    (unless (equalp (type-of val) 'item)
+      (setf final val))
+    ;;(break "wtf ~A" final)
+    final))
+
+
+(defun check-children (key val)
+  (let ((final))
+    (if val
+	(if (and val (listp val))
+	    (let (children)
+	      (dolist (it val)
+		(setf children (append children (list key (struct-to-val it)))))
+	      (if children
+		  (setf final (append final (list key children)))))
+	    (setf final (append final (list key (struct-to-val val)))))
+	(setf final (list key val)))
+    final))
+
+(defun check-structs (item)
+  (let ((final))
+    (dolist (pair (parse-item item))
+     ;; (break "~A" pair)
+      (let ((key (first pair))
+	    (val (second pair)))
+	  (setf final (append final (check-children key val))))) 
+    (unless final
+      (break "hoer ~S" item)
+      )
+     final))
+
+(defun check-item-structs (item)
+  (if (item-changes item)
+      (setf (item-changes item) (check-structs (item-changes item)))
+      (setf (item-values item) (check-structs (item-values item)))
+      )
   item)
 
 (defmethod persist ((item item) &key collection file &allow-other-keys)
   (let ((derived-file))
     (setf (item-persisted-p item) nil)
+    (setf item (check-item-structs item))
     (unless file
       (setf item (check-location item :collection collection))
       (setf derived-file
@@ -725,6 +812,7 @@
     (let ((item-to-persist (check-item item)))
       
       (when item-to-persist
+	;;(break "~A" item-to-persist)
 	    (write-to-file (or file derived-file)
 			   item-to-persist
 			   :if-exists :append)
@@ -826,9 +914,8 @@
 			(map return-type
 			     (lambda (item)
 			       (if find-first-item-p
-				   (progn
-				     (when (apply test item test-args)
-				       (return-from fetch-items* item)))
+				   (when (apply test item test-args)
+				       (return-from fetch-items* item))
 				   (and (apply test item test-args) item)))
 			     (items bucket))
 			(items bucket))))))))
