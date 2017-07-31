@@ -8,67 +8,72 @@
 		   :location "~/data-universe/"))
 	(link-store)
 	(link-one-col)
-	(link-two-col))
+	(link-two-col)
+	(item4)
+	(item5)
+	(item8)
+	(item9))
     
-    (setf link-store (add-store universe (make-instance 'store :name "link-stuff")))
-    
-    (add-data-type 
-     link-store
-     (make-instance 'data-type
-		    :name "two-deap"
-		    :label "Two deap"
-		    :top-level-p t
-		    :fields
-		    (list
-		     (make-instance 'field 
-				    :name :link-two-key
-				    :key-p t
-				    :type-def (list :type :string))
-		     (make-instance 'field 
-				    :name :link-two-stuff
-				    :key-p nil
-				    :type-def (list :type :string))
-		     (make-instance 'field 
-				    :name :link-one-link
-				    :key-p nil
-				    :type-def (list :type :item
-						    :complex-type :collection
-						    :item-type "one-deap"
-						 
-						    :collection "one-deaps"))
-		     (make-instance 'field 
-				    :name :link-one-links
-				    :key-p nil
-				    :type-def (list :type :list
-						    :complex-type :collection-items
-						    :data-type "one-deap"
-						 
-						    :collection "one-deaps")))))
+    (setf link-store (add-store universe
+				(make-instance 'store :name "link-stuff")))
     
     (add-data-type 
      link-store
-     (make-instance 'data-type
-		    :name "one-deap"
-		    :label "One Deap"
-		    :top-level-p t
-		    :fields (list
-			     (make-instance 'field 
-					    :name :link-one-key
-					    :key-p t
-					    :type-def (list :type :string))
-			     (make-instance 'field 
-					    :name :link-one-stuff
-					    :key-p nil
-					    :type-def (list :type :string))
-			     (make-instance 'field 
-					    :name :no-links
-					    :key-p nil
-					    :type-def (list :type :list
-							    :complex-type :collection
-							    :data-type "one-deap"
-							    :store "link-stuff")))))
+     (make-instance
+      'data-type
+      :name "two-deap"
+      :label "Two deap"
+      :top-level-p t
+      :fields
+      (list
+       (make-instance 'field 
+		      :name :link-two-key
+		      :key-p t
+		      :type-def (list :type :string))
+       (make-instance 'field 
+		      :name :link-two-stuff
+		      :key-p nil
+		      :type-def (list :type :string))
+       (make-instance 'field 
+		      :name :link-one-link
+		      :key-p nil
+		      :type-def (list :type :item
+				      :complex-type :collection
+				      :item-type "one-deap"
+						    
+				      :collection "one-deaps"))
+       (make-instance 'field 
+		      :name :link-one-links
+		      :key-p nil
+		      :type-def (list :type :list
+				      :complex-type :collection-items
+				      :data-type "one-deap"
+						    
+				      :collection "one-deaps")))))
     
-   
+    (add-data-type 
+     link-store
+     (make-instance
+      'data-type
+      :name "one-deap"
+      :label "One Deap"
+      :top-level-p t
+      :fields (list
+	       (make-instance 'field 
+			      :name :link-one-key
+			      :key-p t
+			      :type-def (list :type :string))
+	       (make-instance 'field 
+			      :name :link-one-stuff
+			      :key-p nil
+			      :type-def (list :type :string))
+	       (make-instance 'field 
+			      :name :no-links
+			      :key-p nil
+			      :type-def (list :type :list
+					      :complex-type :collection
+					      :data-type "one-deap"
+					      :store "link-stuff")))))  
     (setf link-one-col
 	  (add-collection link-store 
 			  (make-instance 
@@ -82,51 +87,87 @@
 			   :name "two-deaps"
 			   :data-type "two-deap")))
     
-    
+  
     (persist-item link-one-col
-		  (list :link-one-key "some-key-1" :link-one-stuff "arstarsarstarst"
+		  (list :link-one-key "some-key-1"
+			:link-one-stuff "arstarsarstarst"
 			:no-links (list 
-				   (list :link-one-key "some-key-2" 
-					 :link-one-stuff "arstarsarstarst")
-				   (list :link-one-key "some-key-3" 
-					 :link-one-stuff "cccccccccccciiii"))))
+				   (make-item
+				    :store link-store
+				    :collection link-one-col
+				    :values
+				    (list :link-one-key "some-key-2" 
+					  :link-one-stuff "bbbbbbbbbbbb"))
+				   (make-item
+				    :store link-store
+				    :collection link-one-col
+				    :values
+				    (list :link-one-key "some-key-3" 
+					  :link-one-stuff "cccccccccccciiii")))))
+  
+    (setf item4 (persist (make-item
+			  :store link-store
+			  :collection link-one-col
+			  :values
+			  (list :link-one-key "some-key-4"
+				:link-one-stuff "uouyloehoenhoooo"))))
+
+    (setf item8 (persist (make-item
+			  :store link-store
+			  :collection link-one-col
+			  :values
+			  (list :link-one-key "some-key-8"
+				:link-one-stuff "qqqqqqqqqqqqqqqq"))))
+
+    (setf item9 (persist (make-item
+			  :store link-store
+			  :collection link-one-col
+			  :values
+			  (list :link-one-key "some-key-9"
+				:link-one-stuff "wwwwwwwwwwwwwwwwww"))))
+   
     
-    (persist-item link-one-col
-		  (list :link-one-key "some-key-2" :link-one-stuff "uouyloehoenhoooo"))
+    (setf item5
+	  (persist-item link-one-col
+			(list :link-one-key "some-key-5"
+			      :link-one-stuff "eeeeeeeeeeeeee"
+			      :no-links
+			      (list 
+			       (make-item
+				:store link-store
+				:collection link-one-col
+				:values
+				(list :link-one-key "some-key-6" 
+				      :link-one-stuff "rrrrrrsssssssss"))
+			       (make-item
+				:store link-store
+				:collection link-one-col
+				:values
+				(list :link-one-key "some-key-7" 
+				      :link-one-stuff "dddddddddddddddd"))))))
     
-    (persist-item link-one-col
-		  (list :link-one-key "some-key-3" :link-one-stuff "cccccccccccciiii"
-				:no-links (list 
-				   (list :link-one-key "some-key-2" 
-					 :link-one-stuff "uouyloehoenhoooo")
-				   (list :link-one-key "some-key-1" 
-					 :link-one-stuff "arstarsarstarst"))))
+    (persist (make-item
+	      :store link-store
+	      :collection link-one-col
+	      :values
+	      (list :link-two-key "some-other-key-1"
+		    :link-two-stuff "ssssssssssss"
+		    :link-one-link item4
+
+		    :link-one-links	(list item5 item8))))
     
     (persist-item link-two-col
-		  (list :link-two-key "some-other-key-1" :link-two-stuff "ssssssssssss"
-			:link-one-link (list :link-one-key "some-key-3" 
-					     :link-one-stuff "cccccccccccciiii")
-			:link-one-links (list (list :link-one-key "some-key-3" 
-						    :link-one-stuff "cccccccccccciiii")
-					      (list :link-one-key "some-key-1" 
-						    :link-one-stuff "arstarsarstarst"))))
-    (persist-item link-two-col
-		  (list :link-two-key "some-other-key-2" :link-two-stuff "wwwwwwwwwwwww"
-			:link-one-link (list :link-one-key "some-key-2" 
-					     :link-one-stuff "uouyloehoenhoooo")
-			:link-one-links (list (list :link-one-key "some-key-3" 
-						    :link-one-stuff "cccccccccccciiii")
-					      (list :link-one-key "some-key-2" 
-						    :link-one-stuff "uouyloehoenhoooo"))))
+		  (list :link-two-key "some-other-key-2"
+			:link-two-stuff "wwwwwwwwwwwww"
+			:link-one-link item8		
+			:link-one-links (list item4 item9)))
+    
     (persist-item link-two-col 
-		  (list :link-two-key "some-other-key-3" :link-two-stuff "MMMMMMMMMMMMMMM"
-			:link-one-link (list :link-one-key "some-key-1" 
-					     :link-one-stuff "arstarsarstarst")
-			:link-one-links (list (list :link-one-key "some-key-2" 
-						    :link-one-stuff "uouyloehoenhoooo")
-					      (list :link-one-key "some-key-1" 
-						    :link-one-stuff "arstarsarstarst"))))
+		  (list :link-two-key "some-other-key-3"
+			:link-two-stuff "MMMMMMMMMMMMMMM"))
+    
     ;;testing change mech
+    (break "fuck")
     (persist-item link-one-col
 		  (list :link-one-key "some-key-2" 
 			:link-one-stuff "this is new changed values"))
@@ -149,59 +190,61 @@
 		   :link-one-key "some-key-4" 
 		   :link-one-stuff "Setting up for delete 5"))
     
-    universe))
+    universe
 
-(defun test-create-lots (stores-count collections-count items-count bucket-keys-count)
+)
+
+)
+
+(defun test-create-lots (stores-count collections-count
+			 items-count bucket-keys-count)
   
   (let ((universe (make-instance 
 		   'universe
 		   :location "~/data-universe/")))
-        
+    
     (dotimes (i stores-count)
       (let ((store
-	     (add-store universe (make-instance 'store :name 
-						(format nil "test-store-~A" i)))))
+	     (add-store universe
+			(make-instance 'store :name 
+				       (format nil "test-store-~A" i)))))
 	(dotimes (j collections-count)
-	  (let* (
-		 (fields (list (make-instance 'field 
-					      :name (intern 
-						     (string-upcase
-						      (format nil "col-~A-field-1" j))
-						     :KEYWORD)
-					      :key-p t
-					      :type-def (list :type :string)
-					      )
-			       (make-instance 'field 
-					      :name (intern 
-						     (string-upcase
-						      (format nil "col-~A-field-2" j))
-						     :KEYWORD)
-					      :key-p t
-					      :type-def (list :type :string)
-					      )
-			       (make-instance 'field 
-					      :name (intern 
-						     (string-upcase
-						      (format nil "col-~A-field-3" j))
-						     :KEYWORD)
-					      :key-p nil
-					      :type-def (list :type :number)
-					      )
-			       (make-instance 'field 
-					      :name (intern 
-						     (string-upcase
-						      (format nil "col-~A-field-4" j))
-						     :KEYWORD)
-					      :key-p nil
-					      :type-def (list :type :string)
-					      )
-			       (make-instance 'field 
-					      :name (intern 
-						     (string-upcase
-						      (format nil "col-~A-field-5" j))
-						     :KEYWORD)
-					      :key-p nil
-					      :type-def (list :type :string))))
+	  (let* ((fields
+		  (list (make-instance 'field 
+				       :name (intern 
+					      (string-upcase
+					       (format nil "col-~A-field-1" j))
+					      :KEYWORD)
+				       :key-p t
+				       :type-def (list :type :string))
+			(make-instance 'field 
+				       :name (intern 
+					      (string-upcase
+					       (format nil "col-~A-field-2" j))
+					      :KEYWORD)
+				       :key-p t
+				       :type-def (list :type :string))
+			(make-instance 'field 
+				       :name (intern 
+					      (string-upcase
+					       (format nil "col-~A-field-3" j))
+					      :KEYWORD)
+				       :key-p nil
+				       :type-def (list :type :number))
+			(make-instance 'field 
+				       :name (intern 
+					      (string-upcase
+					       (format nil "col-~A-field-4" j))
+					      :KEYWORD)
+				       :key-p nil
+				       :type-def (list :type :string))
+			(make-instance 'field 
+				       :name (intern 
+					      (string-upcase
+					       (format nil "col-~A-field-5" j))
+					      :KEYWORD)
+				       :key-p nil
+				       :type-def (list :type :string))))
 		 (collection)
 		 (bucket-keys))
 
@@ -213,12 +256,14 @@
 			   (format nil "col-~A-field-~A" j (+ n 1)))
 			  :KEYWORD)))
 		(push key bucket-keys)))
-	   ;; (break "~A" bucket-keys)
+	    ;; (break "~A" bucket-keys)
 	    
-	    (add-data-type store (make-instance 'data-type 
-						:name (format nil "test-data-type-~A" j)
-						:top-level-p t
-						:fields fields))
+	    (add-data-type
+	     store
+	     (make-instance 'data-type 
+			    :name (format nil "test-data-type-~A" j)
+			    :top-level-p t
+			    :fields fields))
 	    
 	    (setf collection (add-collection 
 			      store 
@@ -232,31 +277,32 @@
 	      (let ((item))
 		(dolist (field fields)
 		  (setf item 
-			(append item 
-				(list (name field) 
-				      (if (equalp (getf (type-def field) :type) :number)
-					  (random 10000)
-					  (format nil "~A" (random 10)))))))
+			(append
+			 item 
+			 (list (name field) 
+			       (if (equalp (getf (type-def field) :type) :number)
+				   (random 10000)
+				   (format nil "~A" (random 10)))))))
 		(persist-item collection item)))))))
     universe))
 
 
-(defun test-load-hierarchy (load-hash-items-p)
+(defun test-load-hierarchy ()
   (let* ((universe (make-instance 
-		   'universe
-		   :location "~/data-universe/"))
-	(link-store (add-store universe (make-instance 'store :name "link-stuff"))))
-  
-    (load-store  link-store load-hash-items-p)
+		    'universe
+		    :location "~/data-universe/"))
+	 (link-store (add-store universe (make-instance 'store :name "link-stuff"))))
+    
+    (load-store  link-store)
     link-store))
 
 
 (defun test-fetch ()
   (let* ((universe (make-instance 
-		   'universe
-		   :location "~/data-universe/"))
-	(link-store (add-store universe (make-instance 'store :name "link-stuff"))))
-  
+		    'universe
+		    :location "~/data-universe/"))
+	 (link-store (add-store universe (make-instance 'store :name "link-stuff"))))
+    
     (list
      
      (fetch-items link-store :collection-name "one-deaps")
@@ -265,34 +311,34 @@
 
      "xx---------------------------------------------------------"
 
-      (fetch-items link-store :collection-name "two-deaps" 
+     (fetch-items link-store :collection-name "two-deaps" 
 		  :test (lambda (item)
 			  (equalp  (getf (item-values item) :link-two-stuff)
 				   "MMMMMMMMMMMMMMM" )))
      "xxx---------------------------------------------------------"
-    
+     
      link-store)))
 
 (defun test-fetch-col-sig ()
   (let* ((universe (make-instance 
-		   'universe
-		   :location "~/data-universe/"))
+		    'universe
+		    :location "~/data-universe/"))
 	 (link-store (add-store universe (make-instance 'store :name "link-stuff")))
 	 
 	 (one-deaps (add-collection link-store 
-				     (make-instance 
-				      'collection 
-				      :name "one-deaps"
-				      :data-type "one-deap"))))
+				    (make-instance 
+				     'collection 
+				     :name "one-deaps"
+				     :data-type "one-deap"))))
     
     (fetch-items one-deaps)))
 
 (defun test-fetch-partial-hierarchy ()
   (let* ((universe (make-instance 
-		   'universe
-		   :location "~/data-universe/"))
-	(link-store (add-store universe (make-instance 'store :name "link-stuff"))))
-  
+		    'universe
+		    :location "~/data-universe/"))
+	 (link-store (add-store universe (make-instance 'store :name "link-stuff"))))
+    
     (list (fetch-items link-store :collection-name "two-deaps" 
 		       :test (lambda (item)
 			       (equalp  (getf (item-values item) :link-two-stuff)
@@ -302,23 +348,8 @@
 
 (defun test-change-control ()
   (let ((item (make-item :values (list :blah "blah"))))
-       (setf (getx item :blah) "shit")
-       item))
+    (setf (getx item :blah) "shit")
+    item))
 
 
-(defun test-getx-with-resolve ()
-  (let ((universe (make-instance 
-		   'universe
-		   :location "~/data-universe/"))
-	(item (make-item 
-	       :values (list :blah "blah" 
-			      :ref-test 
-			      (list 
-			       :store "link-stuff" 
-			       :collection "one-deaps" 
-			       :hash% 2828978527713628513 
-			       :bucket-key nil)))))
-    (list
-     (getx item :ref-test)
-     "---------------------------------------------------------"
-     (getx item :ref-test :resolve-universe universe))))
+

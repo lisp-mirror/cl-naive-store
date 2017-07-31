@@ -122,9 +122,12 @@
 
 (defgeneric get-collection (store collection-name))
 
-(defmethod get-collection ((store store) collection-name)  
-  (dolist (collection (collections store))    
+(defmethod get-collection ((store store) collection-name)
+  
+  (dolist (collection (collections store))
+    
     (when (string-equal collection-name (name collection))
+      
       (return-from get-collection collection))))
 
 (defgeneric get-bucket (collection bucket-key))
@@ -183,6 +186,7 @@
   collection)
 
 (defun get-collection* (store name)
+  
   (let ((collection (get-collection store name)))
     (unless collection
       (setf collection (get-collection-from-def store name))
@@ -220,7 +224,6 @@
   (let ((files (directory (format nil "~A/**/*.log" (location collection))))
 	(data-type (get-data-type (store collection)
 				  (data-type collection))))
-    
     (unless data-type
       (load-store-data-types (store collection)))
     
@@ -300,17 +303,18 @@
 
 (defun write-to-file (file object &key (if-exists :append))
   (when (equalp (type-of object) 'item)
-    #|
-    (break "~S~%~A" (list
+#|    
+    (break "~S" (list
     :store (name (item-store object))
     :collection (name (item-collection object))
     :bucket-key (item-bucket-key object)
     :hash (item-hash object)
     :deleted-p (item-deleted-p object)
     :values (item-values object))
-    (check-structs object)
+
     )
-    |#  
+    
+|#	   
 
     )
   (with-open-file (out file
@@ -471,7 +475,8 @@
 	 (bucket (get-bucket collection (getf item-ref :bucket-key))))
     
     (unless bucket
-      (load-collection collection)
+      (add-bucket collection (getf item-ref :bucket-key)
+		  :dont-load-items-p t)
       (setf bucket (get-bucket collection (getf item-ref :bucket-key))))
     
     bucket))
@@ -485,6 +490,8 @@
 	    (val (second pair)))
 
 	(if (and (not (equalp (type-of val) 'item))
+		 (listp val)
+		 (not (listp (first val)))
 		 (dig val :values :reference%))
 	    (setf final (append final
 				(list key
@@ -522,9 +529,28 @@
       (let ((ref-item (gethash (dig reference :hash) 
 			       (index (collection bucket)))))
 	(when ref-item
-	  (setf (item-values ref-item)
-		(resolve-item-values universe (item-values ref-item)))
+	  (unless (dig (getf reference :values) :reference%)
+	    
+	    (let ((resolved-values
+		   (resolve-item-values universe (getf reference :values))))
+
+	      (unless (equalp (item-values ref-item) resolved-values)
+		(push  (item-values ref-item) (item-versions ref-item))		
+		(setf (item-values ref-item) resolved-values))))
+	  
 	  (setf final-item ref-item))
+	
+	(unless ref-item
+	  (setf final-item
+		(make-item
+		 :store (store (collection bucket))
+		 :collection (collection bucket)
+		 :bucket bucket
+		 :bucket-key (getf reference :bucket-key)
+		 :values (resolve-item-values universe
+					      (getf reference :values))))
+	  (add-index final-item)
+	  (push final-item (items bucket)))
 	
 	(if final-item
 	    final-item
@@ -564,6 +590,7 @@
 (defgeneric persist-item (collection item))
 
 (defmethod persist-item ((collection collection) item)
+
   (if (equalp (type-of item) 'item)
       (persist item :collection collection)
       (persist (make-item 
@@ -604,7 +631,7 @@
 				    (item-bucket-key item)))
 	(setf (item-bucket item) (first (buckets (item-collection item)))))
     
-    (unless (item-bucket item)      
+    (unless (item-bucket item)
       (setf (item-bucket item) 
 	    (add-bucket (item-collection item) 
 			(item-bucket-key item)))))
@@ -643,18 +670,19 @@
      :collect (list a b)))
 
 (defun item-to-reference (item)
+  
   (if (equalp (type-of item) 'item)
       (when (item-collection item)
 	(list
-	 :store (name (item-store item))
-	 :collection (name (item-collection item))
-	 :bucket-key (item-bucket-key item)
-	 :hash (item-hash item)
-	 ;;	   :deleted-p (item-deleted-p item)
-	 :values 
-	 (if (item-collection item)
-	     '(:reference% t)
-	     (parse-to-references% (item-values item)))))
+		:store (name (item-store item))
+		:collection (name (item-collection item))
+		:bucket-key (item-bucket-key item)
+		:hash (item-hash item)
+		;;	   :deleted-p (item-deleted-p item)
+		:values 
+		(if (item-collection item)
+		    '(:reference% t)
+		    (parse-to-references% (item-values item)))))
       item))
 
 (defun parse-to-references% (values)
@@ -688,7 +716,8 @@
 
 (defun parse-to-references (item)
   (let ((ref-item (copy% item)))
-    (setf (item-values item) (parse-to-references% (item-values item)))
+    (setf (item-values ref-item)
+	  (parse-to-references% (item-values ref-item)))
     ref-item))
 
 (defun check-item-values% (values)
@@ -752,12 +781,14 @@
 		(item-values lookup-item)
 		(item-changes item))))
 	    (when allow-key-change-p
+	      (push (item-values lookup-item) (item-versions lookup-item))
 	      (setf (item-values lookup-item) (item-changes item))
 	      (remove-item lookup-item)	      
 	      (push item (item-bucket lookup-item))
 	      (add-index lookup-item)
 	      (setf final-item lookup-item)))
 	  (when (equalp new-hash (item-hash lookup-item))
+	    (push (item-values lookup-item) (item-versions lookup-item))
 	    (setf (item-values lookup-item) (item-changes item))
 	    (setf final-item lookup-item)))))
     
@@ -768,8 +799,14 @@
 	(setf lookup-item
 	      (lookup-index (item-collection item) (item-values item)))
 
-
 	(when lookup-item
+
+	  (when (equalp (item-values lookup-item) (item-values item))
+	    ;;TODO: Add logging 
+	    ;;Don't save nothing changed
+	   
+	    (setf final-item nil))
+	  
 	  (unless (equalp (item-values lookup-item) (item-values item))
 
 	    ;;Dont know if this is needed logically it should be impossible
@@ -786,6 +823,7 @@
 		  (item-values item))))
 
 	      (when allow-key-change-p
+		(push (item-values lookup-item) (item-versions lookup-item))
 		(setf (item-values lookup-item) (item-changes item))
 		(remove-item lookup-item)	      
 		(push item (item-bucket lookup-item))
@@ -793,13 +831,10 @@
 		(setf final-item lookup-item)))
 	    
 	    (when (equalp new-hash (item-hash lookup-item))
+	 
+	      (push (item-values lookup-item) (item-versions lookup-item))
 	      (setf (item-values lookup-item) (item-values item))
-	      (setf final-item lookup-item)))
-	  
-	  (when (equalp (item-values lookup-item) (item-values item))
-	    ;;TODO: Add logging 
-	    ;;Don't save nothing changed
-	    (setf final-item nil)))	
+	      (setf final-item lookup-item))))	
 	
 	(unless lookup-item
 	  (let ((bucket (get-bucket (item-collection item)
@@ -813,9 +848,12 @@
 
 (defmethod persist ((item item) &key collection file allow-key-change-p
 				  &allow-other-keys)
+
+ 
+  
   (let ((derived-file))    
     (unless file
-
+      
       ;;Resolve the location of the item
       (setf item (check-location item :collection collection))
       
@@ -824,6 +862,8 @@
     ;;See if any of the item values an item(s) that need persisting in their
     ;;own collections.
     (setf item (check-item-values item))
+
+ 
     
     ;;Only persist if the item has not changed and synq with existing item
     ;;if structs are not eql
@@ -832,9 +872,9 @@
       (when changed-item
 	(setf item changed-item)
 
+
 	;;Parse item to persistable format
 	(let ((item-to-persist (parse-to-references item)))
-	  
 	  (when item-to-persist
 	    (setf (item-persisted-p item) nil)
 	    (write-to-file (or file derived-file)
