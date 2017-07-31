@@ -2,7 +2,160 @@
 
 (defparameter *universe* nil)
 
-(defun test-create-hierarcy ()
+(defun test-loose ()
+  (let* ((universe (make-instance 
+		   'universe
+		   :location "~/data-universe/"))
+	(store (add-store universe
+			  (make-instance 'store
+					 :name "loose-stuff")))
+	(collection (add-collection store 
+			  (make-instance 
+			   'collection 
+			   :name "loose-items"
+			   :data-type "hanging-loose"))))
+
+
+    (add-data-type 
+     store
+     (make-instance
+      'data-type
+      :name "loose-one"
+      :label "Loose One"
+      :top-level-p t
+      :fields
+      (list
+       (make-instance 'field 
+		      :name :key-loose
+		      :key-p t
+		      :type-def (list :type :string))
+       (make-instance 'field 
+		      :name :loose-val
+		      :key-p nil
+		      :type-def (list :type :string)))))
+    
+    (add-data-type 
+     store
+     (make-instance
+      'data-type
+      :name "loose-two"
+      :label "Loose Two"
+      :top-level-p t
+      :fields
+      (list
+       (make-instance 'field 
+		      :name :key-loose-2
+		      :key-p t
+		      :type-def (list :type :string))
+       (make-instance 'field 
+		      :name :loose-val-2
+		      :key-p nil
+		      :type-def (list :type :item
+				      :complex-type :item
+				      :data-type "loose-one")))))
+    
+    (add-data-type 
+     store
+     (make-instance
+      'data-type
+      :name "hanging-loose"
+      :label "Hanging Loose"
+      :top-level-p t
+      :fields
+      (list
+       (make-instance 'field 
+		      :name :key-val
+		      :key-p t
+		      :type-def (list :type :string))
+       (make-instance 'field 
+		      :name :link-to-loose
+		      :key-p nil
+		      :type-def (list :type :item
+				      :complex-type :item
+				      :data-type "loose-one"))
+       (make-instance 'field 
+		      :name :link-loose-list
+		      :key-p nil
+		      :type-def (list :type :list
+				      :complex-type :list-items
+				      :data-type "loose-two")))))
+
+    (persist-item collection
+		  (list
+		   :key-val "1"
+		   :link-loose (make-item
+				:values (list
+					 :key-loose "arst"
+					 :loose-val "arst"
+					 ))
+		   :link-loose-list
+		   (list (make-item
+			  :values (list
+				   :key-loose-2 "qwfp"
+				   :loose-val-2 (make-item
+						 :values (list
+							  :key-loose "1234"
+							  :loose-val "1234"
+							  ))))
+
+			 (make-item
+			  :values (list
+				   :key-loose-2 "zxcv"
+				   :loose-val-2 (make-item
+						 :values (list
+							  :key-loose "5678"
+							  :loose-val "5678")))))))
+
+
+    (persist-item collection
+		  (list
+		   :key-val "2"
+		   :link-loose (make-item
+				:values (list
+					 :key-loose "pglj"
+					 :loose-val "pglj"
+					 ))
+		   :link-loose-list
+		   (list (make-item
+			  :values (list
+				   :key-loose-2 "qwfp"
+				   :loose-val-2 (make-item
+						 :values (list
+							  :key-loose "0000"
+							  :loose-val "0000"
+							  ))))
+
+			 (make-item
+			  :values (list
+				   :key-loose-2 "zxcv"
+				   :loose-val-2 (make-item
+						 :values (list
+							  :key-loose "9999"
+							  :loose-val "9999"
+							  )))))))
+
+    universe))
+
+
+(defun test-load-loose ()
+  (let* ((universe (make-instance 
+		    'universe
+		    :location "~/data-universe/"))
+	 (store (add-store universe (make-instance 'store :name "loose-stuff"))))
+    
+    (load-store store)
+    store))
+
+
+(defun test-fetch-loose ()
+  (let* ((universe (make-instance 
+		    'universe
+		    :location "~/data-universe/"))
+	 (store (add-store universe (make-instance 'store :name "loose-stuff"))))
+    
+    (fetch-items store :collection-name "loose-items")))
+
+(defun test-create-hierarchy ()
   (let ((universe (make-instance 
 		   'universe
 		   :location "~/data-universe/"))
@@ -167,7 +320,7 @@
 			:link-two-stuff "MMMMMMMMMMMMMMM"))
     
     ;;testing change mech
-    (break "fuck")
+ 
     (persist-item link-one-col
 		  (list :link-one-key "some-key-2" 
 			:link-one-stuff "this is new changed values"))
@@ -190,11 +343,7 @@
 		   :link-one-key "some-key-4" 
 		   :link-one-stuff "Setting up for delete 5"))
     
-    universe
-
-)
-
-)
+    universe))
 
 (defun test-create-lots (stores-count collections-count
 			 items-count bucket-keys-count)

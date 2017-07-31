@@ -510,15 +510,21 @@
 				 (dig it :values))
 			    (setf children
 				  (append children
-					  (list (resolve-item-reference
-						 universe it))))
+					  (list (make-item
+						 :values
+						 (resolve-item-values
+						  universe
+						  (dig it :values))))))
 			    (setf children (append children (list it))))))
 		  (setf final (append final (list key children))))
 		(if (and val (listp val) (dig val :values))
 		    (setf final (append final
 					(list key
-					      (resolve-item-reference
-					       universe val))))
+					      (make-item
+						 :values
+						 (resolve-item-values
+						  universe
+						  (dig val :values))))))
 		    (setf final (append final (list key val))))))))     
     final))
 
@@ -672,17 +678,18 @@
 (defun item-to-reference (item)
   
   (if (equalp (type-of item) 'item)
-      (when (item-collection item)
-	(list
-		:store (name (item-store item))
-		:collection (name (item-collection item))
-		:bucket-key (item-bucket-key item)
-		:hash (item-hash item)
-		;;	   :deleted-p (item-deleted-p item)
-		:values 
-		(if (item-collection item)
-		    '(:reference% t)
-		    (parse-to-references% (item-values item)))))
+      (if (item-collection item)
+	  (list
+	   :store (name (item-store item))
+	   :collection (name (item-collection item))
+	   :bucket-key (item-bucket-key item)
+	   :hash (item-hash item)
+	   ;;	   :deleted-p (item-deleted-p item)
+	   :values 
+	   '(:reference% t))
+	  (list	   
+	   :values (parse-to-references% (item-values item))
+	   ))
       item))
 
 (defun parse-to-references% (values)
@@ -730,14 +737,20 @@
 
 	(if (equalp (type-of val) 'item)
 	    (setf final (append final
-				(list key (persist val))))
+				(list key
+				      (if (item-collection val)
+					  (persist val)
+					  val))))
 	    (if (or (and val (listp val) (listp (first val)))
 		    (and val (listp val) (equalp (type-of (first val)) 'item)))
 		(let ((children))
 		  (dolist (it val)
 		    (if (equalp (type-of it) 'item)
 			(setf children (append children 
-					       (list (persist it))))
+					       (list
+						(if (item-collection it)
+						    (persist it)
+						    it))))
 			
 			(setf children (append children (list it)))))
 		  (setf final (append final (list key children))))
