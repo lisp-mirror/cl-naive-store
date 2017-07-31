@@ -3,6 +3,7 @@
 (defpackage :cl-naive-store
   (:use :cl)
   (:export
+
    
    ;;Classes
    :field
@@ -52,8 +53,11 @@
    :versions
    :peristed-p
    
+
+   :dig
+   :digx
    :getx
-  
+   
    :write-to-file
    :write-list-to-file   
    :persist
