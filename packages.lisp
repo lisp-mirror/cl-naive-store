@@ -57,6 +57,8 @@
    :dig
    :digx
    :getx
+   :naive-dig
+   :set-naive-dig
    
    :write-to-file
    :write-list-to-file   
