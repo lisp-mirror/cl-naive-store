@@ -49,9 +49,12 @@
    :item-hash
    :item-bucket-key
    :item-values
-   :changes
-   :versions
-   :peristed-p
+   :item-changes
+   :item-versions
+   :item-collection
+   :item-data-type
+   :item-store
+   :item-peristed-p
    
 
    :dig

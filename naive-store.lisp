@@ -96,7 +96,8 @@
 
 (defstruct item
   store
-  collection  
+  collection
+  data-type
   bucket
   hash
   bucket-key
@@ -302,21 +303,6 @@
 
 
 (defun write-to-file (file object &key (if-exists :append))
-  (when (equalp (type-of object) 'item)
-#|    
-    (break "~S" (list
-    :store (name (item-store object))
-    :collection (name (item-collection object))
-    :bucket-key (item-bucket-key object)
-    :hash (item-hash object)
-    :deleted-p (item-deleted-p object)
-    :values (item-values object))
-
-    )
-    
-|#	   
-
-    )
   (with-open-file (out file
 		       :direction :output
 		       :if-exists if-exists
@@ -327,6 +313,7 @@
 	   (list
 	    :store (name (item-store object))
 	    :collection (name (item-collection object))
+	    :data-type (item-data-type object)
 	    :bucket-key (item-bucket-key object)
 	    :hash (item-hash object)
 	    :deleted-p (item-deleted-p object)
@@ -347,6 +334,7 @@
 	     (list
 	      :store (name (item-store object))
 	      :collection (name (item-collection object))
+	      :data-type (item-data-type object)
 	      :bucket-key (item-bucket-key object)
 	      :hash (item-hash object)
 	      :deleted-p (item-deleted-p object)
@@ -488,7 +476,7 @@
     (dolist (pair value-pairs)
       (let ((key (first pair))
 	    (val (second pair)))
-
+	
 	(if (and (not (equalp (type-of val) 'item))
 		 (listp val)
 		 (not (listp (first val)))
@@ -501,12 +489,13 @@
 		(let ((children))
 		  (dolist (it val)
 		    (if (and (not (equalp (type-of it) 'item))
+			     (listp it)
 			     (dig it :values :reference%))
 			(setf children
 			      (append children 
 				      (list
 				       (resolve-item-reference universe it))))
-			(if (and (listp (first val))
+			(if (and (listp (first it))
 				 (dig it :values))
 			    (setf children
 				  (append children
@@ -551,6 +540,7 @@
 		(make-item
 		 :store (store (collection bucket))
 		 :collection (collection bucket)
+		 :data-type (getf reference :data-type)
 		 :bucket bucket
 		 :bucket-key (getf reference :bucket-key)
 		 :values (resolve-item-values universe
@@ -602,6 +592,7 @@
       (persist (make-item 
 		:store (store collection)
 		:collection collection
+		:data-type (data-type collection)
 		:store (name (store collection))
 		:collection (name collection)
 		:values item))))
@@ -675,24 +666,36 @@
   (loop for (a b) on item by #'cddr 
      :collect (list a b)))
 
-(defun item-to-reference (item)
-  
+(defun set-hash (store item)
+  (unless (item-hash item)
+    (let* ((keys (index-keys (get-data-type 
+			      (or (item-store item) store)
+			      (item-data-type item))
+			     (item-values item)))
+	   (hash (sxhash keys)))
+      (setf (item-hash item) hash)
+      hash)))
+
+(defun item-to-reference (store item)
   (if (equalp (type-of item) 'item)
       (if (item-collection item)
 	  (list
 	   :store (name (item-store item))
 	   :collection (name (item-collection item))
+	   :data-type (item-data-type item)
 	   :bucket-key (item-bucket-key item)
 	   :hash (item-hash item)
 	   ;;	   :deleted-p (item-deleted-p item)
 	   :values 
 	   '(:reference% t))
-	  (list	   
-	   :values (parse-to-references% (item-values item))
-	   ))
+	  (list
+	  ;; :store (name (item-store item))
+	   :data-type (item-data-type item)
+	   :hash (or (item-hash item) (set-hash store item ))
+	   :values (parse-to-references% store (item-values item))))
       item))
 
-(defun parse-to-references% (values)
+(defun parse-to-references% (store values)
   (let ((final)
 	(value-pairs (parse-item values)))
     
@@ -701,14 +704,15 @@
 	    (val (second pair)))
 
 	(if (equalp (type-of val) 'item)
-	    (setf final (append final (list key (item-to-reference val))))
+	    (setf final (append final (list key (item-to-reference store val))))
 	    (if (or (and val (listp val) (listp (first val)))
 		    (and val (listp val) (equalp (type-of (first val)) 'item)))
 		(let ((children))
 		  (dolist (it val)
 		    (if (equalp (type-of it) 'item)
-			(setf children (append children 
-					       (list (item-to-reference it))))
+			(setf children
+			      (append children 
+				      (list (item-to-reference store it))))
 			(setf children (append children (list it)))))
 		  (setf final (append final (list key children))))
 		(setf final (append final (list key val)))))))     
@@ -721,10 +725,10 @@
     (setf (item-changes copy) (copy-list (item-changes item)))
     copy))
 
-(defun parse-to-references (item)
+(defun parse-to-references (store item)
   (let ((ref-item (copy% item)))
     (setf (item-values ref-item)
-	  (parse-to-references% (item-values ref-item)))
+	  (parse-to-references% store (item-values ref-item)))
     ref-item))
 
 (defun check-item-values% (values)
@@ -887,7 +891,7 @@
 
 
 	;;Parse item to persistable format
-	(let ((item-to-persist (parse-to-references item)))
+	(let ((item-to-persist (parse-to-references (item-store item) item)))
 	  (when item-to-persist
 	    (setf (item-persisted-p item) nil)
 	    (write-to-file (or file derived-file)

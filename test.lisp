@@ -84,24 +84,29 @@
 		  (list
 		   :key-val "1"
 		   :link-loose (make-item
+				:data-type "loose-one"
 				:values (list
 					 :key-loose "arst"
 					 :loose-val "arst"
 					 ))
 		   :link-loose-list
 		   (list (make-item
+			  :data-type "loose-two"
 			  :values (list
 				   :key-loose-2 "qwfp"
 				   :loose-val-2 (make-item
+						 :data-type "loose-one"
 						 :values (list
 							  :key-loose "1234"
 							  :loose-val "1234"
 							  ))))
 
 			 (make-item
+			  :data-type "loose-two"
 			  :values (list
 				   :key-loose-2 "zxcv"
 				   :loose-val-2 (make-item
+						 :data-type "loose-one"
 						 :values (list
 							  :key-loose "5678"
 							  :loose-val "5678")))))))
@@ -111,21 +116,23 @@
 		  (list
 		   :key-val "2"
 		   :link-loose (make-item
+				:data-type "loose-one"
 				:values (list
 					 :key-loose "pglj"
-					 :loose-val "pglj"
-					 ))
+					 :loose-val "pglj"))
 		   :link-loose-list
 		   (list (make-item
+			  :data-type "loose-two"
 			  :values (list
 				   :key-loose-2 "qwfp"
 				   :loose-val-2 (make-item
+						 :data-type "loose-one"
 						 :values (list
 							  :key-loose "0000"
-							  :loose-val "0000"
-							  ))))
+							  :loose-val "0000"))))
 
 			 (make-item
+			  :data-type "loose-two"
 			  :values (list
 				   :key-loose-2 "zxcv"
 				   :loose-val-2 (make-item
