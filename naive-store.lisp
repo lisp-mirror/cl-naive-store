@@ -642,10 +642,10 @@
     (if (and (item-hash item) 
 	     (not (equalp hash (item-hash item))))
 	(error (format nil
-		       "Cant change key values causes hash diff ~%~A~%~A~%~A" 
-		       (item-hash item)
-		       hash
-		       (item-values item)))
+			 "Cant change key values causes hash diff ~%~A~%~A~%~A" 
+			 (item-hash item)
+			 hash
+			 (item-values item)))
 	(when (item-changes item)
 	  (let ((new-hash (sxhash (index-keys (item-collection item) 
 					      (item-changes item)))))
@@ -774,9 +774,9 @@
 	(lookup-item))
 
     (when (and (item-changes item) (change-in-item-p item))
-      
-      (setf lookup-item
-	    (lookup-index (item-collection item) (item-values item)))
+      (if (item-values item)
+	  (setf lookup-item
+		(lookup-index (item-collection item) (item-values item))))
       
       (unless lookup-item
 	(setf (item-values item) (item-changes item))
@@ -789,6 +789,9 @@
 	  (unless (equalp new-hash (item-hash lookup-item))
 
 	    (unless allow-key-change-p
+
+	      ;;(break "~A ~%~A~%~%~A" new-hash item lookup-item)
+	      
 	      (error
 	       (format
 		nil
@@ -1104,9 +1107,10 @@
     
     (if indicators
 	(naive-dig next-place indicators)
-	next-place)))
+	(getf place indicator))))
 
 (defun set-naive-dig (place indicators value)
+  
   (let* ((indicator (pop indicators))
 	 (val (if indicator
 		  (if (equalp (type-of place) 'item)
@@ -1118,7 +1122,6 @@
 			     (setf (item-changes val)
 				   (copy-list (item-values val))))
 			 val)))
-    
     (if indicators
 	(if (equalp (type-of val) 'item)
 	    (set-naive-dig next-place indicators value)
