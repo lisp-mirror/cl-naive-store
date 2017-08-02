@@ -1107,7 +1107,9 @@
     
     (if indicators
 	(naive-dig next-place indicators)
-	(getf place indicator))))
+	(if (equalp (type-of place) 'item)
+	    (getx place indicator)
+	    (getf place indicator)))))
 
 (defun set-naive-dig (place indicators value)
   
@@ -1127,7 +1129,9 @@
 	    (set-naive-dig next-place indicators value)
 	    (setf (getf place indicator) 
 		  (set-naive-dig next-place indicators value)))
-	(setf (getf place indicator) value))
+	(if (equalp (type-of place) 'item)
+	    (setf (getx place indicator) value)
+	    (setf (getf place indicator) value)))
     place))
 
 (defun digx (place &rest indicators)
