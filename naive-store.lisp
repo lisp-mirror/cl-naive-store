@@ -715,7 +715,7 @@
 				      (list (item-to-reference store it))))
 			(setf children (append children (list it)))))
 		  (setf final (append final (list key children))))
-		(setf final (append final (list key val)))))))     
+		(setf final (append final (list key val)))))))
     final))
 
 
@@ -773,45 +773,6 @@
   (let ((final-item)
 	(lookup-item))
 
-    (when (and (item-changes item) (change-in-item-p item))
-      (if (item-values item)
-	  (setf lookup-item
-		(lookup-index (item-collection item) (item-values item))))
-      
-      (unless lookup-item
-	(setf (item-values item) (item-changes item))
-	(setf (item-changes item) nil)
-	(setf final-item item))
-      
-      (when lookup-item
-	(let ((new-hash (sxhash (index-keys (item-collection item) 
-					    (item-changes item)))))
-	  (unless (equalp new-hash (item-hash lookup-item))
-
-	    (unless allow-key-change-p
-
-	      ;;(break "~A ~%~A~%~%~A" new-hash item lookup-item)
-	      
-	      (error
-	       (format
-		nil
-		"Cant change key values causes hash diff ~%~A~%~A~%~A~%~A" 
-		(item-hash lookup-item)
-		new-hash
-		(item-values lookup-item)
-		(item-changes item))))
-	    (when allow-key-change-p
-	      (push (item-values lookup-item) (item-versions lookup-item))
-	      (setf (item-values lookup-item) (item-changes item))
-	      (remove-item lookup-item)	      
-	      (push item (item-bucket lookup-item))
-	      (add-index lookup-item)
-	      (setf final-item lookup-item)))
-	  (when (equalp new-hash (item-hash lookup-item))
-	    (push (item-values lookup-item) (item-versions lookup-item))
-	    (setf (item-values lookup-item) (item-changes item))
-	    (setf final-item lookup-item)))))
-    
     (unless (and (item-changes item) (change-in-item-p item))
       (let ((new-hash (sxhash (index-keys (item-collection item) 
 					  (item-values item)))))
@@ -821,10 +782,9 @@
 
 	(when lookup-item
 
-	  (when (equalp (item-values lookup-item) (item-values item))
+	  (when (equalp (item-values lookup-item) (item-changes item))
 	    ;;TODO: Add logging 
 	    ;;Don't save nothing changed
-	   
 	    (setf final-item nil))
 	  
 	  (unless (equalp (item-values lookup-item) (item-values item))
@@ -864,6 +824,49 @@
 	    (add-index item)
 	    (setf final-item item)))))
     
+    (when (and (item-changes item) (change-in-item-p item))
+      (if (item-values item)
+	  (setf lookup-item
+		(lookup-index (item-collection item) (item-values item))))
+      
+      (unless lookup-item
+	(let ((bucket (get-bucket (item-collection item)
+				    (item-bucket-key item))))
+
+	  (setf (item-values item) (item-changes item))
+	  (setf (item-changes item) nil)
+	  (push item (items bucket))
+	  (add-index item)
+	  (setf final-item item)))
+
+      (when lookup-item
+	(let ((new-hash (sxhash (index-keys (item-collection item) 
+					    (item-changes item)))))
+	  (unless (equalp new-hash (item-hash lookup-item))
+
+	    (unless allow-key-change-p
+	      (error
+	       (format
+		nil
+		"Cant change key values causes hash diff ~%~A~%~A~%~A~%~A" 
+		(item-hash lookup-item)
+		new-hash
+		(item-values lookup-item)
+		(item-changes item))))
+	    (when allow-key-change-p
+	      (push (item-values lookup-item) (item-versions lookup-item))
+	      (setf (item-values lookup-item) (item-changes item))
+	      (remove-item lookup-item)	      
+	      (push item (item-bucket lookup-item))
+	      (add-index lookup-item)
+	      (setf final-item lookup-item)))
+	  
+	  (when (equalp new-hash (item-hash lookup-item))
+	    (push (item-values lookup-item) (item-versions lookup-item))
+	    (setf (item-values lookup-item) (item-changes item))
+	    (setf (item-changes item) nil)
+	    (setf final-item lookup-item)))))
+    
     final-item))
 
 (defmethod persist ((item item) &key collection file allow-key-change-p
@@ -883,15 +886,12 @@
     ;;own collections.
     (setf item (check-item-values item))
 
- 
-    
-    ;;Only persist if the item has not changed and synq with existing item
+     ;;Only persist if the item has not changed and synq with existing item
     ;;if structs are not eql
     (let ((changed-item (check-item item allow-key-change-p)))
 
       (when changed-item
 	(setf item changed-item)
-
 
 	;;Parse item to persistable format
 	(let ((item-to-persist (parse-to-references (item-store item) item)))
