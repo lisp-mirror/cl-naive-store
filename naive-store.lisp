@@ -225,6 +225,7 @@
   (let ((files (directory (format nil "~A/**/*.log" (location collection))))
 	(data-type (get-data-type (store collection)
 				  (data-type collection))))
+ 
     (unless data-type
       (load-store-data-types (store collection)))
     
@@ -521,19 +522,18 @@
 						(dig it :values)))))))
 			    (append children (list it)))))		  
 		  (setf final (append final (list key children))))
-		(setf final (append final (list key val)))
-		
-		)
-	   )))     
+		(setf final (append final (list key val)))))))     
     final))
 
 (defun resolve-item-reference (universe reference)
   (let ((bucket (load-item-reference-bucket universe reference))
 	(final-item))
+    
     (when bucket
       (let ((ref-item (gethash (dig reference :hash) 
 			       (index (collection bucket)))))
 	(when ref-item
+
 	  (unless (dig (getf reference :values) :reference%)
 	    
 	    (let ((resolved-values
@@ -555,8 +555,8 @@
 		 :bucket-key (getf reference :bucket-key)
 		 :values (resolve-item-values universe
 					      (getf reference :values))))
-	  (add-index final-item)
-	  (push final-item (items bucket)))
+	  (push final-item (items bucket))
+	  (add-index final-item))
 	
 	(if final-item
 	    final-item
@@ -605,7 +605,7 @@
 		:data-type (data-type collection)
 		:store (name (store collection))
 		:collection (name collection)
-		:values item))))
+		:changes item))))
 
 (defun check-location (item &key collection)
   (unless (and (item-store item) (item-collection item))
@@ -772,25 +772,24 @@
     final))
 
 (defun check-item-values (item allow-key-change-p)
-  (let (
-	(change-p (and (item-changes item) (change-in-item-p item)))
+  (let ((change-p (and (item-changes item) (change-in-item-p item)))
 	(lookup-old (lookup-index (item-collection item) (item-values item)))
 	(final-item))
-
+ 
     (when change-p
       (when lookup-old
 	(let ((lookup-new (lookup-index (item-collection item)
 					(item-changes item))))
-	  (when lookup-new	  
+	  
+	  (when lookup-new
 	    (when (equalp (item-hash lookup-new) (item-hash lookup-old))
-	      
+	    
 	      (setf (item-values lookup-old)
 		    (check-item-values% (item-store item) (item-changes item)))
 	      (setf (item-changes item) nil)
 	      (setf final-item lookup-old)))
 	  
 	  (unless lookup-new
-
 	    (unless allow-key-change-p
 	      (error
 	       (format
@@ -807,7 +806,7 @@
 		    (check-item-values% (item-store item)
 					(item-changes item)))
 	      (remove-item lookup-old)	      
-	      (push item (item-bucket lookup-old))
+	      (push item (items (item-bucket lookup-old)))
 	      (add-index lookup-old)
 	      (setf final-item lookup-old)))))
       
@@ -824,14 +823,13 @@
 	     (setf (item-values item)
 		    (check-item-values% (item-store item) (item-changes item)))
 	     (setf (item-changes item) nil)
-	     (push item (item-bucket item))
+	   
+	     (push item (items (item-bucket item)))
 	     (add-index item)
 	     (setf final-item item)))))
 
     (unless change-p
       (when lookup-old
-
-
 	(when (equalp (item-values lookup-old) (item-values item))
 	  (let ((wtf (check-item-values% (item-store item) (item-changes item))))
 	    (when *persist-p*
@@ -847,7 +845,6 @@
 	      (setf final-item nil))))
 	
 	(unless (equalp (item-values lookup-old) (item-values item))
-
 	  (setf (item-values lookup-old)
 		(check-item-values% (item-store item) (item-values item)))
 	  (setf (item-changes item) nil)
@@ -967,6 +964,9 @@
 	
 	(when buckets
 	  (dolist (bucket buckets)
+	    ;;last ditch attempt to load collection if not loaded
+	    (unless (items bucket)
+	      (load-collection-items collection))
 	    (setf items
 		  (append
 		   items
