@@ -451,7 +451,7 @@
   (let ((keys (index-keys (get-data-type 
 			   (store collection)
 			   (data-type collection))
-			  item-values)))    
+			  item-values)))
     (gethash (sxhash keys) (index collection))))
 
 (defun remove-from-index (item)
@@ -477,44 +477,54 @@
       (let ((key (first pair))
 	    (val (second pair)))
 	
-	(if (and (not (equalp (type-of val) 'item))
-		 (listp val)
-		 (not (listp (first val)))
-		 (dig val :values :reference%))
-	    (setf final (append final
-				(list key
-				      (resolve-item-reference universe val))))
-	    (if (or (and val (listp val) (listp (first val)))
-		    (and val (listp val) (equalp (type-of (first val)) 'item)))
+	(if (and (listp val)
+		 (not (listp (first val))))
+
+	    (if (dig val :values)
+		(if (dig val :values :reference%)
+		    (setf final
+			  (append final
+				  (list key
+					(resolve-item-reference universe val))))
+		    (setf final
+			  (append final
+				  (list key
+					(make-item
+					 :data-type (dig val :data-type)
+					 :hash (dig val :hash)
+					 :values
+					 (resolve-item-values
+					  universe
+					  (dig val :values)))))))
+		(setf final (append final (list key val))))
+	    (if (and (listp val) (listp (first val)))
 		(let ((children))
 		  (dolist (it val)
-		    (if (and (not (equalp (type-of it) 'item))
-			     (listp it)
-			     (dig it :values :reference%))
-			(setf children
-			      (append children 
-				      (list
-				       (resolve-item-reference universe it))))
-			(if (and (listp (first it))
-				 (dig it :values))
-			    (setf children
-				  (append children
-					  (list (make-item
-						 :values
-						 (resolve-item-values
-						  universe
-						  (dig it :values))))))
-			    (setf children (append children (list it))))))
+		    (if (and (listp it)
+			     (not (listp (first it))))
+			(if (dig it :values)
+			    (if (dig it :values :reference%)
+				(setf children
+				      (append
+				       children
+				       (list
+					(resolve-item-reference universe it))))
+				(setf children
+				      (append
+				       children
+				       (list (make-item
+					       :data-type (dig it :data-type)
+					       :hash (dig it :hash)
+					       :values
+					       (resolve-item-values
+						universe
+						(dig it :values)))))))
+			    (append children (list it)))))		  
 		  (setf final (append final (list key children))))
-		(if (and val (listp val) (dig val :values))
-		    (setf final (append final
-					(list key
-					      (make-item
-						 :values
-						 (resolve-item-values
-						  universe
-						  (dig val :values))))))
-		    (setf final (append final (list key val))))))))     
+		(setf final (append final (list key val)))
+		
+		)
+	   )))     
     final))
 
 (defun resolve-item-reference (universe reference)
@@ -634,32 +644,8 @@
 			(item-bucket-key item)))))
   item)
 
-
-(defun key-change-check (item)
-  (let ((hash (sxhash (index-keys (item-collection item) 
-				  (item-values item)))))
-    
-    (if (and (item-hash item) 
-	     (not (equalp hash (item-hash item))))
-	(error (format nil
-			 "Cant change key values causes hash diff ~%~A~%~A~%~A" 
-			 (item-hash item)
-			 hash
-			 (item-values item)))
-	(when (item-changes item)
-	  (let ((new-hash (sxhash (index-keys (item-collection item) 
-					      (item-changes item)))))
-	    (when (item-hash item)
-	      (unless (equalp new-hash (item-hash item))
-		(error (format nil "Cant change key values~%~A~%~A" 
-			       (item-values item)
-			       (item-changes item))))))))
-    item))
-
-
 (defun change-in-item-p (item)
   (not (equalp (item-values item) (item-changes item))))
-
 
 
 (defun parse-item (item)
@@ -689,10 +675,11 @@
 	   :values 
 	   '(:reference% t))
 	  (list
-	  ;; :store (name (item-store item))
-	   :data-type (item-data-type item)
-	   :hash (or (item-hash item) (set-hash store item ))
-	   :values (parse-to-references% store (item-values item))))
+	     ;; :store (name (item-store item))
+	     :data-type (item-data-type item)
+	     :hash (or (item-hash item) (set-hash store item ))
+	     :values (parse-to-references% store (or (item-changes item)
+						     (item-values item)))))
       item))
 
 (defun parse-to-references% (store values)
@@ -731,10 +718,32 @@
 	  (parse-to-references% store (item-values ref-item)))
     ref-item))
 
-(defun check-item-values% (values)
+;;Used to mark change deep in the bowls of the beast.
+(defvar *persist-p* nil)
+
+(defun check-no-collection-val (store val)
+  (unless (item-changes val)
+    (setf (item-values val)
+	  (check-item-values% store
+	   (item-values val)))
+    val)
+  (when (item-changes val)
+    (setf *persist-p* t)
+    (setf (item-values val)
+	  (check-item-values% store
+	   (item-changes val)))
+    (setf (item-changes val) nil)
+    val)
+
+  (unless (item-hash val)
+    (set-hash store val))
+  
+  val)
+
+(defun check-item-values% (store values)
   (let ((final)
 	(value-pairs (parse-item values)))
-    
+
     (dolist (pair value-pairs)
       (let ((key (first pair))
 	    (val (second pair)))
@@ -744,151 +753,122 @@
 				(list key
 				      (if (item-collection val)
 					  (persist val)
-					  val))))
+					  (check-no-collection-val store val)))))
 	    (if (or (and val (listp val) (listp (first val)))
 		    (and val (listp val) (equalp (type-of (first val)) 'item)))
 		(let ((children))
 		  (dolist (it val)
 		    (if (equalp (type-of it) 'item)
-			(setf children (append children 
-					       (list
-						(if (item-collection it)
-						    (persist it)
-						    it))))
+			(setf children
+			      (append children 
+				      (list
+				       (if (item-collection it)
+					   (persist it)
+					   (check-no-collection-val store it)))))
 			
 			(setf children (append children (list it)))))
 		  (setf final (append final (list key children))))
 		(setf final (append final (list key val)))))))     
     final))
 
-(defun check-item-values (item)
-  (if (item-changes item)
-      (setf (item-changes item)
-	    (check-item-values% (item-changes item)))
-      (setf (item-values item)
-	    (check-item-values% (item-values item))))
-  item)
+(defun check-item-values (item allow-key-change-p)
+  (let (
+	(change-p (and (item-changes item) (change-in-item-p item)))
+	(lookup-old (lookup-index (item-collection item) (item-values item)))
+	(final-item))
 
-(defun check-item (item allow-key-change-p)
-  (let ((final-item)
-	(lookup-item))
-
-    (unless (and (item-changes item) (change-in-item-p item))
-      (let ((new-hash (sxhash (index-keys (item-collection item) 
-					  (item-values item)))))
-
-	(setf lookup-item
-	      (lookup-index (item-collection item) (item-values item)))
-
-	(when lookup-item
-
-	  (when (equalp (item-values lookup-item) (item-changes item))
-	    ;;TODO: Add logging 
-	    ;;Don't save nothing changed
-	    (setf final-item nil))
+    (when change-p
+      (when lookup-old
+	(let ((lookup-new (lookup-index (item-collection item)
+					(item-changes item))))
+	  (when lookup-new	  
+	    (when (equalp (item-hash lookup-new) (item-hash lookup-old))
+	      
+	      (setf (item-values lookup-old)
+		    (check-item-values% (item-store item) (item-changes item)))
+	      (setf (item-changes item) nil)
+	      (setf final-item lookup-old)))
 	  
-	  (unless (equalp (item-values lookup-item) (item-values item))
-
-	    ;;Dont know if this is needed logically it should be impossible
-	    ;;to get a lookup-item and the keys don't match
-	    (unless (equalp new-hash (item-hash lookup-item))
-	      (unless allow-key-change-p
-		(error
-		 (format
-		  nil
-		  "Cant change key values causes hash diff ~%~A~%~A~%~A~%~A" 
-		  (item-hash lookup-item)
-		  new-hash
-		  (item-values lookup-item)
-		  (item-values item))))
-
-	      (when allow-key-change-p
-		(push (item-values lookup-item) (item-versions lookup-item))
-		(setf (item-values lookup-item) (item-changes item))
-		(remove-item lookup-item)	      
-		(push item (item-bucket lookup-item))
-		(add-index lookup-item)
-		(setf final-item lookup-item)))
-	    
-	    (when (equalp new-hash (item-hash lookup-item))
-	 
-	      (push (item-values lookup-item) (item-versions lookup-item))
-	      (setf (item-values lookup-item) (item-values item))
-	      (setf final-item lookup-item))))	
-	
-	(unless lookup-item
-	  (let ((bucket (get-bucket (item-collection item)
-				    (item-bucket-key item))))
-	    
-	    (push item (items bucket))
-	    (add-index item)
-	    (setf final-item item)))))
-    
-    (when (and (item-changes item) (change-in-item-p item))
-      (if (item-values item)
-	  (setf lookup-item
-		(lookup-index (item-collection item) (item-values item))))
-      
-      (unless lookup-item
-	(let ((bucket (get-bucket (item-collection item)
-				    (item-bucket-key item))))
-
-	  (setf (item-values item) (item-changes item))
-	  (setf (item-changes item) nil)
-	  (push item (items bucket))
-	  (add-index item)
-	  (setf final-item item)))
-
-      (when lookup-item
-	(let ((new-hash (sxhash (index-keys (item-collection item) 
-					    (item-changes item)))))
-	  (unless (equalp new-hash (item-hash lookup-item))
+	  (unless lookup-new
 
 	    (unless allow-key-change-p
 	      (error
 	       (format
 		nil
 		"Cant change key values causes hash diff ~%~A~%~A~%~A~%~A" 
-		(item-hash lookup-item)
-		new-hash
-		(item-values lookup-item)
-		(item-changes item))))
+		(item-hash lookup-old)
+		(item-hash item)
+		(item-values lookup-old)
+		(item-values item))))
+	    
 	    (when allow-key-change-p
-	      (push (item-values lookup-item) (item-versions lookup-item))
-	      (setf (item-values lookup-item) (item-changes item))
-	      (remove-item lookup-item)	      
-	      (push item (item-bucket lookup-item))
-	      (add-index lookup-item)
-	      (setf final-item lookup-item)))
+	      (push (item-values lookup-old) (item-versions lookup-old))
+	      (setf (item-values lookup-old)
+		    (check-item-values% (item-store item)
+					(item-changes item)))
+	      (remove-item lookup-old)	      
+	      (push item (item-bucket lookup-old))
+	      (add-index lookup-old)
+	      (setf final-item lookup-old)))))
+      
+      (unless lookup-old
+	(let ((lookup-new (lookup-index (item-collection item)
+					(item-changes item))))
+	  (when lookup-new
+	     (setf (item-values lookup-new)
+		    (check-item-values% (item-store item) (item-changes item)))
+	      (setf (item-changes lookup-new) nil)
+	      (setf final-item lookup-new))
 	  
-	  (when (equalp new-hash (item-hash lookup-item))
-	    (push (item-values lookup-item) (item-versions lookup-item))
-	    (setf (item-values lookup-item) (item-changes item))
-	    (setf (item-changes item) nil)
-	    (setf final-item lookup-item)))))
-    
+	  (unless lookup-new
+	     (setf (item-values item)
+		    (check-item-values% (item-store item) (item-changes item)))
+	     (setf (item-changes item) nil)
+	     (push item (item-bucket item))
+	     (add-index item)
+	     (setf final-item item)))))
+
+    (unless change-p
+      (when lookup-old
+
+
+	(when (equalp (item-values lookup-old) (item-values item))
+	  (let ((wtf (check-item-values% (item-store item) (item-changes item))))
+	    (when *persist-p*
+	      (push (item-values lookup-old) (item-versions lookup-old))
+	      (setf (item-values lookup-old) wtf)		
+	      (setf (item-changes item) nil)
+	      (setf final-item lookup-old))
+
+	    ;;Don't save nothing changed
+	    (unless *persist-p*
+	      (setf (item-changes lookup-old) nil)
+	      (setf (item-changes item) nil)
+	      (setf final-item nil))))
+	
+	(unless (equalp (item-values lookup-old) (item-values item))
+
+	  (setf (item-values lookup-old)
+		(check-item-values% (item-store item) (item-values item)))
+	  (setf (item-changes item) nil)
+	  (setf final-item lookup-old))))
+      
     final-item))
 
 (defmethod persist ((item item) &key collection file allow-key-change-p
 				  &allow-other-keys)
 
- 
+  (let ((*persist-p* nil)
+	(derived-file))
   
-  (let ((derived-file))    
     (unless file
-      
       ;;Resolve the location of the item
       (setf item (check-location item :collection collection))
       
       (setf derived-file (location (item-bucket item))))
-
-    ;;See if any of the item values an item(s) that need persisting in their
-    ;;own collections.
-    (setf item (check-item-values item))
-
-     ;;Only persist if the item has not changed and synq with existing item
-    ;;if structs are not eql
-    (let ((changed-item (check-item item allow-key-change-p)))
+    
+    ;;Only persist if the item has changed
+    (let ((changed-item (check-item-values item allow-key-change-p)))
 
       (when changed-item
 	(setf item changed-item)
@@ -1088,8 +1068,10 @@
 
 (defmethod (setf getx) (value (item item) field-name &key (change-control-p t))
   (when change-control-p
+    
     (unless (item-changes item)
-      (setf (item-changes item) (copy-list (item-values item))))  
+      (setf (item-changes item) (copy-list (item-values item))))
+    
     (setf (getf (item-changes item) field-name) value))
   (unless change-control-p
     (setf (getf (item-values item) field-name) value)))
