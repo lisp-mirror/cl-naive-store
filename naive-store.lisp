@@ -110,6 +110,7 @@
 (defgeneric get-store (universe storn-name))
 
 (defmethod get-store ((universe universe) store-name)
+  
   (dolist (store (stores universe))
     (when (string-equal store-name (name store))
       (return-from get-store store))))
@@ -477,11 +478,16 @@
     (dolist (pair value-pairs)
       (let ((key (first pair))
 	    (val (second pair)))
-	
+
 	(if (and (listp val)
 		 (not (listp (first val))))
-
-	    (if (dig val :values)
+	    ;;;need to figure out how to difinitively test for keyword list
+	    ;;(:arst :arst :arst)
+	    (if (and (and
+		      (not (stringp (first val)))
+		      (not (stringp (second val)))
+		      (not (keywordp (second val))))
+		     (dig val :values))
 		(if (dig val :values :reference%)
 		    (setf final
 			  (append final
@@ -522,7 +528,7 @@
 						(dig it :values)))))))
 			    (append children (list it)))))		  
 		  (setf final (append final (list key children))))
-		(setf final (append final (list key val)))))))     
+		(setf final (append final (list key val)))))))
     final))
 
 (defun resolve-item-reference (universe reference)
@@ -746,7 +752,7 @@
     (dolist (pair value-pairs)
       (let ((key (first pair))
 	    (val (second pair)))
-
+	
 	(if (equalp (type-of val) 'item)
 	    (setf final (append final
 				(list key
