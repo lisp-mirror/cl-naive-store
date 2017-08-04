@@ -484,7 +484,11 @@
 	    ;;;need to figure out how to difinitively test for keyword list
 	    ;;(:arst :arst :arst)
 	    (if (and (and
+		      (not (integerp (first val)))
+		      (not (numberp (first val)))
 		      (not (stringp (first val)))
+		      (not (integerp (second val)))
+		      (not (numberp (second val)))
 		      (not (stringp (second val)))
 		      (not (keywordp (second val))))
 		     (dig val :values))
