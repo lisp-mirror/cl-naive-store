@@ -401,7 +401,11 @@
 (defun get-key-values (keys item)
   (let ((val))
     (dolist (key keys)
-      (push (list key (getf item key)) val))   
+      (push (list key
+		  (if (equalp (type-of (getf item key)) 'item)
+		      (item-hash (getf item key))
+		      (getf item key)))
+	    val))   
     (reverse val)))
 
 (defun get-bucket-key-val-location (collection key-values)
