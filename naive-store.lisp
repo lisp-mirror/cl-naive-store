@@ -617,8 +617,6 @@
 		:store (store collection)
 		:collection collection
 		:data-type (data-type collection)
-		:store (name (store collection))
-		:collection (name collection)
 		:values item))))
 
 (defun check-location (item &key collection)
@@ -910,6 +908,7 @@
 	;;Parse item to persistable format
 	(let ((item-to-persist (parse-to-references (item-store item) item)))
 	  (when item-to-persist
+	    
 	    (setf (item-persisted-p item) nil)
 	    (write-to-file (or file derived-file)
 			   item-to-persist
