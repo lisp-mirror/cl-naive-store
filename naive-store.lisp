@@ -401,11 +401,7 @@
 (defun get-key-values (keys item)
   (let ((val))
     (dolist (key keys)
-      (push (list key
-		  (if (equalp (type-of (getf item key)) 'item)
-		      (item-hash (getf item key))
-		      (getf item key)))
-	    val))   
+      (push (list key (getf item key)) val))   
     (reverse val)))
 
 (defun get-bucket-key-val-location (collection key-values)
@@ -433,7 +429,9 @@
   (let ((keys))
     (dolist (field fields)
       (when (key-p field)
-	(push (getf item-values (name field)) keys)))
+	(if (equalp (type-of (getf item-values (name field))) 'item)
+	    (push (item-hash (getf item-values (name field))) keys)
+	    (push (getf item-values (name field)) keys))))
     (reverse keys)))
 
 (defun remove-item (item)
@@ -475,6 +473,9 @@
     
     bucket))
 
+(defun find-key (value key)
+  (find key value :test #'equalp))
+
 (defun resolve-item-values (universe values)
   (let ((final)
 	(value-pairs (parse-item values)))
@@ -483,19 +484,9 @@
       (let ((key (first pair))
 	    (val (second pair)))
 
-	(if (and (listp val)
-		 (not (listp (first val))))
-	    ;;;need to figure out how to difinitively test for keyword list
-	    ;;(:arst :arst :arst)
-	    (if (and (and
-		      (not (integerp (first val)))
-		      (not (numberp (first val)))
-		      (not (stringp (first val)))
-		     ;; (not (integerp (second val)))
-		     ;; (not (numberp (second val)))
-		     ;; (not (stringp (second val)))
-		      (not (keywordp (second val))))
-		     (dig val :values))
+	(if (and (not (atom val))
+		 (listp val))	    
+	    (if (find-key val :values)
 		(if (dig val :values :reference%)
 		    (setf final
 			  (append final
@@ -511,32 +502,37 @@
 					 (resolve-item-values
 					  universe
 					  (dig val :values)))))))
-		(setf final (append final (list key val))))
-	    (if (and (listp val) (listp (first val)))
-		(let ((children))
-		  (dolist (it val)
-		    (if (and (listp it)
-			     (not (listp (first it))))
-			(if (dig it :values)
-			    (if (dig it :values :reference%)
-				(setf children
-				      (append
-				       children
-				       (list
-					(resolve-item-reference universe it))))
-				(setf children
-				      (append
-				       children
-				       (list (make-item
-					       :data-type (dig it :data-type)
-					       :hash (dig it :hash)
-					       :values
-					       (resolve-item-values
-						universe
-						(dig it :values)))))))
-			    (append children (list it)))))		  
-		  (setf final (append final (list key children))))
-		(setf final (append final (list key val)))))))
+		(if (and (not (atom (first val)))
+			 (listp (first val)))
+		    (let ((children))
+		      (dolist (it val)
+			(if (and (not (atom it))
+				 (listp it))
+			    (if (find-key it :values)
+				(if (dig it :values :reference%)
+				    (setf children
+					  (append
+					   children
+					   (list
+					    (resolve-item-reference universe it))))
+				    (setf children
+					  (append
+					   children
+					   (list (make-item
+						  :data-type (dig it :data-type)
+						  :hash (dig it :hash)
+						  :values
+						  (resolve-item-values
+						   universe
+						   (dig it :values)))))))
+				(append children (list it)))))		  
+		      (setf final (append final (list key children))))
+		    (setf final (append final (list key val)))))
+	    (setf final (append final (list key val)))
+
+
+	    
+	    )))
     final))
 
 (defun resolve-item-reference (universe reference)
@@ -547,34 +543,55 @@
       (let ((ref-item (gethash (dig reference :hash) 
 			       (index (collection bucket)))))
 	(when ref-item
-
-	  (unless (dig (getf reference :values) :reference%)
+	  (unless (getf reference :deleted-p)
 	    
-	    (let ((resolved-values
-		   (resolve-item-values universe (getf reference :values))))
 
-	      (unless (equalp (item-values ref-item) resolved-values)
-		(push  (item-values ref-item) (item-versions ref-item))		
-		(setf (item-values ref-item) resolved-values))))
+	    (unless (dig (getf reference :values) :reference%)
+	      
+	      (let ((resolved-values
+		     (resolve-item-values universe (getf reference :values))))
+
+		(unless (equalp (item-values ref-item) resolved-values)
+		  (push  (item-values ref-item) (item-versions ref-item))		
+		  (setf (item-values ref-item) resolved-values))))
+
+	    (when (dig (getf reference :values) :reference%)
+	      (break "WTF ~A" reference))	    
+	    
+	    (setf final-item ref-item))
 	  
-	  (setf final-item ref-item))
+	  (when (getf reference :deleted-p)
+	    (remove-item ref-item)
+	    (setf final-item nil)))
+	
 	
 	(unless ref-item
-	  (setf final-item
-		(make-item
-		 :store (store (collection bucket))
-		 :collection (collection bucket)
-		 :data-type (getf reference :data-type)
-		 :bucket bucket
-		 :bucket-key (getf reference :bucket-key)
-		 :values (resolve-item-values universe
-					      (getf reference :values))))
-	  (push final-item (items bucket))
-	  (add-index final-item))
-	
+	  (unless (getf reference :deleted-p)
+	    (setf final-item
+		  (make-item
+		   :store (store (collection bucket))
+		   :collection (collection bucket)
+		   :data-type (getf reference :data-type)
+		   :bucket bucket
+		   :bucket-key (getf reference :bucket-key)
+		   :values (resolve-item-values universe
+						(getf reference :values))))
+
+	    (when (getf (item-values final-item) :reference%)
+	      (write-to-file "~/data-universe/error.log"
+			     (list "Could not resolve ~S" reference)))
+	    
+	    (unless (getf (item-values final-item) :reference%)
+	      (push final-item (items bucket))
+	      (add-index final-item))))
+
+
 	(if final-item
 	    final-item
-	    reference)))))
+	    (unless (getf reference :deleted-p)
+		(write-to-file "~/data-universe/error.log"
+			       (list "Could not resolve ~S" reference))
+	      nil))))))
 
 (defun load-items (universe filename )
   (with-open-file (in filename :if-does-not-exist :create)
@@ -791,6 +808,7 @@
 	(lookup-old (lookup-index (item-collection item) (item-values item)))
 	(final-item))
 
+    
     (when change-p
       (when lookup-old
 	(let ((lookup-new (lookup-index (item-collection item)
@@ -884,7 +902,10 @@
 	 (push item (items (item-bucket item)))
 	 (add-index item)
 	 (setf final-item item)))
-      
+    
+    (when final-item
+      (setf (item-deleted-p final-item) (item-deleted-p item)))
+    
     final-item))
 
 (defmethod persist ((item item) &key collection file allow-key-change-p
@@ -908,7 +929,6 @@
 	;;Parse item to persistable format
 	(let ((item-to-persist (parse-to-references (item-store item) item)))
 	  (when item-to-persist
-	    
 	    (setf (item-persisted-p item) nil)
 	    (write-to-file (or file derived-file)
 			   item-to-persist
@@ -1000,9 +1020,13 @@
 	
 	(when buckets
 	  (dolist (bucket buckets)
+	   ;; (break "~A" bucket)
 	    ;;last ditch attempt to load collection if not loaded
 	    (unless (items bucket)
 	      (load-collection-items collection))
+	    
+	    
+
 	    (setf items
 		  (append
 		   items
