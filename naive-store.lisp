@@ -26,7 +26,10 @@
 	  :initform nil)
    (location :initarg :location
 	     :accessor location
-	     :initform nil)))
+	     :initform nil)
+   (loaded-p :initarg :loaded-p
+	  :accessor loaded-p
+	  :initform nil)))
 
 (defclass collection ()
   ((store :initarg :store
@@ -606,10 +609,7 @@
 	    (unless (getf reference :deleted-p)
 		(write-to-file "~/data-universe/error.log"
 			       (list "Could not resolve ~S" reference))
-		nil))))
-
-    
-    ))
+		nil))))))
 
 (defun load-items (universe filename )
   (with-open-file (in filename :if-does-not-exist :create)
@@ -639,8 +639,9 @@
       
       (setf (collection bucket) collection)
       (unless dont-load-items-p
-	
-	(load-items (universe (store collection)) location)))
+	(unless (loaded-p bucket)
+	  (load-items (universe (store collection)) location)
+	  (setf (loaded-p bucket) t))))
     bucket))
 
 (defgeneric persist-item (collection item))
