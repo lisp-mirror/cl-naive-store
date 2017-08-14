@@ -220,16 +220,26 @@
     (persist data-type))
   data-type)
 
+(defun file-loaded (collection file)
+  (let ((loaded-p))
+    (dolist (bucket (buckets collection))
+      (when (search (remove #\~ (location bucket)) (namestring file))
+	(when (loaded-p bucket)
+	  (setf loaded-p t))))
+    loaded-p))
+
 (defun load-collection-items (collection)  
   (let ((files (directory (format nil "~A/**/*.log" (location collection))))
 	(data-type (get-data-type (store collection)
 				  (data-type collection))))
- 
+
+    
     (unless data-type
       (load-store-data-types (store collection)))
-    
-    (dolist (file files)     
-      (load-items (universe (store collection)) file))))
+
+    (dolist (file files)
+      (unless (file-loaded collection file)	
+	(load-items (universe (store collection)) file)))))
 
 (defun load-store-data-types (store)
   (let ((files (directory (format nil "~A**/*.type" (location store))))
