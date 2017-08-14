@@ -109,8 +109,7 @@
 
 (defgeneric get-store (universe storn-name))
 
-(defmethod get-store ((universe universe) store-name)
-  
+(defmethod get-store ((universe universe) store-name)  
   (dolist (store (stores universe))
     (when (string-equal store-name (name store))
       (return-from get-store store))))
@@ -125,12 +124,9 @@
 (defgeneric get-collection (store collection-name))
 
 (defmethod get-collection ((store store) collection-name)
-  
-  (dolist (collection (collections store))
-    
-    (when (string-equal collection-name (name collection))
-      
-      (return-from get-collection collection))))
+   (dolist (collection (collections store))
+     (when (string-equal collection-name (name collection))
+       (return-from get-collection collection))))
 
 (defgeneric get-bucket (collection bucket-key))
 
@@ -159,7 +155,6 @@
 
 (defun get-store* (universe name)
   (let ((store (get-store universe name)))
-    
     (unless store
       (setf store (get-store-from-def universe name))
       (load-store-data-types store)
@@ -461,14 +456,14 @@
 (defun remove-from-index (item)
   (remhash (item-hash item) (index (item-collection item))))
 
-(defun load-item-reference-bucket (universe item-ref)
+(defun load-item-reference-bucket (universe item-ref &key dont-load-items-p)
   (let* ((store (get-store* universe (getf item-ref :store)))
 	 (collection (get-collection* store (getf item-ref :collection)))
 	 (bucket (get-bucket collection (getf item-ref :bucket-key))))
     
     (unless bucket
       (add-bucket collection (getf item-ref :bucket-key)
-		  :dont-load-items-p t)
+		  :dont-load-items-p dont-load-items-p)
       (setf bucket (get-bucket collection (getf item-ref :bucket-key))))
     
     bucket))
@@ -476,7 +471,7 @@
 (defun find-key (value key)
   (find key value :test #'equalp))
 
-(defun resolve-item-values (universe values)
+(defun resolve-item-values (universe collection values)
   (let ((final)
 	(value-pairs (parse-item values)))
     
@@ -491,7 +486,15 @@
 		    (setf final
 			  (append final
 				  (list key
-					(resolve-item-reference universe val))))
+					(resolve-item-reference
+					 universe val
+					 :dont-load-items-p
+					 ;;Unless hierarchy of same object type
+					 ;;load reference collection
+					 (if (equalp (name collection)
+						     (getf val :collection))
+					     t
+					     nil)))))
 		    (setf final
 			  (append final
 				  (list key
@@ -501,6 +504,7 @@
 					 :values
 					 (resolve-item-values
 					  universe
+					  collection
 					  (dig val :values)))))))
 		(if (and (not (atom (first val)))
 			 (listp (first val)))
@@ -514,7 +518,15 @@
 					  (append
 					   children
 					   (list
-					    (resolve-item-reference universe it))))
+					    (resolve-item-reference
+					     universe it
+					     :dont-load-items-p
+					     ;;Unless hierarchy of same object
+					     ;;load reference collection
+					     (if (equalp (name collection)
+						     (getf it :collection))
+					     t
+					     nil)))))
 				    (setf children
 					  (append
 					   children
@@ -524,6 +536,7 @@
 						  :values
 						  (resolve-item-values
 						   universe
+						   collection
 						   (dig it :values)))))))
 				(append children (list it)))))		  
 		      (setf final (append final (list key children))))
@@ -535,8 +548,12 @@
 	    )))
     final))
 
-(defun resolve-item-reference (universe reference)
-  (let ((bucket (load-item-reference-bucket universe reference))
+(defun resolve-item-reference (universe reference &key dont-load-items-p)
+  (let ((bucket (load-item-reference-bucket
+		 universe reference
+		 ;;Don't load if loading file but if it is value references load
+		 ;;those collections so that reference lookup works correct.
+		 :dont-load-items-p dont-load-items-p))
 	(final-item))
     
     (when bucket
@@ -549,7 +566,8 @@
 	    (unless (dig (getf reference :values) :reference%)
 	      
 	      (let ((resolved-values
-		     (resolve-item-values universe (getf reference :values))))
+		     (resolve-item-values universe (collection bucket)
+					  (getf reference :values))))
 
 		(unless (equalp (item-values ref-item) resolved-values)
 		  (push  (item-values ref-item) (item-versions ref-item))		
@@ -571,6 +589,7 @@
 		   :bucket bucket
 		   :bucket-key (getf reference :bucket-key)
 		   :values (resolve-item-values universe
+						(collection bucket)
 						(getf reference :values))))
 
 	    (when (getf (item-values final-item) :reference%)
@@ -587,7 +606,10 @@
 	    (unless (getf reference :deleted-p)
 		(write-to-file "~/data-universe/error.log"
 			       (list "Could not resolve ~S" reference))
-	      nil))))))
+		nil))))
+
+    
+    ))
 
 (defun load-items (universe filename )
   (with-open-file (in filename :if-does-not-exist :create)
@@ -596,7 +618,8 @@
 	(loop for line = (read in nil)
 	   while line
 	   do (resolve-item-reference
-	       universe line))
+	       universe line
+	       :dont-load-items-p t))
 	(close in)))))
 
 (defmethod add-bucket ((collection collection) key-values
@@ -913,12 +936,10 @@
     (unless file
       ;;Resolve the location of the item
       (setf item (check-location item :collection collection))
-      
       (setf derived-file (location (item-bucket item))))
-    
+
     ;;Only persist if the item has changed
     (let ((changed-item (check-item-values item allow-key-change-p)))
-
       (when changed-item
 	(setf item changed-item)
 
