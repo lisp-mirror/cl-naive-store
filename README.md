@@ -1,5 +1,5 @@
 # cl-naive-store
-This is a naive but cleverish hierarchical persisted in memory data store for an in Common Lisp.
+This is a naive but cleverish hierarchical persisted in memory data store for Common Lisp.
 
 Naive in that it stores data as proper lists, making files human readable. (There
 is nothing worse than to try and find a corruption in your db when the files 
