@@ -968,13 +968,16 @@
   (let ((filename (format nil "~A~A/~A.store" 
 			  (location universe) store-name store-name))
 	(store-def)
-	(store))    
+	(store))
+
+    
     
     (with-open-file (in filename :if-does-not-exist :create)
       (with-standard-io-syntax              
 	(when in
 	  (setf store-def (read in nil))
 	  (close in))))
+
     
     (when store-def
       (setf store
@@ -986,12 +989,17 @@
 
 (defun get-collection-from-def (store collection-name)
   (let ((filename (format nil "~A~A.col" (location store) collection-name))
-	(collection-def))    
+	(collection-def))
+
+	
     (with-open-file (in filename :if-does-not-exist :create)
-      (with-standard-io-syntax              
+      (with-standard-io-syntax
 	(when in
 	  (setf collection-def (read in nil))
 	  (close in))))
+
+    
+
     (when collection-def
       (make-instance 'collection
 		     :store store
@@ -1146,6 +1154,10 @@
 (defun (setf dig) (value place &rest indicators)
   (set-dig-down place indicators value))
 
+(defgeneric exists-p (item field-name))
+
+(defmethod exists-p ((item item) field-name)
+  (get-properties (item-values item) (list field-name)))
 
 (defgeneric getx (item field-name))
 

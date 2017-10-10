@@ -59,6 +59,7 @@
 
    :dig
    :digx
+   :exists-p
    :getx
    :naive-dig
    :set-naive-dig
