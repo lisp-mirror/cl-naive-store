@@ -94,6 +94,15 @@
    :load-store
    :fetch-items
    :fetch-item
+
+
+   :find-item-by-value
+
+   :match-item
+   :match-replace-item
    
-   
+   :find-equalp-item
+   :find-in-item-list 
+   :find-items-in-item-list
+
    ))
