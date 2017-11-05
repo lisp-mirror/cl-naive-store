@@ -970,8 +970,6 @@
 	(store-def)
 	(store))
 
-    
-    
     (with-open-file (in filename :if-does-not-exist :create)
       (with-standard-io-syntax              
 	(when in
@@ -1060,9 +1058,6 @@
 	    ;;last ditch attempt to load collection if not loaded
 	    (unless (items bucket)
 	      (load-collection-items collection))
-	    
-	    
-
 	    (setf items
 		  (append
 		   items

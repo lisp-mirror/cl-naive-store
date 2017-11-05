@@ -63,6 +63,9 @@
    :getx
    :naive-dig
    :set-naive-dig
+   :getfx
+   :getsfx
+   :validate-sfx
    
    :write-to-file
    :write-list-to-file   
