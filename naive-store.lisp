@@ -193,7 +193,12 @@
   (let ((collection (get-collection store name)))
     (unless collection
       (setf collection (get-collection-from-def store name))
-      (add-collection store collection))
+      
+      (when collection
+	(add-collection store collection)
+	)
+      (unless collection
+	  (error "Could not create collection ~A" name)))
     collection))
 
 (defun bucket-location (collection keys)
@@ -947,7 +952,7 @@
 
   (let ((*persist-p* nil)
 	(derived-file))
-  
+;;(break "? ~A" item) 
     (unless file
       ;;Resolve the location of the item
       (setf item (check-location item :collection collection))
@@ -957,7 +962,7 @@
     (let ((changed-item (check-item-values item allow-key-change-p)))
       (when changed-item
 	(setf item changed-item)
-
+;;(break "?? ~A" item)
 	;;Parse item to persistable format
 	(let ((item-to-persist (parse-to-references (item-store item) item)))
 	  (when item-to-persist
@@ -1097,7 +1102,11 @@
       (setf collection (get-collection-from-def 
 			store
 			collection-name))
-      (add-collection store collection))
+      (when collection
+	
+	(add-collection store collection))
+      (unless collection
+	  (error "Could not create collection ~A" collection-name)))
     
     (fetch-items* store collection 
 		  :test test
