@@ -54,7 +54,10 @@
 	    :initform nil)
    (index :initarg :index
 	  :accessor index
-	  :initform (make-hash-table :test 'equalp))))
+	  :initform (make-hash-table :test 'equalp))
+   (filter :initarg :filter
+	   :accessor filter
+	   :initform nil)))
 
 (defclass data-type ()
   ((store :initarg :store
@@ -286,7 +289,8 @@
 		  (make-instance 'collection
 				 :name (getf file-contents :name)
 				 :location (getf file-contents :location)
-				 :data-type (getf file-contents :data-type)))))
+				 :data-type (getf file-contents :data-type)
+				 :filter (getf file-contents :filter)))))
 	    (when with-items-p
 	      (load-collection-items collection))))))))
 
@@ -989,22 +993,20 @@
   (let ((filename (format nil "~A~A.col" (location store) collection-name))
 	(collection-def))
 
-	
     (with-open-file (in filename :if-does-not-exist :create)
       (with-standard-io-syntax
 	(when in
 	  (setf collection-def (read in nil))
 	  (close in))))
 
-    
-
     (when collection-def
-      (make-instance 'collection
+       (make-instance 'collection
 		     :store store
 		     :name (getf collection-def :name)
 		     :bucket-keys (getf collection-def :bucket-keys)
 		     :location (getf collection-def :location)
-		     :data-type (getf collection-def :data-type)))))
+		     :data-type (getf collection-def :data-type)
+		     :filter (getf collection-def :filter)))))
 
 (defun load-collection (collection)
   (load-collection-items collection))
@@ -1058,16 +1060,29 @@
 	    ;;last ditch attempt to load collection if not loaded
 	    (unless (items bucket)
 	      (load-collection-items collection))
+	   
 	    (setf items
 		  (append
 		   items
 		   (if test
 		       (map return-type
 			    (lambda (item)
-			      (if find-first-item-p
-				  (when (apply test item test-args)
-				    (return-from fetch-items* item))
-				  (and (apply test item test-args) item)))
+			     
+			      (when (filter collection)
+				
+			)
+			      (let ((filter-p (if (filter collection)
+						  (eval
+						   `(apply ,(filter collection)
+							   (list ,item)))
+						  t)))
+			
+				(when filter-p
+				  (if find-first-item-p
+				      
+				      (when (apply test item test-args)
+					(return-from fetch-items* item))
+				      (and (apply test item test-args) item)))))
 			    (items bucket))
 		       (items bucket))))))))
 

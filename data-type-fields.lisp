@@ -222,10 +222,12 @@
 (defmethod validate-sfx (type field item value &key &allow-other-keys)
   (values t nil))
 
+;;TODO: how to do collection checking, additional parameters/keys
+;;when and how to pass
 (defmethod (setf getsfx) :around (value type field item   
 				  &key &allow-other-keys)
-  (when (validate-sfx type field item value)
-    (call-next-method)))
+;;  (when (validate-sfx type field item value)    )
+  (call-next-method))
 
 (defmethod (setf getsfx) (value (type (eql :symbol)) field item   
 			  &key &allow-other-keys)
@@ -279,9 +281,9 @@
 (defmethod (setf getsfx) (value (type (eql :script)) field item   &key &allow-other-keys)
   (setsfx-read* field item value #'consp "~S is not a cons!"))
 
-
-(defmethod (setf getsfx) (value (type (eql :collection)) field item   
+(defmethod (setf getsfx) (value (type (eql :collection)) field item
 			  &key &allow-other-keys)
+
   (let ((name (getf field :name))
 	(final-val))
     (if (not (empty-p value))
@@ -289,16 +291,12 @@
 		(setf final-val value)
 		(error (frmt "~S is not of type ~A!" value
 			   (dig field :db-type :data-spec)))))
-
     (setf (getx item name) final-val)))
-
-
 
 (defmethod validate-sfx ((type (eql :collection)) field item value
 			 &key items &allow-other-keys)
     (let* ((valid (find value items)))
-    
-    (values valid (if (not valid)
+     (values valid (if (not valid)
 		      (frmt "Value ~A not found in ~A" value
 			    (dig field :db-type :collection))))))
 
