@@ -465,6 +465,7 @@
 			    (data-type (item-collection item)))
 			   (item-values item)))
 	 (hash (sxhash keys)))
+;;    (break "? ~A ~A" keys (item-store item))
     (setf (item-hash item) hash)
     (setf (gethash hash (index (item-collection item))) item)))
 
@@ -473,6 +474,7 @@
 			   (store collection)
 			   (data-type collection))
 			  item-values)))
+;;    (break "?? ~A ~A" keys (store collection))
     (gethash (sxhash keys) (index collection))))
 
 (defun remove-from-index (item)
@@ -726,6 +728,7 @@
 			      (item-data-type item))
 			     (item-values item)))
 	   (hash (sxhash keys)))
+;;      (break "~A" keys)
       (setf (item-hash item) hash)
       hash)))
 
@@ -958,19 +961,31 @@
       (setf item (check-location item :collection collection))
       (setf derived-file (location (item-bucket item))))
 
-    ;;Only persist if the item has changed
     (let ((changed-item (check-item-values item allow-key-change-p)))
-      (when changed-item
-	(setf item changed-item)
-;;(break "?? ~A" item)
-	;;Parse item to persistable format
-	(let ((item-to-persist (parse-to-references (item-store item) item)))
-	  (when item-to-persist
-	    (setf (item-persisted-p item) nil)
-	    (write-to-file (or file derived-file)
-			   item-to-persist
-			   :if-exists :append)
-	    (setf (item-persisted-p item) t)))))
+	  
+      (if changed-item
+	  (progn
+	    (setf item changed-item)
+	    ;;(break "?? ~A" item)
+	    ;;Parse item to persistable format
+	    (let ((item-to-persist (parse-to-references (item-store item) item)))
+	      (when item-to-persist
+		(setf (item-persisted-p item) nil)
+		(write-to-file (or file derived-file)
+			       item-to-persist
+			       :if-exists :append)
+		(setf (item-persisted-p item) t))))
+	  (when (item-deleted-p item)
+	    (let ((item-to-persist (parse-to-references (item-store item) item)))
+	      (when item-to-persist
+		(setf (item-persisted-p item) nil)
+		(write-to-file (or file derived-file)
+			       item-to-persist
+			       :if-exists :append)
+		(setf (item-persisted-p item) t)))
+	    ))
+	  
+	 )
     item))
 
 (defun get-store-from-def (universe store-name)
