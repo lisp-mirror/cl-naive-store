@@ -477,6 +477,9 @@
 ;;    (break "?? ~A ~A" keys (store collection))
     (gethash (sxhash keys) (index collection))))
 
+(defun lookup-index-hash (collection hash)
+  (gethash hash (index collection)))
+
 (defun remove-from-index (item)
   (remhash (item-hash item) (index (item-collection item))))
 
@@ -665,17 +668,19 @@
 	  (setf (loaded-p bucket) t))))
     bucket))
 
-(defgeneric persist-item (collection item))
+(defgeneric persist-item (collection item &key &allow-other-keys))
 
-(defmethod persist-item ((collection collection) item)
+(defmethod persist-item ((collection collection) item &key allow-key-change-p)
 
   (if (equalp (type-of item) 'item)
-      (persist item :collection collection)
+      (persist item :collection collection
+	       :allow-key-change-p allow-key-change-p)
       (persist (make-item 
 		:store (store collection)
 		:collection collection
 		:data-type (data-type collection)
-		:values item))))
+		:values item)
+	       :allow-key-change-p allow-key-change-p)))
 
 (defun check-location (item &key collection)
   (unless (and (item-store item) (item-collection item))
@@ -847,76 +852,110 @@
 
 (defun check-item-values (item allow-key-change-p)
   (let ((change-p (and (item-changes item) (change-in-item-p item)))
-	(lookup-old (lookup-index (item-collection item) (item-values item)))
+	(lookup-old (or (lookup-index-hash (item-collection item)
+					   (item-hash item))
+			(lookup-index (item-collection item)
+				      (item-values item))))
+	(lookup-new (lookup-index (item-collection item)
+					(item-changes item)))
 	(final-item))
 
-    
     (when change-p
       (when lookup-old
-	(let ((lookup-new (lookup-index (item-collection item)
-					(item-changes item))))	  
-	  (when lookup-new
-	    (when (equalp (item-hash lookup-new) (item-hash lookup-old))
-	      (unless (equalp (item-values lookup-new) (item-changes item))
-		(setf (item-values lookup-old)
-		      (check-item-values% (item-store item) (item-changes item)))
-		(setf (item-changes item) nil)
-		(setf final-item lookup-old)))
+	(when lookup-new
 	    
-	    (unless (equalp (item-hash lookup-new) (item-hash lookup-old))
-	      (unless allow-key-change-p
-		(error
-		 (format
-		  nil
-		  "Cant change key values causes hash diff ~%~A~%~A~%~A~%~A" 
-		  (item-hash lookup-old)
-		  (item-hash item)
-		  (item-values lookup-old)
-		  (item-values item))))
+	  (when (equalp (item-hash lookup-new) (item-hash lookup-old))
+	    (unless (equalp (item-values lookup-new) (item-changes item))
+	      (setf (item-values lookup-old)
+		    (check-item-values% (item-store item) (item-changes item)))
+	      (setf (item-changes item) nil)
+	      (setf final-item lookup-old)))
+
+	  (unless (equalp (item-hash lookup-new) (item-hash lookup-old))
+	    (unless allow-key-change-p
+	      (error
+	       (format
+		nil
+		"Cant change key values causes hash diff ~%~A~%~A~%~A~%~A" 
+		(item-hash lookup-old)
+		(item-hash item)
+		(item-values lookup-old)
+		(item-values item))))
 	      
-	      (when allow-key-change-p
-		(push (item-values lookup-old) (item-versions lookup-old))
-		(setf (item-values lookup-old)
-		      (check-item-values% (item-store item)
-					  (item-changes item)))
-		(remove-item lookup-old)	      
-		(push item (items (item-bucket lookup-old)))
-		(add-index lookup-old)
-		(setf final-item lookup-old))))
-	  
-	  (unless lookup-new
+	    (when allow-key-change-p
+	      (push (item-values lookup-old) (item-versions lookup-old))
+	      (setf (item-values lookup-old)
+		    (check-item-values% (item-store item)
+					(item-changes item)))
+	      (remove-item lookup-old)	      
+	      (push item (items (item-bucket lookup-old)))
+	      (add-index lookup-old)
+	      (setf final-item lookup-old))))
+	
+	(unless lookup-new
+	  (unless (equalp (index-keys  (item-collection lookup-old)
+				       (item-values lookup-old))
+			  (index-keys (item-collection lookup-old)
+				      (item-changes lookup-old)))
+
+	    (unless allow-key-change-p
+	      (error
+	       (format
+		nil
+		"Cant change key values causes hash diff ~%~A~%~A~%~A~%~A" 
+		(item-hash lookup-old)
+		(item-hash item)
+		(item-values lookup-old)
+		(item-values item))))
+	      
+	    (when allow-key-change-p
+	      (push (item-values lookup-old) (item-versions lookup-old))
+	      (setf (item-values lookup-old)
+		    (check-item-values% (item-store item)
+					(item-changes item)))
+	      (remove-item lookup-old)	      
+	      (push item (items (item-bucket lookup-old)))
+	      (add-index lookup-old)
+	      (setf final-item lookup-old)))
+
+	  (when (equalp (index-keys  (item-collection lookup-old)
+				     (item-values lookup-old))
+			(index-keys (item-collection lookup-old)
+				    (item-changes lookup-old)))
 	    (setf (item-values lookup-old)
 		  (check-item-values% (item-store item) (item-changes item)))
 	    (setf (item-changes item) nil)
 	    (setf final-item lookup-old))))
       
       (unless lookup-old
-	(let ((lookup-new (lookup-index (item-collection item)
-					(item-changes item))))
-	  (when lookup-new
-	    (unless (equalp (item-values lookup-new) (item-changes item))
-		(setf (item-values lookup-new)
-		      (check-item-values% (item-store item) (item-changes item)))
-		(setf (item-changes lookup-new) nil)
-		(setf final-item lookup-new)))
+
+	(when lookup-new
 	  
-	  (unless lookup-new
-	     (setf (item-values item)
-		    (check-item-values% (item-store item) (item-changes item)))
-	     (setf (item-changes item) nil)	   
-	     (push item (items (item-bucket item)))
-	     (add-index item)
-	     (setf final-item item)))))
+	  (unless (equalp (item-values lookup-new) (item-changes item))
+	    (setf (item-values lookup-new)
+		  (check-item-values% (item-store item) (item-changes item)))
+	    (setf (item-changes lookup-new) nil)
+	    (setf final-item lookup-new)))
+	(unless lookup-new
+	  (setf (item-values item)
+		(check-item-values% (item-store item) (item-changes item)))
+	  (setf (item-changes item) nil)	   
+	  (push item (items (item-bucket item)))
+	  (add-index item)
+	  (setf final-item item))
+	))
 
     (unless change-p
       
       (when lookup-old
+
 	(let ((wtf (check-item-values% (item-store item)
 				       (or (item-changes item)
 					   (item-values item)))))
 
-	  (if (equalp (item-values lookup-old) (or (item-changes item)
-						   (item-values item)))
+	  (if (equalp (item-values lookup-old)
+		      (or (item-changes item)
+			  (item-values item)))
 	      (progn
 		(when *persist-p*
 		  (push (item-values lookup-old) (item-versions lookup-old))
@@ -936,6 +975,7 @@
 		(setf final-item lookup-old)))))
       
       (unless lookup-old
+
 	 (setf (item-values item)
 	       (check-item-values% (item-store item)
 				   (or (item-changes item)
@@ -955,7 +995,6 @@
 
   (let ((*persist-p* nil)
 	(derived-file))
-;;(break "? ~A" item) 
     (unless file
       ;;Resolve the location of the item
       (setf item (check-location item :collection collection))
@@ -966,7 +1005,6 @@
       (if changed-item
 	  (progn
 	    (setf item changed-item)
-	    ;;(break "?? ~A" item)
 	    ;;Parse item to persistable format
 	    (let ((item-to-persist (parse-to-references (item-store item) item)))
 	      (when item-to-persist
@@ -982,10 +1020,7 @@
 		(write-to-file (or file derived-file)
 			       item-to-persist
 			       :if-exists :append)
-		(setf (item-persisted-p item) t)))
-	    ))
-	  
-	 )
+		(setf (item-persisted-p item) t))))))
     item))
 
 (defun get-store-from-def (universe store-name)
