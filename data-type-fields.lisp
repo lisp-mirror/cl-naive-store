@@ -136,6 +136,9 @@
 (defmethod getsfx ((type (eql :image)) field item &key &allow-other-keys)
   (getsfx* field item))
 
+(defmethod getsfx ((type (eql :file)) field item &key &allow-other-keys)
+  (getsfx* field item))
+
 (defmethod getsfx ((type (eql :number)) field item &key &allow-other-keys)
    (getsfx* field item))
 
@@ -246,6 +249,10 @@
   (setf (getx item (getf field :name)) (frmt "~A" value)))
 
 (defmethod (setf getsfx) (value (type (eql :image)) field item
+			  &key &allow-other-keys)
+  (setf (getx item (getf field :name)) (frmt "~A" value)))
+
+(defmethod (setf getsfx) (value (type (eql :file)) field item
 			  &key &allow-other-keys)
   (setf (getx item (getf field :name)) (frmt "~A" value)))
 
