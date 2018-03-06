@@ -353,7 +353,9 @@
 
 (defmethod validate-sfx (value (type (eql :value-list)) field item
 			 &key &allow-other-keys)
-  (let* ((list (dig field :db-type :values))
+  (let* ((list (or (and (dig field :db-type :values-script)
+			(eval (dig field :db-type :values-script)))
+		   (dig field :db-type :values)))
 	 (*read-eval* nil)
 	 (valid (find (if (not (or (equalp (dig field :db-type :type) :string)
 				   (equalp (dig field :db-type :type) :text)))
@@ -369,7 +371,9 @@
 (defmethod (setf getsfx) (value (type (eql :value-list)) field item 
 			 &key &allow-other-keys)
   (let* ((name (getf field :name))
-	 (list (dig field :db-type :values))
+	 (list (or (and (dig field :db-type :values-script)
+			(eval (dig field :db-type :values-script)))
+		   (dig field :db-type :values)))
 	 (*read-eval* nil)
 	 (val (find (if (not (or (equalp (dig field :db-type :type) :string)
 				   (equalp (dig field :db-type :type) :text)))
