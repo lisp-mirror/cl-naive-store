@@ -232,7 +232,9 @@
   (let ((loaded-p))
     (dolist (bucket (buckets collection))
       (when (search (remove #\~ (location bucket)) (namestring file))
-	(when (loaded-p bucket)
+	(when (and (loaded-p bucket)
+		   (equalp (file-write-date file)
+			   (loaded-p bucket)))
 	  (setf loaded-p t))))
     loaded-p))
 
@@ -465,7 +467,6 @@
 			    (data-type (item-collection item)))
 			   (item-values item)))
 	 (hash (sxhash keys)))
-;;    (break "? ~A ~A" keys (item-store item))
     (setf (item-hash item) hash)
     (setf (gethash hash (index (item-collection item))) item)))
 
@@ -474,7 +475,6 @@
 			   (store collection)
 			   (data-type collection))
 			  item-values)))
-;;    (break "?? ~A ~A" keys (store collection))
     (gethash (sxhash keys) (index collection))))
 
 (defun lookup-index-hash (collection hash)
@@ -663,9 +663,11 @@
       
       (setf (collection bucket) collection)
       (unless dont-load-items-p
-	(unless (loaded-p bucket)
+	(unless (and (loaded-p bucket)
+		     (equalp (file-write-date location)
+			     (loaded-p bucket)))
 	  (load-items (universe (store collection)) location)
-	  (setf (loaded-p bucket) t))))
+	  (setf (loaded-p bucket) (file-write-date location)))))
     bucket))
 
 (defgeneric persist-item (collection item &key &allow-other-keys))
@@ -674,7 +676,7 @@
 
   (if (equalp (type-of item) 'item)
       (persist item :collection collection
-	       :allow-key-change-p allow-key-change-p)
+		   :allow-key-change-p allow-key-change-p)
       (persist (make-item 
 		:store (store collection)
 		:collection collection
@@ -733,7 +735,6 @@
 			      (item-data-type item))
 			     (item-values item)))
 	   (hash (sxhash keys)))
-;;      (break "~A" keys)
       (setf (item-hash item) hash)
       hash)))
 
@@ -766,7 +767,9 @@
 	    (val (second pair)))
 
 	(if (equalp (type-of val) 'item)
-	    (setf final (append final (list key (item-to-reference store val))))
+	    (setf final (append final (list key (item-to-reference
+							store
+							val))))
 	    (if (or (and val (listp val) (listp (first val)))
 		    (and val (listp val) (equalp (type-of (first val)) 'item)))
 		(let ((children))
@@ -774,7 +777,9 @@
 		    (if (equalp (type-of it) 'item)
 			(setf children
 			      (append children 
-				      (list (item-to-reference store it))))
+				      (list (item-to-reference
+					     store
+					     it))))
 			(setf children (append children (list it)))))
 		  (setf final (append final (list key children))))
 		(setf final (append final (list key val)))))))
@@ -1006,8 +1011,9 @@
 	  (progn
 	    (setf item changed-item)
 	    ;;Parse item to persistable format
+	    
 	    (let ((item-to-persist (parse-to-references (item-store item) item)))
-	      (when item-to-persist
+	      (when  item-to-persist
 		(setf (item-persisted-p item) nil)
 		(write-to-file (or file derived-file)
 			       item-to-persist
@@ -1103,9 +1109,11 @@
 		     &key test test-args 
 		       bucket-keys (return-type 'list)
 		       find-first-item-p)
-  (let ((items)) 
+  (let ((items))
+    
     (unless (data-types store)
       (load-store-data-types store))
+    
     (when collection
       (let ((buckets (get-buckets-for-fetch collection bucket-keys))) 
 	
@@ -1113,9 +1121,11 @@
 	  (dolist (bucket buckets)
 	   ;; (break "~A" bucket)
 	    ;;last ditch attempt to load collection if not loaded
+
 	    (unless (items bucket)
 	      (load-collection-items collection))
-	   
+	    
+	    
 	    (setf items
 		  (append
 		   items
@@ -1123,9 +1133,7 @@
 		       (map return-type
 			    (lambda (item)
 			     
-			      (when (filter collection)
-				
-			)
+			      (when (filter collection))
 			      (let ((filter-p (if (filter collection)
 						  (eval
 						   `(apply ,(filter collection)
@@ -1134,7 +1142,6 @@
 			
 				(when filter-p
 				  (if find-first-item-p
-				      
 				      (when (apply test item test-args)
 					(return-from fetch-items* item))
 				      (and (apply test item test-args) item)))))
@@ -1152,11 +1159,11 @@
       (setf collection (get-collection-from-def 
 			store
 			collection-name))
-      (when collection
-	
+      (when collection	
 	(add-collection store collection))
       (unless collection
 	  (error "Could not create collection ~A" collection-name)))
+
     
     (fetch-items* store collection 
 		  :test test
@@ -1171,6 +1178,7 @@
 (defmethod fetch-items ((store store) &key collection-name
 					test test-args
 					bucket-keys (return-type 'list))
+  
   (fetch-store-items* store collection-name :test test
 		      :test-args test-args
 		      :bucket-keys bucket-keys 
@@ -1179,6 +1187,7 @@
 (defmethod fetch-items ((collection collection) 
 			&key test test-args
 			  bucket-keys (return-type 'list))
+
   (fetch-items* (store collection) collection
 		:test test
 		:test-args test-args
