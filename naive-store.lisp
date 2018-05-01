@@ -728,6 +728,63 @@
   (loop for (a b) on item by #'cddr 
      :collect (list a b)))
 
+
+(defun parse-to-plist% (values &key exclude-fields (alt-hash-name :hash))
+  (let ((final)
+	(value-pairs (parse-item values)))
+    
+    (dolist (pair value-pairs)
+      (unless (find (first pair) exclude-fields :test 'equalp) 
+	(let ((key (first pair))
+	      (val (second pair)))
+
+	  (if (equalp (type-of val) 'item)
+	      (setf final (append final
+				  (list key (parse-to-plist%
+					     (append
+					      (list alt-hash-name
+						    (item-hash val))
+					      (cl-naive-store:item-values val))
+					     :exclude-fields exclude-fields))))
+	      (if (or (and val (listp val) (listp (first val)))
+		      (and val (listp val) (equalp (type-of (first val)) 'item)))
+		  (let ((children))
+		    (dolist (it val)
+		      (if (equalp (type-of it) 'item)
+			  (setf children
+				(append
+				 children 
+				 (list (parse-to-plist%
+					(append
+					 (list alt-hash-name
+					       (item-hash it))
+					 (cl-naive-store:item-values it))))))
+			  (setf children (append children (list it)))))
+		    (setf final (append final (list key children))))
+		  (setf final (append final
+				      (list key
+					    (if (listp val)
+						val
+						(string-downcase
+						 (format nil "~A" val)))))))))))
+    final))
+
+(defmethod parse-to-plist ((item item) &key exclude-fields (alt-hash-name :hash))
+  (and item (equalp (type-of item) 'item)
+       (parse-to-plist% (append (list alt-hash-name (item-hash item))
+				(item-values item))
+			:exclude-fields exclude-fields
+			:alt-hash-name alt-hash-name)))
+
+(defmethod parse-to-plist ((item-list list) &key exclude-fields (alt-hash-name :hash))
+  (let ((new-list))
+    (dolist (item item-list)
+      (setf new-list
+	    (push (parse-to-plist item :exclude-fields exclude-fields
+				  :alt-hash-name alt-hash-name )
+		  new-list)))
+    new-list))
+
 (defun set-hash (store item)
   (unless (item-hash item)
     (let* ((keys (index-keys (get-data-type 

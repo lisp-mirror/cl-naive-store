@@ -43,6 +43,8 @@
    :universe
    :stores
    :location
+
+   :parse-to-plist
    
    :item
    :make-item
