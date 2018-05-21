@@ -1053,17 +1053,23 @@
     final-item))
 
 (defmethod persist ((item item) &key collection file allow-key-change-p
+				  new-file-p
 				  &allow-other-keys)
 
   (let ((*persist-p* nil)
 	(derived-file))
+    
     (unless file
       ;;Resolve the location of the item
       (setf item (check-location item :collection collection))
       (setf derived-file (location (item-bucket item))))
 
-    (let ((changed-item (check-item-values item allow-key-change-p)))
-	  
+   
+    (let ((changed-item (if new-file-p
+			    item
+			    (check-item-values item allow-key-change-p))))
+      
+     
       (if changed-item
 	  (progn
 	    (setf item changed-item)
