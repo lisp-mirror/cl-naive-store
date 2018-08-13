@@ -913,13 +913,14 @@
   (not (equalp (item-values item) (item-changes item))))
 
 (defun check-item-values (item allow-key-change-p)
+
   (let ((change-p (and (item-changes item) (change-in-item-p item)))
 	(lookup-old (or (lookup-index-hash (item-collection item)
 					   (item-hash item))
 			(lookup-index (item-collection item)
 				      (item-values item))))
 	(lookup-new (lookup-index (item-collection item)
-					(item-changes item)))
+				  (item-changes item)))
 	(final-item))
 
     (when change-p
