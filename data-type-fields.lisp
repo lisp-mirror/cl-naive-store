@@ -130,6 +130,9 @@
 (defmethod getsfx ((type (eql :string)) field item &key &allow-other-keys)
   (getsfx* field item))
 
+(defmethod getsfx ((type (eql :link)) field item &key &allow-other-keys)
+  (getsfx* field item))
+
 (defmethod getsfx ((type (eql :text)) field item &key &allow-other-keys)
   (getsfx* field item))
 
@@ -241,6 +244,10 @@
   (setsfx-read* field item value #'keywordp  "~S is not a keyword!"))
 
 (defmethod (setf getsfx) (value (type (eql :string)) field item
+			  &key &allow-other-keys)
+  (setf (getx item (getf field :name)) (frmt "~A" value)))
+
+(defmethod (setf getsfx) (value (type (eql :link)) field item
 			  &key &allow-other-keys)
   (setf (getx item (getf field :name)) (frmt "~A" value)))
 
@@ -358,6 +365,7 @@
 		   (dig field :db-type :values)))
 	 (*read-eval* nil)
 	 (valid (find (if (not (or (equalp (dig field :db-type :type) :string)
+				   (equalp (dig field :db-type :type) :link)
 				   (equalp (dig field :db-type :type) :text)))
 			  (if (and value (not (empty-p value)))
 			      (read-from-string value))
@@ -376,7 +384,8 @@
 		   (dig field :db-type :values)))
 	 (*read-eval* nil)
 	 (val (find (if (not (or (equalp (dig field :db-type :type) :string)
-				   (equalp (dig field :db-type :type) :text)))
+				 (equalp (dig field :db-type :type) :link)
+				 (equalp (dig field :db-type :type) :text)))
 			  (if (and value (not (empty-p value)))
 			      (read-from-string value))
 			  value)
