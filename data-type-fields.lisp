@@ -93,9 +93,11 @@
 
 (defun empty-p (value)
   "Checks if value is null or an empty string."
-  (or (null value)
-      (equal value "")
-      (equal (trim-whitespace (princ-to-string value)) "")))
+  (if (equalp (type-of value) 'item)
+      nil
+      (or (null value)
+	  (equal value "")
+	  (equal (trim-whitespace (princ-to-string value)) ""))))
 
 
 (defgeneric getfx (item field &key &allow-other-keys))
@@ -186,6 +188,11 @@
 
 (defmethod getsfx ((type (eql :hierarchical)) field item &key &allow-other-keys)
    (getsfx* field item))
+
+
+(defmethod getsfx ((type (eql :item)) field item
+		   &key &allow-other-keys)
+  (getsfx* field item))
 
 (defmethod getsfx ((type (eql :contained-item)) field item
 		   &key &allow-other-keys)
@@ -307,7 +314,26 @@
 			   (dig field :db-type :data-spec)))))
     (setf (getx item name) final-val)))
 
+(defmethod (setf getsfx) (value (type (eql :item)) field item
+			  &key &allow-other-keys)
+
+  (let ((name (getf field :name))
+	(final-val))
+    (if (not (empty-p value))
+	(if (equalp (type-of value) 'item)
+		(setf final-val value)
+		(error (frmt "~S is not of type ~A!" value
+			   (dig field :db-type :data-spec)))))
+    (setf (getx item name) final-val)))
+
 (defmethod validate-sfx ((type (eql :collection)) field item value
+			 &key items &allow-other-keys)
+    (let* ((valid (find value items)))
+     (values valid (if (not valid)
+		      (frmt "Value ~A not found in ~A" value
+			    (dig field :db-type :collection))))))
+
+(defmethod validate-sfx ((type (eql :item)) field item value
 			 &key items &allow-other-keys)
     (let* ((valid (find value items)))
      (values valid (if (not valid)
