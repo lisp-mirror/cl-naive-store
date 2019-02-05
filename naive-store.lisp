@@ -586,7 +586,9 @@
     (when bucket
       (let ((ref-item (gethash (dig reference :hash) 
 			       (index (collection bucket)))))
+
 	(when ref-item
+	  
 	  (unless (getf reference :deleted-p)
 	    
 
@@ -625,7 +627,16 @@
 	    
 	    (unless (getf (item-values final-item) :reference%)
 	      (push final-item (items bucket))
-	      (add-index final-item))))
+	      (add-index final-item)
+
+	      (unless (equalp (dig reference :hash) (item-hash final-item))
+		(write-to-file "~/data-universe/shash.log"
+			       (list (format nil " ~A" (item-hash final-item))
+				     (format nil " ~A" (dig reference :hash))) 
+			       )
+		(setf (gethash (dig reference :hash) (index (item-collection final-item))) final-item))
+
+	      )))
 
 
 	(if final-item
