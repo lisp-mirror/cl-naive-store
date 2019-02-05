@@ -582,6 +582,8 @@
 		 ;;those collections so that reference lookup works correct.
 		 :dont-load-items-p dont-load-items-p))
 	(final-item))
+
+    
     
     (when bucket
       (let ((ref-item (gethash (dig reference :hash) 
@@ -621,18 +623,22 @@
 						(collection bucket)
 						(getf reference :values))))
 
+	  
 	    (when (getf (item-values final-item) :reference%)
-	      (write-to-file "~/data-universe/error.log"
-			     (list "Could not resolve ~S" reference)))
+	      (write-to-file (format nil "~Aerror.log" (location universe))
+			     (list "Could not resolve ~A ~S" (location bucket) reference)))
 	    
 	    (unless (getf (item-values final-item) :reference%)
 	      (push final-item (items bucket))
 	      (add-index final-item)
 
 	      (unless (equalp (dig reference :hash) (item-hash final-item))
-		(write-to-file "~/data-universe/shash.log"
-			       (list (format nil " ~A" (item-hash final-item))
-				     (format nil " ~A" (dig reference :hash))))
+		(write-to-file (format nil "~Ashash.log" (location universe))
+			       (list
+				(location universe)
+				(location bucket)
+				(coerce  (format nil " ~A"  (item-hash final-item)) 'simple-string)
+				(format nil " ~A" (dig reference :hash))))
 		(setf (gethash (dig reference :hash) (index (item-collection final-item))) final-item))
 
 	      )))
