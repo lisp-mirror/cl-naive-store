@@ -632,8 +632,7 @@
 	      (unless (equalp (dig reference :hash) (item-hash final-item))
 		(write-to-file "~/data-universe/shash.log"
 			       (list (format nil " ~A" (item-hash final-item))
-				     (format nil " ~A" (dig reference :hash))) 
-			       )
+				     (format nil " ~A" (dig reference :hash))))
 		(setf (gethash (dig reference :hash) (index (item-collection final-item))) final-item))
 
 	      )))
