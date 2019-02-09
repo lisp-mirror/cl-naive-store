@@ -369,7 +369,12 @@
 (defmethod (setf getsfx) (value (type (eql :value-string-list)) field item   
 			 &key &allow-other-keys)
   (let* ((name (getf field :name))
-	 (delimiter (coerce (dig field :db-type :delimiter) 'character))
+	 (delimiter (if (stringp (dig field :db-type :delimiter))
+			(coerce (dig field :db-type :delimiter)
+				'character)
+			(coerce (eval (dig field :db-type :delimiter))
+				'character)
+			))
 	 (type (dig field :db-type :type))
 	 (split (split-sequence:split-sequence delimiter value))
 	 (list))
