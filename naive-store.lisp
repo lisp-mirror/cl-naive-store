@@ -601,7 +601,8 @@
 					  (getf reference :values))))
 
 		(unless (equalp (item-values ref-item) resolved-values)
-		  (push  (item-values ref-item) (item-versions ref-item))		
+		  (push  (item-values ref-item) (item-versions ref-item))
+		  (setf (item-values ref-item) resolved-values))))
 	    (setf final-item ref-item))
 	  
 	  (when (getf reference :deleted-p)
