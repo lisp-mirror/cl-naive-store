@@ -602,7 +602,6 @@
 
 		(unless (equalp (item-values ref-item) resolved-values)
 		  (push  (item-values ref-item) (item-versions ref-item))		
-		  (setf (item-values ref-item) resolved-values))))	  	    
 	    (setf final-item ref-item))
 	  
 	  (when (getf reference :deleted-p)
@@ -625,7 +624,7 @@
 
 	  
 	    (when (getf (item-values final-item) :reference%)
-	      (write-to-file (format nil "~Aerror.log" (location universe))
+	      (write-to-file (format nil "~Aerror.err" (location universe))
 			     (list "Could not resolve ~A ~S" (location bucket) reference)))
 	    
 	    (unless (getf (item-values final-item) :reference%)
@@ -633,11 +632,11 @@
 	      (add-index final-item)
 
 	      (unless (equalp (dig reference :hash) (item-hash final-item))
-		(write-to-file (format nil "~Ashash.log" (location universe))
+		(write-to-file (format nil "~Ashash.err" (location universe))
 			       (list
 				(location universe)
 				(location bucket)
-				(coerce  (format nil " ~A"  (item-hash final-item)) 'simple-string)
+				(format nil " ~A"  (item-hash final-item))
 				(format nil " ~A" (dig reference :hash))))
 		(setf (gethash (dig reference :hash) (index (item-collection final-item))) final-item))
 
@@ -1081,8 +1080,8 @@
       (setf item (check-location item :collection collection))
       (setf derived-file (location (item-bucket item))))
 
-   
-    (let ((changed-item (if new-file-p
+
+     (let ((changed-item (if new-file-p
 			    item
 			    (check-item-values item allow-key-change-p))))
       
