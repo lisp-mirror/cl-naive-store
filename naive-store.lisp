@@ -1219,7 +1219,7 @@
 						   `(apply ,(filter collection)
 							   (list ,item)))
 						  t)))
-			
+
 				(when filter-p
 				  (if find-first-item-p
 				      (when (apply test item test-args)

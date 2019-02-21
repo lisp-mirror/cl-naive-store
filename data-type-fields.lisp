@@ -326,6 +326,17 @@
 			   (dig field :db-type :data-spec)))))
     (setf (getx item name) final-val)))
 
+
+
+
+(defmethod validate-sfx ((type (eql :collection-contained-item)) field item value
+			 &key items &allow-other-keys)
+    (let* ((valid (find value items)))
+     (values valid (if (not valid)
+		      (frmt "Value ~A not found in ~A" value
+			    (dig field :db-type :collection))))))
+
+
 (defmethod validate-sfx ((type (eql :collection)) field item value
 			 &key items &allow-other-keys)
     (let* ((valid (find value items)))
@@ -395,13 +406,18 @@
 			(eval (dig field :db-type :values-script)))
 		   (dig field :db-type :values)))
 	 (*read-eval* nil)
-	 (valid (find (if (not (or (equalp (dig field :db-type :type) :string)
+	 (valid ))
+
+    (if (functionp list)
+	(setf list (funcall (eval (dig field :db-type :values-script)) item)))
+
+    (setf valid (find (if (not (or (equalp (dig field :db-type :type) :string)
 				   (equalp (dig field :db-type :type) :link)
 				   (equalp (dig field :db-type :type) :text)))
 			  (if (and value (not (empty-p value)))
 			      (read-from-string value))
 			  value)
-		      list :test #'equalp)))
+		      list :test #'equalp))
  
     (values valid (if (not valid)
 		      (frmt "Value not one of ~S" list)))))
@@ -414,13 +430,19 @@
 			(eval (dig field :db-type :values-script)))
 		   (dig field :db-type :values)))
 	 (*read-eval* nil)
-	 (val (find (if (not (or (equalp (dig field :db-type :type) :string)
+	 (val ))
+
+    (if (functionp list)
+	(setf list (funcall (eval (dig field :db-type :values-script)) item)))
+
+   ;; (break "~s~%~%~s~%~%~s" (read-from-string value) value list)
+    (setf val (find (if (not (or (equalp (dig field :db-type :type) :string)
 				 (equalp (dig field :db-type :type) :link)
 				 (equalp (dig field :db-type :type) :text)))
-			  (if (and value (not (empty-p value)))
-			      (read-from-string value))
-			  value)
-		      list :test #'equalp)))
+			(if (and value (not (empty-p value)))
+			    (read-from-string value))
+			value)
+		      list :test #'equalp))
  
     (setf (getx item name) val)))
 
