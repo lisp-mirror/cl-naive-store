@@ -55,6 +55,9 @@
    (index :initarg :index
 	  :accessor index
 	  :initform (make-hash-table :test 'equalp))
+   (key-index :initarg :key-index
+	  :accessor key-index
+	  :initform (make-hash-table :test 'equalp))
    (filter :initarg :filter
 	   :accessor filter
 	   :initform nil)))
@@ -324,6 +327,7 @@
 
 
 (defun write-to-file (file object &key (if-exists :append))
+
   (with-open-file (out file
 		       :direction :output
 		       :if-exists if-exists
@@ -466,22 +470,35 @@
 			    (item-store item)
 			    (data-type (item-collection item)))
 			   (item-values item)))
-	 (hash (sxhash keys)))
-    (setf (item-hash item) hash)
-    (setf (gethash hash (index (item-collection item))) item)))
+	 (hash (uuid:make-v4-uuid))
+	 (hashx (sxhash keys)))
+
+    (when (or (not (item-hash item))
+	      (string-equal (format nil "~A" (item-hash item))
+			    (format nil "~A" hashx)))
+      
+      (setf (item-hash item) hash))    
+    
+    (setf (gethash hashx (key-index (item-collection item))) item)
+    (setf (gethash (item-hash item) (index (item-collection item))) item)))
 
 (defun lookup-index (collection item-values)
-  (let ((keys (index-keys (get-data-type 
+  (let* ((keys (index-keys (get-data-type 
 			   (store collection)
 			   (data-type collection))
 			  item-values)))
-    (gethash (sxhash keys) (index collection))))
+    (gethash (sxhash keys) (key-index collection))))
 
 (defun lookup-index-hash (collection hash)
   (gethash hash (index collection)))
 
 (defun remove-from-index (item)
-  (remhash (item-hash item) (index (item-collection item))))
+  (let ((keys (index-keys (get-data-type 
+			   (item-store item)
+			   (data-type (item-collection item)))
+			  (item-values item))))
+    (remhash (sxhash keys) (key-index (item-collection item)))
+    (remhash (item-hash item) (index (item-collection item)))))
 
 (defun load-item-reference-bucket (universe item-ref &key dont-load-items-p)
   (let* ((store (get-store* universe (getf item-ref :store)))
@@ -527,7 +544,9 @@
 				  (list key
 					(make-item
 					 :data-type (dig val :data-type)
-					 :hash (dig val :hash)
+					 :hash (if (> (length (frmt "~A" (dig val :hash)) ) 25)
+						   (dig val :hash)
+						   (uuid:make-v4-uuid))
 					 :values
 					 (resolve-item-values
 					  universe
@@ -559,7 +578,9 @@
 					   children
 					   (list (make-item
 						  :data-type (dig it :data-type)
-						  :hash (dig it :hash)
+						  :hash (if (> (length (frmt "~A" (dig it :hash)) ) 25)
+							    (dig it :hash)
+							    (uuid:make-v4-uuid))
 						  :values
 						  (resolve-item-values
 						   universe
@@ -582,18 +603,20 @@
 		 ;;those collections so that reference lookup works correct.
 		 :dont-load-items-p dont-load-items-p))
 	(final-item))
-
-    
     
     (when bucket
-      (let ((ref-item (gethash (dig reference :hash) 
-			       (index (collection bucket)))))
+      (let (
+	    (ref-item (or (gethash (dig reference :hash) 
+				   (index (collection bucket)))
+			  
+			  (gethash (dig reference :hash) 
+				   (key-index (collection bucket))))))
 
+	
+	
 	(when ref-item
 	  
 	  (unless (getf reference :deleted-p)
-	    
-
 	    (unless (dig (getf reference :values) :reference%)
 	      
 	      (let ((resolved-values
@@ -612,6 +635,7 @@
 	
 	(unless ref-item
 	  (unless (getf reference :deleted-p)
+
 	    (setf final-item
 		  (make-item
 		   :store (store (collection bucket))
@@ -619,12 +643,14 @@
 		   :data-type (getf reference :data-type)
 		   :bucket bucket
 		   :bucket-key (getf reference :bucket-key)
+		   :hash (getf reference :hash)
 		   :values (resolve-item-values universe
 						(collection bucket)
 						(getf reference :values))))
 
 	  
 	    (when (getf (item-values final-item) :reference%)
+	 
 	      (write-to-file (format nil "~Aerror.err" (location universe))
 			     (list "Could not resolve ~A ~S" (location bucket) reference)))
 	    
@@ -639,7 +665,9 @@
 				(location bucket)
 				(format nil " ~A"  (item-hash final-item))
 				(format nil " ~A" (dig reference :hash))))
-		(setf (gethash (dig reference :hash) (index (item-collection final-item))) final-item))
+		(setf (gethash (dig reference :hash)
+			       (index (item-collection final-item)))
+		      final-item))
 
 	      )))
 
@@ -803,11 +831,7 @@
 
 (defun set-hash (store item)
   (unless (item-hash item)
-    (let* ((keys (index-keys (get-data-type 
-			      (or (item-store item) store)
-			      (item-data-type item))
-			     (item-values item)))
-	   (hash (sxhash keys)))
+    (let* ((hash (uuid:make-v4-uuid)))
       (setf (item-hash item) hash)
       hash)))
 
@@ -1073,7 +1097,7 @@
 				  new-file-p
 				  &allow-other-keys)
 
-  (let ((*persist-p* nil)
+    (let ((*persist-p* nil)
 	(derived-file))
     
     (unless file
@@ -1086,15 +1110,17 @@
 			    item
 			    (check-item-values item allow-key-change-p))))
       
-     
+   
       (if changed-item
 	  (progn
+	    
 	    (setf item changed-item)
 	    ;;Parse item to persistable format
 	    
 	    (let ((item-to-persist (parse-to-references (item-store item) item)))
 	      (when  item-to-persist
 		(setf (item-persisted-p item) nil)
+	
 		(write-to-file (or file derived-file)
 			       item-to-persist
 			       :if-exists :append)
@@ -1267,7 +1293,6 @@
 (defmethod fetch-items ((collection collection) 
 			&key test test-args
 			  bucket-keys (return-type 'list))
-
   (fetch-items* (store collection) collection
 		:test test
 		:test-args test-args
@@ -1433,3 +1458,4 @@
 			 (lambda (item)
 			   (apply test (list item)))
 			 item-list)))
+
