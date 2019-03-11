@@ -446,6 +446,9 @@
 	      item-values))
 
 (defmethod index-keys ((data-type data-type) item-values)
+  (unless data-type
+    ;;Raising an error here because its problem with datatype specifications some where.
+    (error "index-keys called with data-type = nil. If this happened on a save look for a mismatch between a collection and its data-type's destinations"))
   (index-keys (fields data-type) item-values))
 
 (defmethod index-keys ((fields list) item-values)
@@ -484,9 +487,10 @@
 
 (defun lookup-index (collection item-values)
   (let* ((keys (index-keys (get-data-type 
-			   (store collection)
-			   (data-type collection))
-			  item-values)))
+			    (store collection)
+			    (data-type collection))
+			   item-values)))
+    
     (gethash (sxhash keys) (key-index collection))))
 
 (defun lookup-index-hash (collection hash)
@@ -830,6 +834,7 @@
     new-list))
 
 (defun set-hash (store item)
+  (declare (ignore store))
   (unless (item-hash item)
     (let* ((hash (uuid:make-v4-uuid)))
       (setf (item-hash item) hash)
@@ -963,6 +968,7 @@
 				  (item-changes item)))
 	(final-item))
 
+    
     (when change-p
       (when lookup-old
 	(when lookup-new
@@ -1055,7 +1061,7 @@
 	(let ((wtf (check-item-values% (item-store item)
 				       (or (item-changes item)
 					   (item-values item)))))
-
+	  
 	  (if (equalp (item-values lookup-old)
 		      (or (item-changes item)
 			  (item-values item)))
@@ -1109,8 +1115,7 @@
      (let ((changed-item (if new-file-p
 			    item
 			    (check-item-values item allow-key-change-p))))
-      
-   
+        
       (if changed-item
 	  (progn
 	    
@@ -1225,9 +1230,6 @@
 	
 	(when buckets
 	  (dolist (bucket buckets)
-	   ;; (break "~A" bucket)
-	    ;;last ditch attempt to load collection if not loaded
-
 	    (unless (items bucket)
 	      (load-collection-items collection))
 	    
