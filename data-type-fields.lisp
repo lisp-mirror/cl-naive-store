@@ -85,7 +85,7 @@
 (defun frmt (control-string &rest args)
   (apply #'format nil control-string args))
 
-;;STRING MANIPULATION
+
 (defun trim-whitespace (string)
   (string-trim
    '(#\Space #\Newline #\Tab #\Return) string))
@@ -93,7 +93,7 @@
 
 (defun empty-p (value)
   "Checks if value is null or an empty string."
-  (if (equalp (type-of value) 'item)
+  (if (item-p value)
       nil
       (or (null value)
 	  (equal value "")
@@ -159,7 +159,19 @@
 (defmethod getsfx ((type (eql :email)) field item &key &allow-other-keys)
   (getsfx* field item))
 
-(defmethod getsfx ((type (eql :script)) field item &key &allow-other-keys)
+(defmethod getsfx ((type (eql :lambda)) field item &key &allow-other-keys)
+  (getsfx* field item))
+
+(defmethod getsfx ((type (eql :lisp-code)) field item &key &allow-other-keys)
+  (getsfx* field item))
+
+(defmethod getsfx ((type (eql :java-script)) field item &key &allow-other-keys)
+  (getsfx* field item))
+
+(defmethod getsfx ((type (eql :css)) field item &key &allow-other-keys)
+  (getsfx* field item))
+
+(defmethod getsfx ((type (eql :text-blob)) field item &key &allow-other-keys)
   (getsfx* field item))
 
 (defmethod getsfx ((type (eql :boolean)) field item &key &allow-other-keys)
@@ -299,8 +311,49 @@
     (set-getsfx* field item val)))
 
 
-(defmethod (setf getsfx) (value (type (eql :script)) field item   &key &allow-other-keys)
+(defmethod (setf getsfx) (value (type (eql :lambda)) field item   &key &allow-other-keys)
   (setsfx-read* field item value #'consp "~S is not a cons!"))
+
+(defmethod (setf getsfx) (value (type (eql :lisp-code)) field item   &key &allow-other-keys)
+  (let ((blob (getx item (getf field :name))))
+    (if (blob-p blob)
+	(setf (blob-raw blob) value)
+	(setf blob (make-blob  :file-type :text
+			       :file-ext "lisp"
+			       :location ""
+			       :raw value)))
+    (set-getsfx* field item blob)))
+
+
+(defmethod (setf getsfx) (value (type (eql :css)) field item   &key &allow-other-keys)
+  (let ((blob (getx item (getf field :name))))
+    (if (blob-p blob)
+	(setf (blob-raw blob) value)
+	(setf blob (make-blob  :file-type :text
+			       :file-ext "css"
+			       :location ""
+			       :raw value)))
+    (set-getsfx* field item blob)))
+
+(defmethod (setf getsfx) (value (type (eql :java-script)) field item   &key &allow-other-keys)
+  (let ((blob (getx item (getf field :name))))
+    (if (blob-p blob)
+	(setf (blob-raw blob) value)
+	(setf blob (make-blob  :file-type :text
+			       :file-ext "js"
+			       :location ""
+			       :raw value)))
+    (set-getsfx* field item blob)))
+
+(defmethod (setf getsfx) (value (type (eql :text-blob)) field item   &key &allow-other-keys)
+  (let ((blob (getx item (getf field :name))))
+    (if (blob-p blob)
+	(setf (blob-raw blob) value)
+	(setf blob (make-blob  :file-type :text
+			       :file-ext "txt"
+			       :location ""
+			       :raw value)))
+    (set-getsfx* field item blob)))
 
 (defmethod (setf getsfx) (value (type (eql :collection)) field item
 			  &key &allow-other-keys)
@@ -308,7 +361,7 @@
   (let ((name (getf field :name))
 	(final-val))
     (if (not (empty-p value))
-	(if (equalp (type-of value) 'item)
+	(if (item-p value)
 		(setf final-val value)
 		(error (frmt "~S is not of type ~A!" value
 			   (dig field :db-type :data-spec)))))
@@ -320,13 +373,11 @@
   (let ((name (getf field :name))
 	(final-val))
     (if (not (empty-p value))
-	(if (equalp (type-of value) 'item)
+	(if (item-p value)
 		(setf final-val value)
 		(error (frmt "~S is not of type ~A!" value
 			   (dig field :db-type :data-spec)))))
     (setf (getx item name) final-val)))
-
-
 
 
 (defmethod validate-sfx ((type (eql :collection-contained-item)) field item value
@@ -466,7 +517,7 @@
   (let ((name (getf field :name))
 	(final-val))
     
-    (if (equalp (type-of value) 'item)
+    (if (item-p value)
 		(setf final-val value)
 		(error (frmt "~S is not of type ~A!" value
 			   (dig field :db-type :data-spec))))
@@ -477,7 +528,7 @@
   (let ((name (getf field :name))
 	(final-val))
     
-    (if (equalp (type-of value) 'item)
+    (if (item-p value)
 		(setf final-val value)
 		(error (frmt "~S is not of type ~A!" value
 			   (dig field :db-type :data-spec))))

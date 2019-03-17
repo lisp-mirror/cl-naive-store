@@ -103,6 +103,39 @@
 	     :accessor location
 	     :initform "~/data-universe/")))
 
+(defstruct blob
+  file-type
+  file-ext
+  location
+  raw)
+
+
+(defun read-file-to-string (file)
+  (let ((*read-eval* nil)
+	(out (make-string-output-stream))
+	(str ""))
+
+    (with-open-file (in file
+			:direction :input		     
+			:if-does-not-exist nil)
+      (when in
+	(loop for line = (read-line in nil)
+	   while line do (write-line line out) )
+	(close in))
+      (setf str (get-output-stream-string out))
+      (close out))
+    
+    str))
+
+(defun blob-string-value (blob)
+  (if (blob-p blob)
+      (if (not (empty-p (blob-raw blob)))
+	  (if (not (empty-p (blob-location blob)))
+	      (read-file-to-string (blob-location blob)))
+	  (blob-raw blob))
+      blob))
+
+
 (defstruct item
   store
   collection
@@ -115,6 +148,9 @@
   versions
   deleted-p
   persisted-p)
+
+(defun item-of-type-p (item data-type)
+  (string-equal data-type (item-data-type item)))
 
 (defgeneric get-store (universe storn-name))
 
@@ -333,7 +369,7 @@
 		       :if-exists if-exists
 		       :if-does-not-exist :create)
     (with-standard-io-syntax
-      (if (equalp (type-of object) 'item)
+      (if (item-p object)
 	  (pprint 
 	   (list
 	    :store (name (item-store object))
@@ -354,7 +390,7 @@
 		       :if-does-not-exist :create)
     (with-standard-io-syntax
       (dolist (object list)
-	(if (equalp (type-of object) 'item)
+	(if (item-p object)
 	    (pprint 
 	     (list
 	      :store (name (item-store object))
@@ -455,7 +491,7 @@
   (let ((keys))
     (dolist (field fields)
       (when (key-p field)
-	(if (equalp (type-of (getf item-values (name field))) 'item)
+	(if (item-p (getf item-values (name field)))
 	    (push (item-hash (getf item-values (name field))) keys)
 	    (push (getf item-values (name field)) keys))))
     (reverse keys)))
@@ -468,13 +504,18 @@
 	  (remove-if #'rem-item (items (item-bucket item))))
     item))
 
+(defun key-sxhash (store data-type values)
+  (let ((keys (index-keys (get-data-type 
+			    store
+			    data-type)
+			  values)))
+    (sxhash keys)))
+
 (defun add-index (item)
-  (let* ((keys (index-keys (get-data-type 
-			    (item-store item)
-			    (data-type (item-collection item)))
-			   (item-values item)))
-	 (hash (uuid:make-v4-uuid))
-	 (hashx (sxhash keys)))
+  (let* ((hash (uuid:make-v4-uuid))
+	 (hashx (key-sxhash (item-store item)
+			    (item-data-type item)
+			    (item-values item) )))
 
     (when (or (not (item-hash item))
 	      (string-equal (format nil "~A" (item-hash item))
@@ -486,23 +527,21 @@
     (setf (gethash (item-hash item) (index (item-collection item))) item)))
 
 (defun lookup-index (collection item-values)
-  (let* ((keys (index-keys (get-data-type 
-			    (store collection)
-			    (data-type collection))
-			   item-values)))
-    
-    (gethash (sxhash keys) (key-index collection))))
+  (gethash (key-sxhash (store collection)
+		       (data-type collection)
+		       item-values)
+	     (key-index collection)))
 
 (defun lookup-index-hash (collection hash)
   (gethash hash (index collection)))
 
 (defun remove-from-index (item)
-  (let ((keys (index-keys (get-data-type 
-			   (item-store item)
-			   (data-type (item-collection item)))
-			  (item-values item))))
-    (remhash (sxhash keys) (key-index (item-collection item)))
-    (remhash (item-hash item) (index (item-collection item)))))
+  (remhash (key-sxhash (item-store item)
+			 (data-type (item-collection item))
+			 (item-values item) )
+
+	   (key-index (item-collection item)))
+  (remhash (item-hash item) (index (item-collection item))))
 
 (defun load-item-reference-bucket (universe item-ref &key dont-load-items-p)
   (let* ((store (get-store* universe (getf item-ref :store)))
@@ -519,10 +558,45 @@
 (defun find-key (value key)
   (find key value :test #'equalp))
 
+
+(defun blob-ref-p (object)
+  (if (listp object)
+      (equalp (first object) :blob%)))
+
+(defun blob-ref-values (blob-ref)
+  (let ((values (second blob-ref)))
+    (if (listp values)
+	values
+	(list :location values :file-type :text :file-ext "blob"))))
+
+
+
+
+(defun read-blob (blob-ref-values)
+  (let ((*read-eval* nil)
+	(out (make-string-output-stream))
+	(str ""))
+
+    (with-open-file (in (getf blob-ref-values :location)
+			:direction :input		     
+			:if-does-not-exist nil)
+      (when in
+	(loop for line = (read-line in nil)
+	   while line do (write-line line out) )
+	(close in))
+      (setf str (get-output-stream-string out))
+      (close out))
+    
+    (make-blob
+     :file-type (getf blob-ref-values :file-type)
+     :file-ext (getf blob-ref-values :file-ext)
+     :location (getf blob-ref-values :location)
+     :raw str)))
+
 (defun resolve-item-values (universe collection values)
   (let ((final)
 	(value-pairs (parse-item values)))
-    
+
     (dolist (pair value-pairs)
       (let ((key (first pair))
 	    (val (second pair)))
@@ -590,15 +664,23 @@
 						   universe
 						   collection
 						   (dig it :values)))))))
-				(append children (list it)))))		  
+				(progn
+
+				  (append children (list it))))))		  
 		      (setf final (append final (list key children))))
-		    (setf final (append final (list key val)))))
+		    (if (blob-ref-p val)
+			(let ((blob (read-blob (blob-ref-values val))))			      
+			  (setf final (append final (list key blob))))
+			(setf final (append final (list key val))))))
 	    (setf final (append final (list key val)))
 
 
 	    
 	    )))
     final))
+
+
+
 
 (defun resolve-item-reference (universe reference &key dont-load-items-p)
   (let ((bucket (load-item-reference-bucket
@@ -722,7 +804,7 @@
 
 (defmethod persist-item ((collection collection) item &key allow-key-change-p)
 
-  (if (equalp (type-of item) 'item)
+  (if (item-p item) 
       (persist item :collection collection
 		   :allow-key-change-p allow-key-change-p)
       (persist (make-item 
@@ -786,7 +868,7 @@
 	(let ((key (first pair))
 	      (val (second pair)))
 
-	  (if (equalp (type-of val) 'item)
+	  (if (item-p val)
 	      (setf final (append final
 				  (list key (parse-to-plist%
 					     (append
@@ -795,10 +877,10 @@
 					      (cl-naive-store:item-values val))
 					     :exclude-fields exclude-fields))))
 	      (if (or (and val (listp val) (listp (first val)))
-		      (and val (listp val) (equalp (type-of (first val)) 'item)))
+		      (and val (listp val) (item-p (first val)) ))
 		  (let ((children))
 		    (dolist (it val)
-		      (if (equalp (type-of it) 'item)
+		      (if (item-p it)
 			  (setf children
 				(append
 				 children 
@@ -818,7 +900,7 @@
     final))
 
 (defmethod parse-to-plist ((item item) &key exclude-fields (alt-hash-name :hash))
-  (and item (equalp (type-of item) 'item)
+  (and item (item-p item)
        (parse-to-plist% (append (list alt-hash-name (item-hash item))
 				(item-values item))
 			:exclude-fields exclude-fields
@@ -840,8 +922,8 @@
       (setf (item-hash item) hash)
       hash)))
 
-(defun item-to-reference (store item)
-  (if (equalp (type-of item) 'item)
+(defun item-to-reference (store item location)
+  (if (item-p item)
       (if (item-collection item)
 	  (list
 	   :store (name (item-store item))
@@ -856,35 +938,79 @@
 	     ;; :store (name (item-store item))
 	     :data-type (item-data-type item)
 	     :hash (or (item-hash item) (set-hash store item ))
-	     :values (parse-to-references% store (or (item-changes item)
-						     (item-values item)))))
+	     :values (parse-to-references% store
+					   item
+					   (or (item-changes item)
+					       (item-values item))
+					   location)))
       item))
 
-(defun parse-to-references% (store values)
-  (let ((final)
+(defun write-blob (file value)
+  (let ((*read-eval* nil)
+	(in (make-string-input-stream value)))
+    
+    (ensure-directories-exist file)
+    
+    (with-open-file (out file
+			 :direction :output
+			 :if-exists :supersede
+			 :if-does-not-exist :create)
+      (when in
+	(loop for line = (read-line in nil)		 
+	   while line do (write-line line out) )
+	(close in))
+    
+      (close out))))
+
+
+(defun parse-to-references% (store item values location)
+  (let (
+	(final)
 	(value-pairs (parse-item values)))
     
     (dolist (pair value-pairs)
       (let ((key (first pair))
 	    (val (second pair)))
 
-	(if (equalp (type-of val) 'item)
-	    (setf final (append final (list key (item-to-reference
-							store
-							val))))
+	(if (item-p val)
+	    (setf final (append final
+				(list key (item-to-reference
+					   store
+					   val
+					   location))))
 	    (if (or (and val (listp val) (listp (first val)))
-		    (and val (listp val) (equalp (type-of (first val)) 'item)))
+		    (and val (listp val) (item-p (first val))))
 		(let ((children))
 		  (dolist (it val)
-		    (if (equalp (type-of it) 'item)
+		    (if (item-p it)
 			(setf children
 			      (append children 
 				      (list (item-to-reference
 					     store
-					     it))))
+					     it
+					     location))))
 			(setf children (append children (list it)))))
 		  (setf final (append final (list key children))))
-		(setf final (append final (list key val)))))))
+		(cond ((blob-p val)
+		      
+		       (let ((file (or (and (not (empty-p (blob-location val)))
+					    (blob-location val))
+				       (frmt "~A~A/~A.~A"
+					     location
+					     key
+					     (item-hash item)
+					     (blob-file-ext val)))))
+			   ;;string-blob was converted to stream for persistence
+			   ;;have to reset it to string-blob
+			 (write-blob file (blob-raw val))
+			 (setf final (append final (list key
+							 (list :blob%
+							       (list :file-type (blob-file-type val)
+								     :file-type (blob-file-ext val)
+								     :location file)))))))
+			
+			(t
+			 (setf final (append final (list key val)))))))))
     final))
 
 
@@ -894,10 +1020,10 @@
     (setf (item-changes copy) (copy-list (item-changes item)))
     copy))
 
-(defun parse-to-references (store item)
+(defun parse-to-references (store item location)
   (let ((ref-item (copy% item)))
     (setf (item-values ref-item)
-	  (parse-to-references% store (item-values ref-item)))
+	  (parse-to-references% store item (item-values ref-item) location))
     ref-item))
 
 ;;Used to mark change deep in the bowls of the beast.
@@ -909,6 +1035,7 @@
 	  (check-item-values% store
 	   (item-values val)))
     val)
+  
   (when (item-changes val)
     (setf *persist-p* t)
     (setf (item-values val)
@@ -922,6 +1049,37 @@
   
   val)
 
+
+
+(defun new-duplicate-item (items)
+  (let ((new-duplicate-item ))
+	    
+    (dolist (item items)
+      (when (not (item-hash item))
+	(setf new-duplicate-item item)))
+    new-duplicate-item))
+
+(defun remove-duplicate-items (store values)
+  (let ((matching-hashes)
+
+	(keyhash (make-hash-table :test 'equalp)))
+    
+    (dolist (item values)
+      (let ((hash (key-sxhash store (item-data-type item) (or (item-changes item) (item-values item)))))
+	(if (gethash hash keyhash)
+	    (setf matching-hashes (push hash matching-hashes)))
+	(setf (gethash hash keyhash) (push item (gethash hash keyhash)))))
+
+     (dolist (match matching-hashes)
+      (let* ((items (gethash match keyhash))
+	     (new-duplicate-item (new-duplicate-item items)))
+
+	(dolist (item items)
+	    (unless (eq item new-duplicate-item)
+	      (setf (item-changes item) (item-changes new-duplicate-item))))
+	(setf values (remove new-duplicate-item values))))
+    values))
+
 (defun check-item-values% (store values)
   (let ((final)
 	(value-pairs (parse-item values)))
@@ -930,17 +1088,18 @@
       (let ((key (first pair))
 	    (val (second pair)))
 	
-	(if (equalp (type-of val) 'item)
+	(if (item-p val) 
 	    (setf final (append final
 				(list key
 				      (if (item-collection val)
 					  (persist val)
 					  (check-no-collection-val store val)))))
 	    (if (or (and val (listp val) (listp (first val)))
-		    (and val (listp val) (equalp (type-of (first val)) 'item)))
+		    (and val (listp val) (item-p (first val))))
 		(let ((children))
-		  (dolist (it val)
-		    (if (equalp (type-of it) 'item)
+		  
+		  (dolist (it (remove-duplicate-items store val))
+		    (if (item-p it)
 			(setf children
 			      (append children 
 				      (list
@@ -968,19 +1127,23 @@
 				  (item-changes item)))
 	(final-item))
 
-    
+  
     (when change-p
       (when lookup-old
 	(when lookup-new
+	  
 	    
 	  (when (equalp (item-hash lookup-new) (item-hash lookup-old))
+
 	    (unless (equalp (item-values lookup-new) (item-changes item))
+
 	      (setf (item-values lookup-old)
 		    (check-item-values% (item-store item) (item-changes item)))
 	      (setf (item-changes item) nil)
 	      (setf final-item lookup-old)))
 
 	  (unless (equalp (item-hash lookup-new) (item-hash lookup-old))
+
 	    (unless allow-key-change-p
 	      (error
 	       (format
@@ -998,6 +1161,7 @@
 					(item-changes item)))
 	      (remove-item lookup-old)	      
 	      (push item (items (item-bucket lookup-old)))
+	      (break "shit")
 	      (add-index lookup-old)
 	      (setf final-item lookup-old))))
 	
@@ -1061,7 +1225,7 @@
 	(let ((wtf (check-item-values% (item-store item)
 				       (or (item-changes item)
 					   (item-values item)))))
-	  
+
 	  (if (equalp (item-values lookup-old)
 		      (or (item-changes item)
 			  (item-values item)))
@@ -1099,46 +1263,41 @@
     
     final-item))
 
+(defun parse-persist-item (file item)
+  ;;Parse item to persistable format
+  (let ((item-to-persist (parse-to-references (item-store item) item (directory-namestring file))))
+    (when  item-to-persist
+      (setf (item-persisted-p item) nil)	
+      (write-to-file file
+		     item-to-persist
+		     :if-exists :append)
+      (setf (item-persisted-p item) t))
+    item))
+
 (defmethod persist ((item item) &key collection file allow-key-change-p
 				  new-file-p
 				  &allow-other-keys)
-
-    (let ((*persist-p* nil)
+  (let ((*persist-p* nil)
 	(derived-file))
-    
+
     (unless file
       ;;Resolve the location of the item
       (setf item (check-location item :collection collection))
       (setf derived-file (location (item-bucket item))))
-
-
-     (let ((changed-item (if new-file-p
+    
+    (let ((changed-item (if new-file-p
 			    item
 			    (check-item-values item allow-key-change-p))))
-        
-      (if changed-item
-	  (progn
-	    
-	    (setf item changed-item)
-	    ;;Parse item to persistable format
-	    
-	    (let ((item-to-persist (parse-to-references (item-store item) item)))
-	      (when  item-to-persist
-		(setf (item-persisted-p item) nil)
-	
-		(write-to-file (or file derived-file)
-			       item-to-persist
-			       :if-exists :append)
-		(setf (item-persisted-p item) t))))
-	  (when (item-deleted-p item)
-	    (let ((item-to-persist (parse-to-references (item-store item) item)))
-	      (when item-to-persist
-		(setf (item-persisted-p item) nil)
-		(write-to-file (or file derived-file)
-			       item-to-persist
-			       :if-exists :append)
-		(setf (item-persisted-p item) t))))))
-    item))
+
+      (cond (changed-item
+	     (setf item changed-item)
+	     (parse-persist-item (or file derived-file)
+				 item))
+	    ((item-deleted-p item)
+	     (parse-persist-item (or file derived-file)
+				 item))
+	    (t
+	     item)))))
 
 (defun get-store-from-def (universe store-name)
   (let ((filename (format nil "~A~A/~A.store" 
@@ -1365,16 +1524,16 @@
 (defun naive-dig (place indicators)
   (let* ((indicator (pop indicators))
 	 (val (if indicator
-		  (if (equalp (type-of place) 'item)
+		  (if (item-p place)
 		      (getx place indicator)
 		      (getf place indicator))))
-	 (next-place (if (equalp (type-of val) 'item)
+	 (next-place (if (item-p val)
 			 (item-values val)
 			 val)))
     
     (if indicators
 	(naive-dig next-place indicators)
-	(if (equalp (type-of place) 'item)
+	(if (item-p place)
 	    (getx place indicator)
 	    (getf place indicator)))))
 
@@ -1382,21 +1541,21 @@
   
   (let* ((indicator (pop indicators))
 	 (val (if indicator
-		  (if (equalp (type-of place) 'item)
+		  (if (item-p place)
 		      (getx place indicator)
 		      (getf place indicator))))
-	 (next-place (if (equalp (type-of val) 'item)
+	 (next-place (if (item-p val)
 			 (if (item-changes val)
 			     (item-changes val)
 			     (setf (item-changes val)
 				   (copy-list (item-values val))))
 			 val)))
     (if indicators
-	(if (equalp (type-of val) 'item)
+	(if (item-p val)
 	    (set-naive-dig next-place indicators value)
 	    (setf (getf place indicator) 
 		  (set-naive-dig next-place indicators value)))
-	(if (equalp (type-of place) 'item)
+	(if (item-p place)
 	    (setf (getx place indicator) value)
 	    (setf (getf place indicator) value)))
     place))

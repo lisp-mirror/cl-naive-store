@@ -45,6 +45,16 @@
    :location
 
    :parse-to-plist
+
+   :blob
+   :make-blob
+   :blob-file-type
+   :blob-file-ext
+   :blob-location
+   :blob-raw
+   :blob-p
+   :read-file-to-string
+   :blob-string-value
    
    :item
    :make-item
@@ -57,8 +67,10 @@
    :item-data-type
    :item-store
    :item-peristed-p
-   
+   :item-p
 
+   :item-of-type-p
+   
    :dig
    :digx
    :exists-p
