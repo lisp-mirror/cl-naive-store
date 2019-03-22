@@ -852,11 +852,14 @@
   item)
 
 
-
+(defun plist-to-value-pairs (values)
+  (loop for (a b) on values by #'cddr 
+     :collect (list a b)))
 
 (defun parse-item (item)
-  (loop for (a b) on item by #'cddr 
-     :collect (list a b)))
+  (plist-to-value-pairs (if (item-p item)
+			   (item-values item)
+			   item)))
 
 
 (defun parse-to-plist% (values &key exclude-fields (alt-hash-name :hash))
