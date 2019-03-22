@@ -1058,7 +1058,7 @@
   (let ((new-duplicate-item ))
 	    
     (dolist (item items)
-      (when (not (item-hash item))
+      (when (and (item-p item) (not (item-hash item)))
 	(setf new-duplicate-item item)))
     new-duplicate-item))
 
@@ -1068,19 +1068,25 @@
 	(keyhash (make-hash-table :test 'equalp)))
     
     (dolist (item values)
-      (let ((hash (key-sxhash store (item-data-type item) (or (item-changes item) (item-values item)))))
-	(if (gethash hash keyhash)
-	    (setf matching-hashes (push hash matching-hashes)))
-	(setf (gethash hash keyhash) (push item (gethash hash keyhash)))))
-
-     (dolist (match matching-hashes)
+      (when (item-p item)
+	(let ((hash (key-sxhash store
+				(item-data-type item)
+				(or (item-changes item) (item-values item)))))
+	  
+	  (if (gethash hash keyhash)
+	      (setf matching-hashes (push hash matching-hashes)))
+	  (setf (gethash hash keyhash) (push item (gethash hash keyhash))))))
+    
+    (dolist (match matching-hashes)
       (let* ((items (gethash match keyhash))
-	     (new-duplicate-item (new-duplicate-item items)))
-
-	(dolist (item items)
-	    (unless (eq item new-duplicate-item)
-	      (setf (item-changes item) (item-changes new-duplicate-item))))
-	(setf values (remove new-duplicate-item values))))
+	       (new-duplicate-item (new-duplicate-item items)))
+	(when new-duplicate-item
+	  (dolist (item items)
+	    (when  (item-p item)
+	      (unless (eq item new-duplicate-item)
+		(setf (item-changes item) (item-changes new-duplicate-item))))))
+	  (setf values (remove new-duplicate-item values)))
+      )
     values))
 
 (defun check-item-values% (store values)
