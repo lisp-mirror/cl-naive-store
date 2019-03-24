@@ -129,7 +129,7 @@
 
 (defun blob-string-value (blob)
   (if (blob-p blob)
-      (if (not (empty-p (blob-raw blob)))
+      (if (empty-p (blob-raw blob))
 	  (if (not (empty-p (blob-location blob)))
 	      (read-file-to-string (blob-location blob)))
 	  (blob-raw blob))
@@ -148,6 +148,11 @@
   versions
   deleted-p
   persisted-p)
+
+
+(defun item-list-p (list)
+  (and (listp list)
+       (item-p (first list))))
 
 (defun item-of-type-p (item data-type)
   (string-equal data-type (item-data-type item)))
@@ -281,7 +286,6 @@
   (let ((files (directory (format nil "~A/**/*.log" (location collection))))
 	(data-type (get-data-type (store collection)
 				  (data-type collection))))
-
     
     (unless data-type
       (load-store-data-types (store collection)))
@@ -363,7 +367,6 @@
 
 
 (defun write-to-file (file object &key (if-exists :append))
-
   (with-open-file (out file
 		       :direction :output
 		       :if-exists if-exists
@@ -555,8 +558,46 @@
     
     bucket))
 
+(defparameter *load-buckets* nil)
+
+(defun item-ref-bucket (universe item-ref dont-load-items-p)
+  (when (getf item-ref :store)
+    (let* ((key
+	    (format nil "~A~A~A"
+		    (getf item-ref :store)
+		    (getf item-ref :collection)
+		    (getf item-ref :bucket-key)))
+	   (bucket (gethash key *load-buckets*)))
+      (unless bucket
+	(setf bucket
+	      (load-item-reference-bucket
+	       universe item-ref
+	       ;;Don't load if loading file but if it is value references load
+	       ;;those collections so that reference lookup works correct.
+	       :dont-load-items-p dont-load-items-p))
+	(setf (gethash key *load-buckets*)
+	      bucket))
+      bucket)))
+
+
 (defun find-key (value key)
   (find key value :test #'equalp))
+
+(defun line-item-p (line)
+  (and (listp line)
+       (atom (first line))
+       (symbolp (first line))
+       (> (length line) 1)
+       (find-key line :values)        
+       (not (dig line :values :reference%))))
+
+(defun line-ref-item-p (line)
+  (and (listp line)
+       (atom (first line))
+       (symbolp (first line))
+       (> (length line) 1)
+       (find-key line :values)   
+       (dig line :values :reference%)))
 
 
 (defun blob-ref-p (object)
@@ -568,9 +609,6 @@
     (if (listp values)
 	values
 	(list :location values :file-type :text :file-ext "blob"))))
-
-
-
 
 (defun read-blob (blob-ref-values)
   (let ((*read-eval* nil)
@@ -593,188 +631,112 @@
      :location (getf blob-ref-values :location)
      :raw str)))
 
-(defun resolve-item-values (universe collection values)
-  (let ((final)
-	(value-pairs (parse-item values)))
+(defun parse-item-line (universe tree &key dont-load-items-p)
+  (cond ((null tree)
+	 nil)
+	((line-item-p tree)
+	 (let* ((final-item)
+		(bucket (item-ref-bucket universe tree dont-load-items-p))
+		(ref-values (dig tree :values))
+		(resolved-values (and ref-values
+				      (parse-item-line universe ref-values :dont-load-items-p dont-load-items-p)))
+		(ref-item (and bucket (or (gethash (dig tree :hash) 
+						   (index (collection bucket)))
+					 
+					  (gethash (dig tree :hash) 
+						   (key-index (collection bucket)))))))
+	   (cond (ref-item
+		  (unless (getf tree :deleted-p)
+		    (unless (equalp (item-values ref-item) resolved-values)
+			(push  (item-values ref-item) (item-versions ref-item))
+			(setf (item-values ref-item) resolved-values))
+		    (setf final-item ref-item))
+		    
+		  (when (getf tree :deleted-p)
+		    (remove-item ref-item)
+		    (setf final-item nil)))
+		 
+		 ((not ref-item)
+		  (unless (getf tree :deleted-p)
+		    (when bucket
+			(setf final-item
+			      (make-item
+			       :store (store (collection bucket))
+			       :collection (collection bucket)
+			       :data-type (dig tree :data-type)
+			       :bucket bucket
+			       :bucket-key (dig tree :bucket-key)
+			       :hash (dig tree :hash)
+			       :values resolved-values))
 
-    (dolist (pair value-pairs)
-      (let ((key (first pair))
-	    (val (second pair)))
+			(push final-item (items bucket))
+			(add-index final-item)
 
-	(if (and (not (atom val))
-		 (listp val))	    
-	    (if (find-key val :values)
-		(if (dig val :values :reference%)
-		    (setf final
-			  (append final
-				  (list key
-					(resolve-item-reference
-					 universe val
-					 :dont-load-items-p
-					 ;;Unless hierarchy of same object type
-					 ;;load reference collection
-					 (if (equalp (name collection)
-						     (getf val :collection))
-					     t
-					     nil)))))
-		    (setf final
-			  (append final
-				  (list key
-					(make-item
-					 :data-type (dig val :data-type)
-					 :hash (if (> (length (frmt "~A" (dig val :hash)) ) 25)
-						   (dig val :hash)
-						   (uuid:make-v4-uuid))
-					 :values
-					 (resolve-item-values
-					  universe
-					  collection
-					  (dig val :values)))))))
-		(if (and (not (atom (first val)))
-			 (listp (first val)))
-		    (let ((children))
-		      (dolist (it val)
-			(if (and (not (atom it))
-				 (listp it))
-			    (if (find-key it :values)
-				(if (dig it :values :reference%)
-				    (setf children
-					  (append
-					   children
-					   (list
-					    (resolve-item-reference
-					     universe it
-					     :dont-load-items-p
-					     ;;Unless hierarchy of same object
-					     ;;load reference collection
-					     (if (equalp (name collection)
-						     (getf it :collection))
-					     t
-					     nil)))))
-				    (setf children
-					  (append
-					   children
-					   (list (make-item
-						  :data-type (dig it :data-type)
-						  :hash (if (> (length (frmt "~A" (dig it :hash)) ) 25)
-							    (dig it :hash)
-							    (uuid:make-v4-uuid))
-						  :values
-						  (resolve-item-values
-						   universe
-						   collection
-						   (dig it :values)))))))
-				(progn
-
-				  (append children (list it))))))		  
-		      (setf final (append final (list key children))))
-		    (if (blob-ref-p val)
-			(let ((blob (read-blob (blob-ref-values val))))			      
-			  (setf final (append final (list key blob))))
-			(setf final (append final (list key val))))))
-	    (setf final (append final (list key val)))
-
-
-	    
-	    )))
-    final))
-
-
-
-
-(defun resolve-item-reference (universe reference &key dont-load-items-p)
-  (let ((bucket (load-item-reference-bucket
-		 universe reference
-		 ;;Don't load if loading file but if it is value references load
-		 ;;those collections so that reference lookup works correct.
-		 :dont-load-items-p dont-load-items-p))
-	(final-item))
-    
-    (when bucket
-      (let (
-	    (ref-item (or (gethash (dig reference :hash) 
-				   (index (collection bucket)))
+			(unless (equalp (dig tree :hash) (item-hash final-item))
+			  (write-to-file (format nil "~Ashash.err" (location universe))
+					 (list
+					  (location universe)
+					  (location bucket)
+					  (format nil " ~A"  (item-hash final-item))
+					  (format nil " ~A" (dig tree :hash))))
 			  
-			  (gethash (dig reference :hash) 
-				   (key-index (collection bucket))))))
+			  (setf (gethash (dig tree :hash)
+					 (index (item-collection final-item)))
+				final-item)))
+		    
+		    (unless bucket
+			(setf final-item
+			      (make-item
+			    
+			       :data-type (dig tree :data-type)
+			       :bucket bucket
+			       :bucket-key (dig tree :bucket-key)
+			       :hash (dig tree :hash)
+			       :values resolved-values))))
+		  
+		  (unless final-item
+		    (unless (getf tree :deleted-p)
+		      (write-to-file "~/data-universe/error.log"
+				     (list "Could not resolve ~S" tree))
+		      nil))))	   
+	   final-item))
+	((line-ref-item-p tree)
+	 ;;Force load of bucket items because these are reference items
+	 ;;the bucket will only be loaded once so dont worry.
+	 (let* ((bucket (item-ref-bucket universe tree nil))
+	       (ref-item (and bucket (or (gethash (dig tree :hash) 
+						  (index (collection bucket)))
+					  
+					 (gethash (dig tree :hash) 
+						  (key-index (collection bucket)))))))
+	   (unless ref-item
+	     (write-to-file  (format nil "~Aerror.err" (location universe))
+				       (list "Could not resolve reference  ~S" tree)))
 
-	
-	
-	(when ref-item
-	  
-	  (unless (getf reference :deleted-p)
-	    (unless (dig (getf reference :values) :reference%)
-	      
-	      (let ((resolved-values
-		     (resolve-item-values universe (collection bucket)
-					  (getf reference :values))))
-
-		(unless (equalp (item-values ref-item) resolved-values)
-		  (push  (item-values ref-item) (item-versions ref-item))
-		  (setf (item-values ref-item) resolved-values))))
-	    (setf final-item ref-item))
-	  
-	  (when (getf reference :deleted-p)
-	    (remove-item ref-item)
-	    (setf final-item nil)))
-	
-	
-	(unless ref-item
-	  (unless (getf reference :deleted-p)
-
-	    (setf final-item
-		  (make-item
-		   :store (store (collection bucket))
-		   :collection (collection bucket)
-		   :data-type (getf reference :data-type)
-		   :bucket bucket
-		   :bucket-key (getf reference :bucket-key)
-		   :hash (getf reference :hash)
-		   :values (resolve-item-values universe
-						(collection bucket)
-						(getf reference :values))))
-
-	  
-	    (when (getf (item-values final-item) :reference%)
-	 
-	      (write-to-file (format nil "~Aerror.err" (location universe))
-			     (list "Could not resolve ~A ~S" (location bucket) reference)))
-	    
-	    (unless (getf (item-values final-item) :reference%)
-	      (push final-item (items bucket))
-	      (add-index final-item)
-
-	      (unless (equalp (dig reference :hash) (item-hash final-item))
-		(write-to-file (format nil "~Ashash.err" (location universe))
-			       (list
-				(location universe)
-				(location bucket)
-				(format nil " ~A"  (item-hash final-item))
-				(format nil " ~A" (dig reference :hash))))
-		(setf (gethash (dig reference :hash)
-			       (index (item-collection final-item)))
-		      final-item))
-
-	      )))
-
-
-	(if final-item
-	    final-item
-	    (unless (getf reference :deleted-p)
-		(write-to-file "~/data-universe/error.log"
-			       (list "Could not resolve ~S" reference))
-		nil))))))
+	   ref-item))
+	((blob-ref-p tree)
+	 (read-blob (blob-ref-values tree))
+	 )
+	((atom tree)
+	 tree)
+        ((consp tree)
+	 (mapcar (lambda (child)
+		     (parse-item-line universe child :dont-load-items-p dont-load-items-p))
+		 tree))
+        (t tree)))
 
 (defun load-items (universe filename )
-  (with-open-file (in filename :if-does-not-exist :create)
-    (with-standard-io-syntax              
-      (when in
-	(loop for line = (read in nil)
-	   while line
-	   do (resolve-item-reference
-	       universe line
-	       :dont-load-items-p t))
-	(close in)))))
+  (let ((*load-buckets* (make-hash-table :test 'equalp)))
+    (declare (special *load-buckets*))
+    (with-open-file (in filename :if-does-not-exist :create)
+      (with-standard-io-syntax              
+	(when in
+	  (loop for line = (read in nil)
+	     while line
+	     do (parse-item-line
+		 universe line
+		 :dont-load-items-p t))
+	  (close in))))))
 
 (defmethod add-bucket ((collection collection) key-values
 		       &key dont-load-items-p)    
@@ -851,72 +813,10 @@
 			(item-bucket-key item)))))
   item)
 
-
-(defun plist-to-value-pairs (values)
-  (loop for (a b) on values by #'cddr 
-     :collect (list a b)))
-
 (defun parse-item (item)
   (plist-to-value-pairs (if (item-p item)
 			   (item-values item)
 			   item)))
-
-
-(defun parse-to-plist% (values &key exclude-fields (alt-hash-name :hash))
-  (let ((final)
-	(value-pairs (parse-item values)))
-    
-    (dolist (pair value-pairs)
-      (unless (find (first pair) exclude-fields :test 'equalp) 
-	(let ((key (first pair))
-	      (val (second pair)))
-
-	  (if (item-p val)
-	      (setf final (append final
-				  (list key (parse-to-plist%
-					     (append
-					      (list alt-hash-name
-						    (item-hash val))
-					      (cl-naive-store:item-values val))
-					     :exclude-fields exclude-fields))))
-	      (if (or (and val (listp val) (listp (first val)))
-		      (and val (listp val) (item-p (first val)) ))
-		  (let ((children))
-		    (dolist (it val)
-		      (if (item-p it)
-			  (setf children
-				(append
-				 children 
-				 (list (parse-to-plist%
-					(append
-					 (list alt-hash-name
-					       (item-hash it))
-					 (cl-naive-store:item-values it))))))
-			  (setf children (append children (list it)))))
-		    (setf final (append final (list key children))))
-		  (setf final (append final
-				      (list key
-					    (if (listp val)
-						val
-						(string-downcase
-						 (format nil "~A" val)))))))))))
-    final))
-
-(defmethod parse-to-plist ((item item) &key exclude-fields (alt-hash-name :hash))
-  (and item (item-p item)
-       (parse-to-plist% (append (list alt-hash-name (item-hash item))
-				(item-values item))
-			:exclude-fields exclude-fields
-			:alt-hash-name alt-hash-name)))
-
-(defmethod parse-to-plist ((item-list list) &key exclude-fields (alt-hash-name :hash))
-  (let ((new-list))
-    (dolist (item item-list)
-      (setf new-list
-	    (push (parse-to-plist item :exclude-fields exclude-fields
-				  :alt-hash-name alt-hash-name )
-		  new-list)))
-    new-list))
 
 (defun set-hash (store item)
   (declare (ignore store))
@@ -964,7 +864,6 @@
 	(close in))
     
       (close out))))
-
 
 (defun parse-to-references% (store item values location)
   (let (
@@ -1052,8 +951,6 @@
   
   val)
 
-
-
 (defun new-duplicate-item (items)
   (let ((new-duplicate-item ))
 	    
@@ -1085,8 +982,7 @@
 	    (when  (item-p item)
 	      (unless (eq item new-duplicate-item)
 		(setf (item-changes item) (item-changes new-duplicate-item))))))
-	  (setf values (remove new-duplicate-item values)))
-      )
+	  (setf values (remove new-duplicate-item values))))
     values))
 
 (defun check-item-values% (store values)
@@ -1136,12 +1032,9 @@
 				  (item-changes item)))
 	(final-item))
 
-  
     (when change-p
       (when lookup-old
 	(when lookup-new
-	  
-	    
 	  (when (equalp (item-hash lookup-new) (item-hash lookup-old))
 
 	    (unless (equalp (item-values lookup-new) (item-changes item))
@@ -1224,8 +1117,7 @@
 	  (setf (item-changes item) nil)	   
 	  (push item (items (item-bucket item)))
 	  (add-index item)
-	  (setf final-item item))
-	))
+	  (setf final-item item))))
 
     (unless change-p
       
@@ -1529,7 +1421,6 @@
   (unless change-control-p
     (setf (getf (item-values item) field-name) value)))
 
-
 (defun naive-dig (place indicators)
   (let* ((indicator (pop indicators))
 	 (val (if indicator
@@ -1628,4 +1519,3 @@
 			 (lambda (item)
 			   (apply test (list item)))
 			 item-list)))
-

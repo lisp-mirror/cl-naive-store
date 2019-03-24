@@ -4,6 +4,10 @@
   (:use :cl)
   (:export
 
+   ;;Common
+
+   :plist-to-values
+   :plist-to-value-pairs
    
    ;;Classes
    :field
@@ -43,8 +47,6 @@
    :universe
    :stores
    :location
-
-   :parse-to-plist
 
    :blob
    :make-blob
@@ -122,4 +124,11 @@
    :find-in-item-list 
    :find-items-in-item-list
 
+   ;;EXPORT
+   :item-list-to-csv
+   :item-list-to-json
+   :item-lists-to-plist
+
+   :item-pair-to-plist
+   :items-to-plist
    ))
