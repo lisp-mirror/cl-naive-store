@@ -266,6 +266,7 @@
 (defgeneric add-data-type (store data-type))
 
 (defmethod add-data-type ((store store) (data-type data-type))
+  
   (unless (get-data-type store (name data-type))
     (setf (store data-type) store)
     (pushnew data-type (data-types store))
@@ -492,7 +493,7 @@
 
 (defmethod index-keys ((fields list) item-values)
   (let ((keys))
-    (dolist (field fields)
+    (dolist (field fields)     
       (when (key-p field)
 	(if (item-p (getf item-values (name field)))
 	    (push (item-hash (getf item-values (name field))) keys)
@@ -508,10 +509,14 @@
     item))
 
 (defun key-sxhash (store data-type values)
-  (let ((keys (index-keys (get-data-type 
+  (let* ((data-type-spec (get-data-type 
 			    store
-			    data-type)
-			  values)))
+			    data-type))
+	(keys (if data-type-spec
+		  (index-keys data-type-spec
+			      values)
+		  (error "index-keys called with data-type = nil. If this happened on a save look for a mismatch between a collection and its data-type's destinations."))))
+    
     (sxhash keys)))
 
 (defun add-index (item)
@@ -973,10 +978,10 @@
 	  (if (gethash hash keyhash)
 	      (setf matching-hashes (push hash matching-hashes)))
 	  (setf (gethash hash keyhash) (push item (gethash hash keyhash))))))
-    
+
     (dolist (match matching-hashes)
       (let* ((items (gethash match keyhash))
-	       (new-duplicate-item (new-duplicate-item items)))
+	     (new-duplicate-item (new-duplicate-item items)))
 	(when new-duplicate-item
 	  (dolist (item items)
 	    (when  (item-p item)
@@ -1004,6 +1009,7 @@
 		(let ((children))
 		  
 		  (dolist (it (remove-duplicate-items store val))
+		    
 		    (if (item-p it)
 			(setf children
 			      (append children 
