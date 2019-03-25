@@ -1069,7 +1069,7 @@
 					(item-changes item)))
 	      (remove-item lookup-old)	      
 	      (push item (items (item-bucket lookup-old)))
-	      (break "shit")
+;;	      (break "shit")
 	      (add-index lookup-old)
 	      (setf final-item lookup-old))))
 	

@@ -100,21 +100,33 @@
 	  (equal (trim-whitespace (princ-to-string value)) ""))))
 
 
+(defun db-type-get-set (field)
+  (cond ((listp (getf field :db-type))
+	 (cond ((equalp (getf (getf field :db-type) :complex-type)
+			:value-list)
+		(getf (getf field :db-type) :type))
+	       ((equalp (getf (getf field :db-type) :complex-type)
+			:key-value-list)
+		(getf (getf field :db-type) :type))
+	       (t
+		(getf (getf field :db-type) :complex-type))))
+	(t
+	 (getf field :db-type))))
+
 (defgeneric getfx (item field &key &allow-other-keys))
 
 (defmethod getfx ((item item) field &key  &allow-other-keys)
-  (let ((db-type (if (listp (getf field :db-type))
-		     (or (getf (getf field :db-type) :complex-type)
-			 (getf (getf field :db-type) :type))
-		     (getf field :db-type))))
+  (let ((db-type (db-type-get-set field)))
     (getsfx db-type field item)))
+
+
 
 (defmethod (setf getfx) (value (item item) field
 			 &key &allow-other-keys)
-  (let ((db-type (if (listp (getf field :db-type))
-		     (or (getf (getf field :db-type) :complex-type)
-			 (getf (getf field :db-type) :type))
-		     (getf field :db-type))))
+  
+  (let ((db-type (db-type-get-set field)))
+
+    (break "shit ~A ~A" db-type value)
     (setf (getsfx db-type field item) value)))
 
 (defun getsfx* (field item)
@@ -260,6 +272,7 @@
 
 (defmethod (setf getsfx) (value (type (eql :keyword)) field item
 			  &key &allow-other-keys)
+  (break "value ~A" value)
   (setsfx-read* field item value #'keywordp  "~S is not a keyword!"))
 
 (defmethod (setf getsfx) (value (type (eql :string)) field item
