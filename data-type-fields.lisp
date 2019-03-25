@@ -125,8 +125,6 @@
 			 &key &allow-other-keys)
   
   (let ((db-type (db-type-get-set field)))
-
-    (break "shit ~A ~A" db-type value)
     (setf (getsfx db-type field item) value)))
 
 (defun getsfx* (field item)
@@ -272,7 +270,6 @@
 
 (defmethod (setf getsfx) (value (type (eql :keyword)) field item
 			  &key &allow-other-keys)
-  (break "value ~A" value)
   (setsfx-read* field item value #'keywordp  "~S is not a keyword!"))
 
 (defmethod (setf getsfx) (value (type (eql :string)) field item
