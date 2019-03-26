@@ -3,105 +3,163 @@
 (defclass field ()
   ((name :initarg :name
 	 :accessor name
-	 :initform nil)
+	 :initform nil
+	 :documentation "Name of the field. This must be a KEYWORD.")
    (type-def :initarg :type-def
 	     :accessor type-def
-	     :initform nil)
+	     :initform nil
+	     :documentation "A property list of type specifics. The cl-naive-store was designed not to use
+these definitions in any way, which makes naive-store a very forgiving data store. There is scope for
+additional modules to enhance naive-store and those would most likely use these heavily. GUI's like 
+cl-wfx can also use these to help with generic rendering of user input screens. See *example-type-defs* 
+for examples of type definitions to see a feel for the intended use.")
    (key-p :initarg :key-p
 	  :accessor key-p
-	  :initform nil)
+	  :initform nil
+	  :documentation "Indicates that the field is part of the primary key. Used for indexing 
+and object comparison. For example when a new item is persisted naive-store checks for items with the
+same index value and then updates the existing object in its default mode.")
    (attributes :initarg :attributes
 	       :accessor attributes
-	       :initform nil)))
+	       :initform nil
+	       :documentation "A property list of additional field attributes. Not used by naive-store."))
+  
+  (:documentation "A unit of data stored in a field. This class represents a field specification.
+The type-def and attributes are not used by naive-store directly, but is supplied here to that creators
+of additional modules dont have to use class inheritence to store extra info in type definitions.
+Fields can reference simple objects, complex object or items based on other data-types making naive-store hierarchical."))
 
 (defclass bucket ()
   ((collection :initarg :collection
 	       :accessor collection
-	       :initform nil)
+	       :initform nil
+	       :documentation "A reference to the collection object that holds this bucket.")
    (key-values :initarg :key-values
 	       :accessor key-values
-	       :initform nil)
+	       :initform nil
+	       :documentation "Field values use choose data to load into this bucket.")
    (items :initarg :items
 	  :accessor items
-	  :initform nil)
+	  :initform nil
+	  :documentation "The items read from the file is stored in here.")
    (location :initarg :location
 	     :accessor location
-	     :initform nil)
+	     :initform nil
+	     :documentation "The path to the file that contains the data.")
    (loaded-p :initarg :loaded-p
 	  :accessor loaded-p
-	  :initform nil)))
+	  :initform nil))
+  (:documentation "Buckets are used to store data in memory when read from files."))
 
 (defclass collection ()
   ((store :initarg :store
 	  :accessor store
-	  :initform nil)
+	  :initform nil
+	  :documentation "A reference to the store object that this collection belongs to.")
    (name :initarg :name
-	 :accessor name)
+	 :accessor name
+	 :documentation "The name of the collection, as a string.")
    (name-space :initarg :name-space
 	       :accessor name-space
-	       :initform nil)
+	       :initform nil
+	       :documentation "TODO: Not implemented!!")
    (bucket-keys :initarg :bucket-keys
 		:accessor bucket-keys
-		:initform nil)
+		:initform nil
+		:documentation "Field names used to further segregate data in to seperate files based on
+data content.")
    (data-type :initarg :data-type
 	      :accessor data-type
-	      :initform nil)
+	      :initform nil
+	      :documentation "A reference to the data-type object that this collection represents/contains.")
    (location :initarg :location
 	     :accessor location
-	     :initform nil)
+	     :initform nil
+	     :documentation "The directory path to where files for this collection is stored.")
    (buckets :initarg :buckets
 	    :accessor buckets
-	    :initform nil)
+	    :initform nil
+	    :documentation "Seperate containers based on bucket-keys to hold data in memory when read.")
    (index :initarg :index
 	  :accessor index
-	  :initform (make-hash-table :test 'equalp))
+	  :initform (make-hash-table :test 'equalp)
+	  :documentation "Hash table keyed on item hash codes for quick retrieval of an item.")
    (key-index :initarg :key-index
 	  :accessor key-index
-	  :initform (make-hash-table :test 'equalp))
+	  :initform (make-hash-table :test 'equalp)
+	  :documentation "Hash table keyed on item key values for quick retrieval of an item. Used 
+when doing value equality comparisons.")
    (filter :initarg :filter
 	   :accessor filter
-	   :initform nil)))
+	   :initform nil
+	   :documentation "TODO: Not implemented or at least in the wrong place/level."))
+  
+  (:documentation "A collection of items of a specific data type. Currently it is a list but can be changed
+to any other collection type (this needs testing!!). The reason the collection container type can be changed
+is that access functions are supplied so the collection should never be accessed directly. naive-store
+is designed to segregate data storage into different files. A collection by default uses on file/bucket, but based 
+on the values of the fields specified in bucket-keys more files/buckets will be used for storing data.
+It is up to the designer of the database to decide what will be the optimal file segregation of the data for a 
+single data type. However data segregation is often better achieved by splitting data accross data types optimally."))
 
 (defclass data-type ()
   ((store :initarg :store
 	  :accessor store
-	  :initform nil)
+	  :initform nil
+	  :documentation "A reference to the store that this type belongs to.")
    (name :initarg :name
 	 :accessor name
-	 :initform nil)
+	 :initform nil
+	 :documentation "String representing a name.")
    (label :initarg :label
 	  :accessor label
-	  :initform nil)
+	  :initform nil
+	  :documentation "Human readable/formated short description.")
    (top-level-p :initarg :top-level-p
 		:accessor top-level-p
-		:initform nil)  
+		:initform nil
+		:documentation "Not all data types have their own collections, only data types marked as top
+level t have their own collections/files. Non top level type items are stored in their referencing data type's
+collections.")  
    (fields :initarg :fields
 	   :accessor fields
-	   :initform nil)))
+	   :initform nil
+	   :documentation "Field definitions that represents a data unit."))
+  (:documentation "A grouping of field definitions that represents a complex data unit. This would the
+document in a document database or the table in a relational database."))
 
 (defclass store ()
   ((universe :initarg :universe
 	     :accessor universe
-	     :initform nil)
+	     :initform nil
+	     :documentation "A reference to the universe this store belongs to.")
    (name :initarg :name
-	 :accessor name)
+	 :accessor name
+	 :documentation "Store name string.")
    (data-types :initarg :data-types
 	       :accessor data-types
-	       :initform nil)
+	       :initform nil
+	       :documentation "List of data-types represented by this store")
    (collections :initarg :collections
 		:accessor collections
-		:initform nil)
+		:initform nil
+		:documentation "List of collections represented by this store.")
    (location :initarg :location
 	     :accessor location
-	     :initform nil)))
+	     :initform nil
+	     :documentation "The directory path to the data-type files and collection files for this store."))
+  (:documentation "Data types are organized into groups called stores."))
 
 (defclass universe ()
   ((stores :initarg :stores
 	   :accessor stores
-	   :initform nil)
+	   :initform nil
+	   :documentation "List of stores represtend by this universe.")
    (location :initarg :location
 	     :accessor location
-	     :initform "~/data-universe/")))
+	     :initform "~/data-universe/"
+	     :documention "Directory path to stores.")
+   (:documentation "Stores are held by a universe to make up a database." )))
 
 (defstruct blob
   file-type
