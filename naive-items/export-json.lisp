@@ -1,4 +1,4 @@
-(in-package :cl-naive-store)
+(in-package :cl-naive-items)
 
 (defun lambda-p (object)
   (and (listp object)

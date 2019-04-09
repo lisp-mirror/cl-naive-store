@@ -4,131 +4,126 @@
   (:use :cl)
   (:export
 
-   ;;Common
-
+   ;;####common.lisp
+   :frmt
+   :empty-p
+   :trim-whitespace
    :plist-to-values
    :plist-to-value-pairs
+   :read-file-to-string
+   :write-object
+   :write-to-file
+   :write-list-to-file
+   :persist
+   :dig
+   :getx
+   :digx
+   :exists-p
+
+   ;;####naive-core.lisp
    
-   ;;Classes
+   ;;##classes
    :field
    :name
    :type-def
+   :key-p
    :attributes
-   
-   :bucket
-   :collection
-   :key-values
-   :items
-   :location
-   
-   :collection
-   :store
-   :name
-   :bucket-keys
-   :data-type
-   :location
-   :buckets
-   :index
-   
+
+      
    :data-type
    :store
-   :name
+   ;;:name
+   :field-class
    :label
    :top-level-p
-   :fields
-   
+   :fields  
+
+
+   :collection
    :store
+   ;;:name
+   ;;:data-type
+   :location
+   :data-objects
+   :uuid-index
+   :key-value-index
+   :loaded-p
+
+   ;;:store
    :universe
-   :name
+   ;;:name
+   :collection-class
+   :data-type-class
    :data-types
    :collections
-   :location
+   ;;:location
    
-   :universe
+   ;;:universe
    :stores
-   :location
+   ;;:location
 
+   ;;##methods
+   :add-data-object
+   :remove-data-object
+   :deleted-p
+   :delete-data-object
+   :hash
+   :key-values
+   :key-values-hash
+   :index-lookup-values-hash
+   :index-lookup-uuid
+   :add-index
+   :remove-index
+   :get-store
+   :get-data-type
+   :get-collection
+   ;;:persist
+   :add-store
+   :add-collection
+   :add-data-type
+   
+   
+   ;;####blob.lisp
    :blob
    :make-blob
    :blob-file-type
    :blob-file-ext
    :blob-location
    :blob-raw
-   :blob-p
-   :read-file-to-string
    :blob-string-value
+   :blob-p
    
-   :item
-   :make-item
-   :item-hash
-   :item-bucket-key
-   :item-values
-   :item-changes
-   :item-versions
-   :item-collection
-   :item-data-type
-   :item-store
-   :item-peristed-p
-   :item-p
+   :blob-ref-p
+   ;;:blob-ref-values
+   :read-blob
+   :write-blob
 
-   :item-of-type-p
+   ;;####parse.lisp
+    :naive-object-deleted-p
+   :naive-object-p
+   :naive-reference-object-p
+   :parse-top-level-data-object
+   :parse-reference-data-object
+   :parse-child-data-object
+   :parse-data-object
+   :parse-top-level-data-object
+   :parse-reference-data-object
+   :parse-child-data-object
+   :parse-data-object
    
-   :dig
-   :digx
-   :exists-p
-   :getx
-   :naive-dig
-   :set-naive-dig
-   :getfx
-   :getsfx
-   :validate-sfx
-   
-   :write-to-file
-   :write-list-to-file   
-   :persist
-   :add-store
-   ;;:persist-collection-def
-   :persist-collection
-   :add-data-type
-   :add-collection
 
-   :get-store
-   :get-data-type
-   :get-collection
-   :get-bucket
-   :get-collection-bucket
-   :get-key-values
-   ;;get-bucket-key-val-location
-   :index-keys
-   ;;:add-index
-   :lookup-index
-   ;;:remove-from-index
-  
-   :persist-item
-   
-   :load-store-data-types
-   :load-store-collections
-   :load-collection-items
-   
+   ;;####load.lisp
+   :load-data
    :load-store
+   :load-stores
+
+
+   ;;####query.lisp
    :fetch-items
    :fetch-item
-
-
-   :find-item-by-value
-
-   :match-item
-   :match-replace-item
-   
-   :find-equalp-item
-   :find-in-item-list 
+   :find-in-item-list
    :find-items-in-item-list
 
-   ;;EXPORT
-   :item-list-to-csv
-   :item-list-to-json
-   :item-lists-to-plist
 
-   :item-pair-to-plist
-   :items-to-plist
+
    ))

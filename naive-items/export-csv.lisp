@@ -1,4 +1,4 @@
-(in-package :cl-naive-store)
+(in-package :cl-naive-items)
 
 
 (defun write-pair-csv (pair stream first-p)
