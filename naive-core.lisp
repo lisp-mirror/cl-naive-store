@@ -182,9 +182,15 @@ more than 10 mil items in a collection please let me know!"))
 (defgeneric remove-data-object (collection object &key &allow-other-keys)
   (:documentation "See add-data-object"))
 
+
+
 (defmethod remove-data-object ((collection collection) object &key &allow-other-keys)
   (remove-index collection object)
-  (remove object (data-objects collection)))
+  (setf (data-objects collection)
+	(remove object (data-objects collection) :test #'(lambda (object item)
+										     (or
+										      (eql object item)
+										      (equalp (hash item) (hash object)))))))
 
 (defgeneric deleted-p (object)
   (:documentation "Indicates if a data object has been marked as deleted. naive-store writes data to 

@@ -3,7 +3,7 @@
   :version "0.0.1"
   :author "Phil Marneweck <phil@psychedelic.co.za>"
   :licence "MIT"
-  :depends-on ("split-sequence" "uuid")
+  :depends-on ("cl-fad" "split-sequence" "uuid")
   :components ((:file "packages")
 	       (:file "common" :depends-on ("packages"))
                (:file "naive-core" :depends-on ("common" "packages"))

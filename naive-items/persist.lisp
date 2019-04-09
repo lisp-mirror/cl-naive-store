@@ -444,12 +444,13 @@
 			    item
 			    (check-item-values item allow-key-change-p))))
 
-   ;;   (break "?!? ~A" changed-item)
       (cond (changed-item
 	     (setf item changed-item)
 	     (parse-persist-item (or file derived-file)
 				 item))
 	    ((item-deleted-p item)
+	     ;;The remove must be done much earlier in the process
+	     (remove-data-object (item-collection item) item)
 	     (parse-persist-item (or file derived-file)
 				 item))
 	    (t

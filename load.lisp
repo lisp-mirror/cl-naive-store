@@ -85,3 +85,54 @@ in a universe, where as the default behaviour of naive-store is to lazy load def
   (load-store-collections store t)
   (dolist (collection (collections store))
     (load-data collection)))
+
+
+;;TODO: Move this to a maintenance.lisp and add functionality to do sanitize when loading data for the first time.
+
+(defgeneric sanitize-data-file (collection &key &allow-other-keys)
+  (:documentation "This removes all the deleted items from a collection. When a collection is loaded
+only the active objects are loaded and by simply writing those active items out to a new file and then replacing
+the old file deleted objects are removed."))
+
+(defmethod sanitize-data-file ((collection collection) &key &allow-other-keys)
+  (let ((items (fetch-items 
+		collection)))
+    (when (probe-file
+	   (format nil "~A/~A.old"
+		   (location collection)
+		   (name collection)))
+      (fad:copy-file
+
+       (format nil "~A/~A.old"
+	       (location collection)
+	       (name collection))
+       (format nil "~A/~A.old.old"
+	       (location collection)
+	       (name collection))
+       :overwrite t))
+
+    (fad:copy-file
+
+     (format nil "~A/~A.log"
+	     (location collection)
+	     (name collection))
+       
+     (format nil "~A/~A.old"
+	     (location collection)
+	     (name collection))
+     :overwrite t)
+    
+    (when items
+      (dolist (item items)
+	(cl-naive-store::persist item
+				 :file (format nil "~A/~A.new"
+					       (location collection)
+					       (name collection))
+				 :new-file-p t))
+      (fad:copy-file (format nil "~A/~A.new"
+			     (location collection)
+			     (name collection))
+		     (format nil "~A/~A.log"
+			     (location collection)
+			     (name collection))
+		     :overwrite t))))

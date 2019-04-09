@@ -116,6 +116,7 @@
    :load-data
    :load-store
    :load-stores
+   :sanitize-data-file
 
 
    ;;####query.lisp
