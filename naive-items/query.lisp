@@ -64,6 +64,8 @@
 (defmethod (setf digx) (value (place item) &rest indicators)
   (set-naive-dig place indicators value))
 
+
+
 ;;((:name arst :value arts) (:name ...))
 (defun find-item-by-value (item-list field-values)
   (let ((exists nil))

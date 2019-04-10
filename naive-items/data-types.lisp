@@ -1,8 +1,10 @@
 (in-package :cl-naive-items)
 
+
 (defmethod getfx ((item item) field &key  &allow-other-keys)
   (let ((db-type (db-type-get-set field)))
     (getsfx db-type field item)))
+
 
 (defmethod (setf getfx) (value (item item) field
 			 &key &allow-other-keys)
@@ -45,9 +47,9 @@
     (setf (getx item name) final-val)))
 
 
-(defmethod getsfx ((type (eql :list-items)) field object &key &allow-other-keys)
+(defmethod getsfx ((type (eql :list-objects)) field object &key &allow-other-keys)
   (cl-naive-data-types::getsfx* field object))
 
-(defmethod (setf getsfx) (value (type (eql :list-items)) field object   
+(defmethod (setf getsfx) (value (type (eql :list-objects)) field object   
 			  &key &allow-other-keys)
   (cl-naive-data-types::set-getsfx* field object value))

@@ -9,35 +9,45 @@
 	     :accessor type-def
 	     :initform nil
 	     :documentation "A user defined object that defines the type specifics of an field.
- The defualt implementation of cl-naive-store do not to use these definitions in any when reading and 
+
+ The default implementation of cl-naive-store does not to use these definitions when reading and 
 writing data objects to and from file. This was by design, to place as little burden on reading and writing
-data objects. Depending on the use of naive-store a user could customize the reading and writing to 
-use these definitions for validation and file layout specifics. GUI's like cl-wfx can also use these 
-to help with generic rendering of user input screens. See cl-naive-items:*example-type-defs* for examples of 
-type definitions to get a feel for the intended use.")
+data objects. Depending on the use of naive-store a user could customize the reading and writing methods of 
+naive-store to use these definitions for validation and file layout specifics. 
+
+GUI's like cl-wfx can also use these to help with generic rendering of user input screens. 
+
+See cl-naive-items:*example-type-defs* for examples of type definitions to get a feel for the intended use.")
    (key-p :initarg :key-p
 	  :accessor key-p
 	  :initform nil
-	  :documentation "Indicates that the field is part of the primary key. Used for indexing 
-and object comparison. For example when a new item is persisted naive-store checks for items with the
-same index value and then updates the existing object in its default mode.")
+	  :documentation "Indicates that the field is part of the primary key.
+
+ Used for indexing and object comparison. For example when a new object is persisted naive-store 
+checks for objects with the same index value and then updates the existing object in its default mode.")
    (attributes :initarg :attributes
 	       :accessor attributes
 	       :initform nil
 	       :documentation "A property list of additional field attributes that are not data type specific.
  Not used by naive-store."))
   
-  (:documentation "A definition of a unit of data of a data oject. The type-def and attributes are not used 
-by naive-store in its default implementation directly, but is supplied here to that creators
-of additional modules dont have to use class inheritence to store extra info in type definitions.
-Fields can reference simple objects, complex object or items based on other data-types. Hint, naive-store is
-by default designed to be a hierarchical database.."))
+  (:documentation "A definition of a unit of data of a data oject. 
+
+The type-def and attributes are not used by naive-store in its default implementation directly,
+ but is supplied here so that creators of additional modules dont have to use class inheritence 
+to add such data to type definitions.
+
+By adding type-def and attributes here even though it is not used it helps to standardize possible use.
+
+Fields can reference simple types, a complex object or objects based on other data-types. 
+
+*Note*: naive-store is by default designed to be a hierarchical database."))
 
 (defclass data-type ()
   ((store :initarg :store
 	  :accessor store
 	  :initform nil
-	  :documentation "A reference to the store that this data-type belongs to.")
+	  :documentation "The store that this data-type belongs to.")
    (name :initarg :name
 	 :accessor name
 	 :initform nil
@@ -46,8 +56,8 @@ by default designed to be a hierarchical database.."))
 	       :accessor field-class
 	       :initform 'field
 	       :allocation :class
-	       :documentation "The class that should be used to make data-type objects. Class is
- delcaritively specied here because fields are dynamicly created when definition
+	       :documentation "The class that should be used to make data-type objects. 
+field-class is delcaritively specied here because fields are dynamicly created when definition
 files are loaded. The alternative would be defmethod hell where the user of naive-store would have to 
 implement a whole lot of methods that do exactly what the provided methods do just to be able to be type 
 specific in other methods where it is actually needed. Alternatively meta classes could be used for field-class
@@ -60,28 +70,27 @@ specific in other methods where it is actually needed. Alternatively meta classe
 		:accessor top-level-p
 		:initform nil
 		:documentation "Not all data types have their own collections, only data types marked as top
-level t have their own collections/files. Non top level type items are stored in their referencing data type's
+level t have their own collections/files. Non top level type objectss are stored in their referencing data type's
 collections. ")  
    (fields :initarg :fields
 	   :accessor fields
 	   :initform nil
 	   :documentation "Field definitions that represents a data unit."))
-  (:documentation "A grouping of field definitions that represents a complex data unit. This would the
-document in a document database or the table in a relational database."))
+  (:documentation "A grouping of field definitions that represents a complex data unit."))
 
 
 (defclass collection ()
   ((store :initarg :store
 	  :accessor store
 	  :initform nil
-	  :documentation "A reference to the store object that this collection belongs to.")
+	  :documentation "The store that this collection belongs to.")
    (name :initarg :name
 	 :accessor name
-	 :documentation "The name of the collection, as a string.")   
+	 :documentation "The collection name string.")   
    (data-type :initarg :data-type
 	      :accessor data-type
 	      :initform nil
-	      :documentation "A reference to the data-type object that this collection represents/contains.")
+	      :documentation "The data-type that this collection contains objects of.")
    (location :initarg :location
 	     :accessor location
 	     :initform nil
@@ -89,28 +98,28 @@ document in a document database or the table in a relational database."))
    (data-objects :initarg :data-objects
 	  :accessor data-objects
 	  :initform nil
-	  :documentation "The items read from the file is stored in here.")  
+	  :documentation "The objects contained by this collection.")  
    (uuid-index :initarg :uuid-index
 	  :accessor uuid-index
 	  :initform (make-hash-table :test 'equalp)
-	  :documentation "Hash table keyed on item hash codes for quick retrieval of an item.")
+	  :documentation "Hash table keyed on object hash codes for quick retrieval of an object.")
    (key-value-index :initarg :key-value-index
 	  :accessor key-value-index
 	  :initform (make-hash-table :test 'equalp)
-	  :documentation "Hash table keyed on item key values for quick retrieval of an item. Used 
-when doing value equality comparisons.")
+	  :documentation "Hash table keyed on object key values for quick retrieval of an object. Used 
+when doing key value equality comparisons.")
    (loaded-p :initarg :loaded-p
 	  :accessor loaded-p
 	  :initform nil
 	  :documentation "Indicates if the collection has been loaded from file yet."))
   
-  (:documentation "A collection of items of a specific data type."))
+  (:documentation "A collection of objects of a specific data-type."))
 
 (defclass store ()
   ((universe :initarg :universe
 	     :accessor universe
 	     :initform nil
-	     :documentation "A reference to the universe this store belongs to.")
+	     :documentation "The universe this store belongs to.")
    (name :initarg :name
 	 :accessor name
 	 :documentation "Store name string.")
@@ -127,7 +136,7 @@ when doing value equality comparisons.")
    (data-types :initarg :data-types
 	       :accessor data-types
 	       :initform nil
-	       :documentation "List of data-types represented by this store")
+	       :documentation "List of data-types represented by this store's collections.")
    (collections :initarg :collections
 		:accessor collections
 		:initform nil
@@ -136,7 +145,7 @@ when doing value equality comparisons.")
 	     :accessor location
 	     :initform nil
 	     :documentation "The directory path to the data-type files and collection files for this store."))
-  (:documentation "Data types are organized into groups called stores. 
+  (:documentation "Data types and their associated collections are organized into groups called stores. 
 
 Collection-class and data-type-class is delcaritively specied here because they are dynamicly created 
 when definition files are loaded. The alternative would be defmethod hell where the customizer of 
@@ -149,13 +158,14 @@ classes could be used for field-class but that opens another can of worms. "))
   ((stores :initarg :stores
 	   :accessor stores
 	   :initform nil
-	   :documentation "List of stores represtend by this universe.")
+	   :documentation "List of stores contained by this universe.")
    (store-class :initarg :store-class
 		:accessor store-class
 		:initform 'store
 		:allocation :class
-		:documentation "The class that should be used to make store objects. Class is
- delcaritively specied here because stores are dynamicly created when definition
+		:documentation "The class that should be used to make store objects. 
+
+store-class is delcaritively specied here because stores are dynamicly created when definition
 files are loaded. The alternative would be defmethod hell where the user of naive-store would have to 
 implement a whole lot of methods that do exactly what the provided methods do just to be able to be type 
 specific in other methods where it is actually needed. Alternatively meta classes could be used for field-class
@@ -166,36 +176,11 @@ specific in other methods where it is actually needed. Alternatively meta classe
 	     :documentation "Directory path to stores."))
   (:documentation "Stores are held by a universe to make up a database." ))
 
-
-(defgeneric add-data-object (collection object &key &allow-other-keys)
-  (:documentation "Adds data object to collection. This method in combination with remove-data-object,
- and data-objects slot of the collection can be used to customize the container used for data objects. 
-By default naive-store uses a list. *Note* Testing on my system doing string comparisons etc 
-while querying data (ie high touch) I only saw .7 seconds diff between an array of 10 mil (3.154) and 
-a list of ten mil (3.851) plist data objects. The bulk of time is used to access a field in a data object 
-and doing comparisons, so if you are desperate for speed look there. If you are using naive-store for 
-more than 10 mil items in a collection please let me know!"))
-
-(defmethod add-data-object ((collection collection) object &key &allow-other-keys)
-  (push object (data-objects collection)))
-
-(defgeneric remove-data-object (collection object &key &allow-other-keys)
-  (:documentation "See add-data-object"))
-
-
-
-(defmethod remove-data-object ((collection collection) object &key &allow-other-keys)
-  (remove-index collection object)
-  (setf (data-objects collection)
-	(remove object (data-objects collection) :test #'(lambda (object item)
-										     (or
-										      (eql object item)
-										      (equalp (hash item) (hash object)))))))
-
 (defgeneric deleted-p (object)
-  (:documentation "Indicates if a data object has been marked as deleted. naive-store writes data to 
-file sequentially and when deleting data objects it does not remove a data object from the underlying file 
-it just marks it as deleted."))
+  (:documentation "Indicates if a data object has been marked as deleted. 
+
+naive-store writes data to file sequentially and when deleting data objects it does not 
+remove a data object from the underlying file it just marks it as deleted."))
 
 (defmethod deleted-p (object)
   (getf object :deleted-p))
@@ -238,7 +223,7 @@ to work with naive-store. naive-store uses a UUID in its default implementation.
     (sxhash key-values)))
 
 (defgeneric index-lookup-values-hash (collection values &key &allow-other-keys)
-  (:documentation "Looks up item in key value hash index."))
+  (:documentation "Looks up object in key value hash index."))
 
 (defmethod index-lookup-values-hash ((collection collection) values &key &allow-other-keys) 
   (let* ((hashx (key-values-hash collection values)))  
@@ -246,16 +231,16 @@ to work with naive-store. naive-store uses a UUID in its default implementation.
 	     (key-value-index collection))))
 
 (defgeneric index-lookup-uuid (collection hash)
-  (:documentation "Looks up item in UUID hash index."))
+  (:documentation "Looks up object in UUID hash index."))
 
 (defmethod index-lookup-uuid (collection hash)
   (gethash (frmt "~A" hash)
 	     (uuid-index collection)))
 
 (defgeneric add-index (collection object &key &allow-other-keys)
-  (:documentation "Adds an item to two indexes. The first uses a UUID that will stay with the item for
- its life time. The UUID is used when persisting the item and is never changed once created. This allows us to 
-change key values without loosing the identify of the original item. The second is a key value hash index to
+  (:documentation "Adds an object to two indexes. The first uses a UUID that will stay with the object for
+ its life time. The UUID is used when persisting the object and is never changed once created. This allows us to 
+change key values without loosing the identify of the original object. The second is a key value hash index to
  be used when looking for duplicate objects during persist."))
 
 (defmethod add-index (collection object &key &allow-other-keys)
@@ -278,6 +263,35 @@ change key values without loosing the identify of the original item. The second 
   (remhash (key-values-hash collection object)
 	   (key-value-index collection))
   (remhash (hash object) (uuid-index collection)))
+
+
+(defgeneric add-data-object (collection object &key &allow-other-keys)
+  (:documentation "Adds data object to a collection. This method in combination with remove-data-object,
+ and data-objects slot of the collection can be used to customize the container used for data objects. 
+By default naive-store uses a list. 
+
+*Note* Testing on my system doing string comparisons etc while querying data (ie high touch) 
+I only saw .7 seconds diff between an array of 10 mil (3.154) and a list of ten mil (3.851) plist data objects. 
+The bulk of time is used to access a field in a data object and doing comparisons, so if you are
+ desperate for speed look there. If you are using naive-store for more than 10 mil objects in a collection
+ please let me know!"))
+
+(defmethod add-data-object ((collection collection) object &key &allow-other-keys)
+  (remove-data-object collection object)
+  (add-index collection object)
+  (push object (data-objects collection)))
+
+(defgeneric remove-data-object (collection object &key &allow-other-keys)
+  (:documentation "Removes an object from the collection and its indexes. See add-data-object."))
+
+(defmethod remove-data-object ((collection collection) object &key &allow-other-keys)
+  (remove-index collection object)
+  (setf (data-objects collection)
+	(remove object (data-objects collection)
+		:test #'(lambda (object item)
+			  (or
+			   (eql object item)
+			   (equalp (hash item) (hash object)))))))
 
 (defgeneric get-store (universe store-name)
   (:documentation "Returns a store object if found in the universe."))
@@ -349,7 +363,7 @@ change key values without loosing the identify of the original item. The second 
    :if-exists :supersede))
 
 (defun persist-collection (collection)
-  "Persists the items in a collection."
+  "Persists the objects in a collection."
   (persist (data-objects collection) :file (format nil "~A/~A.log"
 					    (location collection)
 					    (name collection))))
@@ -423,7 +437,7 @@ change key values without loosing the identify of the original item. The second 
     store))
 
 (defgeneric add-collection (store collection)
-  (:documentation "Adds a collection object to a store."))
+  (:documentation "Adds a collection to a store."))
 
 (defmethod add-collection ((store store) (collection collection))
   (unless (get-collection store (name collection))    
@@ -458,7 +472,7 @@ change key values without loosing the identify of the original item. The second 
     collection))
 
 (defgeneric add-data-type (store data-type)
-  (:documentation "Adds a data-type object to a store."))
+  (:documentation "Adds a data-type to a store."))
 
 (defmethod add-data-type ((store store) (data-type data-type))
   (unless (get-data-type store (name data-type))

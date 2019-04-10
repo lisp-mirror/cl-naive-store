@@ -1,6 +1,7 @@
 (in-package :cl-naive-store)
 
-(defgeneric load-data (collection &key &allow-other-keys))
+(defgeneric load-data (collection &key &allow-other-keys)
+  (:documentation "Loads the data objects of a collection from file."))
 
 (defmethod load-data ((collection collection) &key &allow-other-keys)
   (let ((filename (format nil "~A/~A.log"
@@ -20,7 +21,7 @@
 
 
 (defun load-store-collections (store with-data-p)
-  "Finds and loads collection definitions for a store, if with-items-p is t then the items are loaded as well."
+  "Finds and loads collection definitions for a store, with or without data objects."
   (let ((files (directory (format nil "~A**/*.col" (location store)))))
     (dolist (file files)
       (let ((file-contents))
@@ -53,9 +54,8 @@
 	      (when with-data-p
 		(load-data collection)))))))))
 
-(defun load-stores (universe with-collections-p with-items-p)
-  "Loads a whole universe, with or without collections and items. This is a way to pre load all the definitions 
-in a universe, where as the default behaviour of naive-store is to lazy load definitions and data."
+(defun load-stores (universe with-collections-p with-data-p)
+  "Loads a whole universe, with or without collections and data objects."
   (let ((files (directory (format nil "~A**/*.store" (location universe)))))
     (dolist (file files)
       (let ((file-contents))
@@ -73,30 +73,29 @@ in a universe, where as the default behaviour of naive-store is to lazy load def
 			 :location (getf file-contents :location)))))
 	    
 	    (load-store-data-types store)
-	    (when (or with-collections-p with-items-p)
-	      (load-store-collections store with-items-p))))))))
+	    (when (or with-collections-p with-data-p)
+	      (load-store-collections store with-data-p))))))))
 
 
 
-(defgeneric load-store (store &key &allow-other-keys))
+(defgeneric load-store (store &key &allow-other-keys)
+  (:documentation "Loads the data-types and collections, with or without the actual data objects."))
 
-(defmethod load-store ((store store)  &key &allow-other-keys)
+(defmethod load-store ((store store) &key with-data-p &allow-other-keys)
   (load-store-data-types store)
-  (load-store-collections store t)
-  (dolist (collection (collections store))
-    (load-data collection)))
+  (load-store-collections store with-data-p))
 
 
 ;;TODO: Move this to a maintenance.lisp and add functionality to do sanitize when loading data for the first time.
 
 (defgeneric sanitize-data-file (collection &key &allow-other-keys)
-  (:documentation "This removes all the deleted items from a collection. When a collection is loaded
-only the active objects are loaded and by simply writing those active items out to a new file and then replacing
+  (:documentation "This removes all the deleted data objects from a collection. When a collection is loaded
+only the active objects are loaded and by simply writing those active objects out to a new file and then replacing
 the old file deleted objects are removed."))
 
 (defmethod sanitize-data-file ((collection collection) &key &allow-other-keys)
-  (let ((items (fetch-items 
-		collection)))
+  (let ((objects (query-data
+		  collection)))
     (when (probe-file
 	   (format nil "~A/~A.old"
 		   (location collection)
@@ -122,9 +121,9 @@ the old file deleted objects are removed."))
 	     (name collection))
      :overwrite t)
     
-    (when items
-      (dolist (item items)
-	(cl-naive-store::persist item
+    (when objects
+      (dolist (object objects)
+	(cl-naive-store::persist object
 				 :file (format nil "~A/~A.new"
 					       (location collection)
 					       (name collection))

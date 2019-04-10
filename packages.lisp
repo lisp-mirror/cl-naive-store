@@ -99,17 +99,14 @@
    :write-blob
 
    ;;####parse.lisp
-    :naive-object-deleted-p
-   :naive-object-p
-   :naive-reference-object-p
+   :parse-object-deleted-p
+   :parse-object-p
+   :parse-reference-object-p
    :parse-top-level-data-object
    :parse-reference-data-object
    :parse-child-data-object
    :parse-data-object
-   :parse-top-level-data-object
-   :parse-reference-data-object
-   :parse-child-data-object
-   :parse-data-object
+  
    
 
    ;;####load.lisp
@@ -120,11 +117,9 @@
 
 
    ;;####query.lisp
-   :fetch-items
-   :fetch-item
-   :find-in-item-list
-   :find-items-in-item-list
-
-
-
+   :naive-reduce
+   :query-data
+   :query-data-object
+   
+  
    ))

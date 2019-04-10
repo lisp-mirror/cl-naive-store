@@ -18,11 +18,11 @@
   (let ((keys))
     (dolist (field fields)     
       (when (key-p field)
-	(if (item-p (getf values (name field)))
+	(if (item-p (getx values (name field)))
 	    (progn
 	      (push (item-hash (getf values (name field))) keys))
 	    (progn
-	      (push (getf values (name field)) keys)))))
+	      (push (getx values (name field)) keys)))))
     (reverse keys)))
 
 (defmethod key-values ((collection item-collection) values &key &allow-other-keys)
@@ -304,8 +304,10 @@
 	      (push item (data-objects (item-collection lookup-old)))
 	      
 	      (break "shit")
-	      (add-index (item-collection item) lookup-old)
-	      (setf final-item lookup-old))))
+	      
+	     ;; (add-index (item-collection item) lookup-old)
+	      (setf final-item lookup-old)
+	      )))
 	
 	(unless lookup-new
 	  (unless (equalp (key-values (item-collection lookup-old)
@@ -330,8 +332,8 @@
 					(item-changes item)
 					allow-key-change-p))
 	      (remove-data-object (item-collection item) lookup-old)	      
-	      (push item (data-objects (item-collection lookup-old)))
-	      (add-index (item-collection item) lookup-old)
+	     ;; (push item (data-objects (item-collection lookup-old)))
+	     ;; (add-index (item-collection item) lookup-old)
 	      (setf final-item lookup-old)))
 
 	  (when (equalp (key-values  (item-collection lookup-old)
@@ -359,8 +361,8 @@
 		(check-item-values% (item-collection item) (item-changes item)
 				    allow-key-change-p))
 	  (setf (item-changes item) nil)	   
-	  (push item (data-objects (item-collection item)))
-	  (add-index (item-collection item) item)
+	 ;; (push item (data-objects (item-collection item)))
+	 ;; (add-index (item-collection item) item)
 	  (setf final-item item))))
 
     (unless change-p
@@ -401,8 +403,8 @@
 				       (item-values item))
 				   allow-key-change-p))
 	 (setf (item-changes item) nil)	   
-	 (push item (data-objects (item-collection item)))
-	 (add-index (item-collection item) item)
+	 ;;(push item (data-objects (item-collection item)))
+	 ;;(add-index (item-collection item) item)
 	 (setf final-item item)))
     
     (when final-item
@@ -446,10 +448,12 @@
 
       (cond (changed-item
 	     (setf item changed-item)
+	     (add-data-object (item-collection item) item)
 	     (parse-persist-item (or file derived-file)
 				 item))
 	    ((item-deleted-p item)
-	     ;;The remove must be done much earlier in the process
+	     ;;The remove must be done much earlier in the process, take care of it in item persist
+	     ;;rewrite.
 	     (remove-data-object (item-collection item) item)
 	     (parse-persist-item (or file derived-file)
 				 item))

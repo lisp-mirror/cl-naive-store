@@ -5,7 +5,6 @@
   "Short hand for (format nil ..)."
   (apply #'format nil control-string args))
 
-
 (defun trim-whitespace (string)
   "Removes white spaces from a string."
   (string-trim
@@ -21,7 +20,6 @@
        (or (string-equal value "NIL")
 	   (string-equal value "NULL")))
    (equal (trim-whitespace (princ-to-string value)) "")))
-
 
 ;;TODO: There must be a lisp function that already does this
 (defun plist-to-values (values)
@@ -50,7 +48,6 @@
       (close out))   
     str))
 
-
 (defgeneric write-object (object stream)
   (:documentation "Write an object to stream. Using this method gives the user the chance to modify the
 how a data oject is written by naive-store."))
@@ -64,7 +61,7 @@ how a data oject is written by naive-store."))
 		       :if-exists if-exists
 		       :if-does-not-exist :create)
     (with-standard-io-syntax
-      ;;Readability set to nil so that sbcl writes strings out strings as simple strings.
+      ;;*print-readably* set to nil so that sbcl writes strings out strings as simple strings.
       (let (*print-readably*) 
 	(write-object object out)))
     (close out)))
@@ -76,7 +73,7 @@ how a data oject is written by naive-store."))
 		       :if-exists if-exists
 		       :if-does-not-exist :create)
     (with-standard-io-syntax
-      ;Readability set to nil so that sbcl writes strings out strings as simple strings.
+      ;*print-readably* set to nil so that sbcl writes strings out strings as simple strings.
       (let ((*print-readably*))
 	(dolist (object list)
 	  (write-object object out)))
@@ -114,17 +111,18 @@ naive-store structural elements like data-types and collections to file."))
     place))
 
 (defun dig (place &rest indicators)
+  "Hierarchical getf."
   (dig-down place indicators))
 
 (defun (setf dig) (value place &rest indicators)
-  ;;When digx setf is call I cant use apply because &rest params causes extra list wrapper
+  ;;When digx setf is called I cant use apply because &rest params causes extra list wrapper
   (if (and (listp indicators) (listp (first indicators)))
       (set-dig-down place (first indicators) value)
       (set-dig-down place indicators value)))
 
 (defgeneric getx (object field-name)
   (:documentation "Returns the value of an field in a data object. By using getx and digx instead of 
-accessing, object values directly the user has the opportunity to change the underlying structure of 
+accessing, object values directly the user has the opportunity to change the underlying structure/type of 
 the object without having to rewrite a lot of code."))
 
 (defmethod getx (object field-name)

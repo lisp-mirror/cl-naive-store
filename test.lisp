@@ -77,7 +77,7 @@
 		      :name :link-loose-list
 		      :key-p nil
 		      :type-def (list :type :list
-				      :complex-type :list-items
+				      :complex-type :list-objects
 				      :data-type "loose-two")))))
 
     (persist-item collection
@@ -160,7 +160,7 @@
 		    :location "~/data-universe/"))
 	 (store (add-store universe (make-instance 'store :name "loose-stuff"))))
     
-    (fetch-items store :collection-name "loose-items")))
+    (query-data store :collection-name "loose-items")))
 
 (defun test-create-hierarchy ()
   (let ((universe (make-instance 
@@ -206,7 +206,7 @@
 		      :name :link-one-links
 		      :key-p nil
 		      :type-def (list :type :list
-				      :complex-type :collection-items
+				      :complex-type :collection-objects
 				      :data-type "one-deap"
 						    
 				      :collection "one-deaps")))))
@@ -461,14 +461,14 @@
     
     (list
      
-     (fetch-items link-store :collection-name "one-deaps")
+     (query-data link-store :collection-name "one-deaps")
      "x---------------------------------------------------------"
-     (fetch-items link-store :collection-name "two-deaps")
+     (query-data link-store :collection-name "two-deaps")
 
      "xx---------------------------------------------------------"
 
-     (fetch-items link-store :collection-name "two-deaps" 
-		  :test (lambda (item)
+     (query-data  link-store :collection-name "two-deaps" 
+		  :query (lambda (item)
 			  (equalp  (getf (item-values item) :link-two-stuff)
 				   "MMMMMMMMMMMMMMM" )))
      "xxx---------------------------------------------------------"
@@ -487,7 +487,7 @@
 				     :name "one-deaps"
 				     :data-type "one-deap"))))
     
-    (fetch-items one-deaps)))
+    (query-data one-deaps)))
 
 (defun test-fetch-partial-hierarchy ()
   (let* ((universe (make-instance 
@@ -495,8 +495,8 @@
 		    :location "~/data-universe/"))
 	 (link-store (add-store universe (make-instance 'store :name "link-stuff"))))
     
-    (list (fetch-items link-store :collection-name "two-deaps" 
-		       :test (lambda (item)
+    (list (query-data link-store :collection-name "two-deaps" 
+		      :query (lambda (item)
 			       (equalp  (getf (item-values item) :link-two-stuff)
 					"MMMMMMMMMMMMMMM" )))
 	  "---------------------------------------------------------"
