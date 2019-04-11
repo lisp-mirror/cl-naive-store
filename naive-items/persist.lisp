@@ -19,10 +19,8 @@
     (dolist (field fields)     
       (when (key-p field)
 	(if (item-p (getx values (name field)))
-	    (progn
-	      (push (item-hash (getf values (name field))) keys))
-	    (progn
-	      (push (getx values (name field)) keys)))))
+	    (push (item-hash (getx values (name field))) keys)
+	    (push (getx values (name field)) keys))))
     (reverse keys)))
 
 (defmethod key-values ((collection item-collection) values &key &allow-other-keys)

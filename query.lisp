@@ -40,6 +40,7 @@
 	  (error "Collection data-type could not be found."))
 	
 	(when data-type
+	  
 	  (make-instance (collection-class store)
 			 :store store
 			 :name (getf collection-def :name)

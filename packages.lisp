@@ -61,6 +61,7 @@
    ;;:universe
    :stores
    ;;:location
+   :store-class
 
    ;;##methods
    :add-data-object
