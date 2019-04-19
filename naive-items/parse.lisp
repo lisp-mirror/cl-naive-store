@@ -62,12 +62,12 @@
 		
 	     (add-index collection final-item)
 
-	     (unless (equalp (dig object :hash) (item-hash final-item))
+	     (unless (string-equal (dig object :hash) (item-hash final-item))
 	       (write-to-file (format nil "~Ashash.err" (location (universe (store collection))))
 			      (list
 			       (location collection)
-			       (format nil " ~A"  (item-hash final-item))
-			       (format nil " ~A" (dig object :hash))))
+			       (format nil "~A"  (item-hash final-item))
+			       (format nil "~A" (dig object :hash))))
 			  
 	       (setf (gethash (dig object :hash)
 			      (uuid-index (item-collection final-item)))
@@ -75,8 +75,9 @@
 		    
 	   (unless final-item
 	     (unless (parse-object-deleted-p collection object)
-	       (write-to-file "~/data-universe/error.log"
-			      (list "Could not resolve ~S" object))
+	       (write-to-file
+		(format nil "~Aerror.err" (location (universe (store collection))))	
+			      (list (frmt "Could not resolve ~S" object)))
 	       nil))))	   
     final-item))
 
