@@ -34,4 +34,4 @@ something.
 In summary this db is relatively fast and small in memory (if used right) but 
 you have to apply your mind, so use it at your own peril!
 
-See cl-wfx to see a very complicated use of naive-store.
+See https://github.com/Harag/cl-wfx to see a very complicated use of naive-store.
