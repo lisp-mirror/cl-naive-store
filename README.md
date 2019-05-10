@@ -25,16 +25,13 @@ within the directories used to persist the data. These files helps with the lazy
 loading of stuff.
 
 Outstanding stuff (in order of priority):
-- Change to vectors for internal storage for speed's sake.
 - Do some file locking to protect against basic corruption.
-- Code to redistribute the files of a collection if you change your mind about
-how the data should be partitioned/bucketed.
-- Data field type checking, is non existant, will only put in stubs for this
-and leave the rest up to the user.
 - Implement comms with external data stores, maybe as an additonal package or
 something.
+- Update testing.lisp to work again.
+- Test on lisp other than SBCL so it can be submitted to QuickLisp.
 
 In summary this db is relatively fast and small in memory (if used right) but 
-extremely dangerous so use it at your own peril!
+you have to apply your mind, so use it at your own peril!
 
-See test.lisp for simple examples.
+See cl-wfx to see a very complicated use of naive-store.
