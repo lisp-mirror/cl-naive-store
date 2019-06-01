@@ -62,7 +62,7 @@
 		
 	     (add-index collection final-item)
 
-	     (unless (string-equal (dig object :hash) (item-hash final-item))
+	     (unless (string-equal (frmt "~A" (dig object :hash)) (item-hash final-item))
 	       (write-to-file (format nil "~Ashash.err" (location (universe (store collection))))
 			      (list
 			       (location collection)
