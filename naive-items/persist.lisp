@@ -207,6 +207,7 @@
 	      (setf matching-hashes (push hash matching-hashes)))
 	  (setf (gethash hash keyhash) (push item (gethash hash keyhash))))))
 
+    (setf matching-hashes nil)
     (dolist (match matching-hashes)
       (let* ((items (gethash match keyhash))
 	     (new-duplicate-item (new-duplicate-item items)))
