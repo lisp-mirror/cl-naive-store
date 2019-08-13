@@ -32,9 +32,8 @@
 	(key-values% (fields data-type) (item-values values))
 	(key-values% (fields data-type) values))))
 
-(defgeneric persist-item (collection item &key &allow-other-keys))
 
-(defmethod persist-item ((collection collection) item &key allow-key-change-p)
+(defmethod persist-object ((collection collection) item &key allow-key-change-p)
    (if (item-p item) 
       (persist item
 	       :collection collection
@@ -130,11 +129,12 @@
 		      
 		       (let ((file (or (and (not (empty-p (blob-location val)))
 					    (blob-location val))
-				       (format nil "~A~A/~A.~A"
-					     location
-					     key
-					     (item-hash item)
-					     (blob-file-ext val)))))
+
+				       (cl-fad:merge-pathnames-as-file
+					(pathname (location universe))
+					(make-pathname :directory (list :relative location key)
+						       :name (item-hash item)
+						       :type (blob-file-ext val))))))
 			   ;;string-blob was converted to stream for persistence
 			   ;;have to reset it to string-blob
 			 (write-blob file (blob-raw val))
@@ -437,9 +437,10 @@
       (unless (loaded-p (item-collection item))
 	(load-data (item-collection item)))
       
-      (setf derived-file (format nil "~A/~A.log"
-				 (location (item-collection item))
-				 (name (item-collection item)))))
+      (setf derived-file (cl-fad:merge-pathnames-as-file
+			  (pathname (location (item-collection item)))
+			  (make-pathname :name (name (item-collection item))
+					 :type "log"))))
     
     (let ((changed-item (if new-file-p
 			    item
@@ -447,7 +448,7 @@
 
       (cond (changed-item
 	     (setf item changed-item)
-	     (add-data-object (item-collection item) item)
+	     (setf item (add-data-object (item-collection item) item))
 	     (parse-persist-item (or file derived-file)
 				 item))
 	    ((item-deleted-p item)

@@ -19,7 +19,7 @@
    :item-collection
    :item-data-type
    :item-store
-   :item-peristed-p
+   :item-persisted-p
    :item-deleted-p
    :item-p
 
@@ -29,8 +29,6 @@
    :item-of-type-p
    :getxo
    :getxn
-     
-   :persist-item
 
    :find-equalp-item
 

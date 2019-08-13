@@ -19,8 +19,6 @@
   (declare (ignore collection))
   (getf object :deleted-p))
 
-
-
 (defgeneric parse-reference-object-p (collection object &key &allow-other-keys)
   (:documentation "Returns t if the raw/reference object is marked as an object referenced from another 
 collection."))
@@ -37,18 +35,23 @@ collection."))
   (:documentation "Parses the raw top level object read from file to its object reprensentation."))
 
 (defmethod parse-top-level-data-object ((collection collection) object &key &allow-other-keys)
-  (let ((resolved-values (parse-data-object collection object))
-	(looked-up-object  (index-lookup-uuid 
+  (let ((resolved-values )
+	(looked-up-object (index-lookup-uuid 
 			   collection
 			   (dig object :hash)))
 	(final-object))
+
+    (dolist (pair (plist-to-value-pairs object))
+      (setf resolved-values (append resolved-values (list (first pair)
+							  (parse-data-object collection (second pair))))))
 
     (setf final-object resolved-values)
     
     (cond (looked-up-object
 	   (remove-data-object collection looked-up-object)	   
 	   (if (parse-object-deleted-p collection object)
-	       (setf final-object nil)))
+	       (setf final-object nil)
+	       (add-data-object collection final-object)))
 	  ((not looked-up-object)
 	   (unless (getf object :deleted-p)
 	     (add-data-object collection final-object))))
@@ -111,7 +114,7 @@ happen the collection containing the referenced objects need to be loaded first.
   (:documentation "Parses the raw object read from file to its object reprensentation."))
 
 (defmethod parse-data-object ((collection collection) object  &key top-level-p &allow-other-keys)
-  (cond ((null object)
+   (cond ((null object)
 	 nil)
 	(top-level-p
 	 (parse-top-level-data-object collection object))

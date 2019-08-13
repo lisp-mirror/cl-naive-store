@@ -1,8 +1,11 @@
 (in-package :cl-naive-store)
 
 (defun get-store-from-def (universe store-name)
-  (let ((filename (format nil "~A~A/~A.store" 
-			  (location universe) store-name store-name))
+  (let ((filename (cl-fad:merge-pathnames-as-file
+		   (pathname (location universe))
+		   (make-pathname :directory (list :relative store-name)
+				  :name store-name
+				  :type "store")))
 	(store-def)
 	(store))
 
@@ -21,7 +24,10 @@
     store))
 
 (defun get-collection-from-def (store collection-name)
-  (let ((filename (format nil "~A~A.col" (location store) collection-name))
+  (let ((filename (cl-fad:merge-pathnames-as-file
+		   (pathname (location store))
+		   (make-pathname :name collection-name
+				  :type "col")))
 	(collection-def))
 
     (with-open-file (in filename :if-does-not-exist :create)
@@ -48,7 +54,7 @@
 			 :data-type data-type))))))
 
 
-(defun pushx (&optional result object)
+(defun push* (&optional result object)
   "Used by naive-reduce because cl push is a makro and not a function and reduce cant use it."
   (push object result))
 
@@ -58,28 +64,32 @@ those objects."))
 
 (defmethod naive-reduce ((collection collection) function query &key initial-value)
   (let ((actual-result))
+
+    ;;Data types might not exist at all!! naive-store does not need them to work.
     (unless (data-types (store collection))
       (load-store-data-types (store collection)))
-
-    ;;Load if not loaded
-    (when (or (not (loaded-p collection))
-	      (not (data-objects collection)))	
-      (load-data collection))
  
+    ;;Load if not loaded
+    (when (or
+	   (not (data-objects collection))
+	   (not (loaded-p collection)))
+      (load-data collection))
+
     (reduce #'(lambda (result object)
 		(declare (ignore result))
-		       (when (apply query (list object))
-			 (setf actual-result (funcall function actual-result object))))
-		   (data-objects collection)
-		   :initial-value initial-value)
+		(when (apply query (list object))
+		  
+		  (setf actual-result (funcall function actual-result object))))
+	    (data-objects collection)
+	    :initial-value initial-value)
     actual-result))
 
 (defgeneric query-data (collection &key query &allow-other-keys)
   (:documentation "Returns the data that satisfies the query"))
 
-(defmethod query-data ((collection collection) &key query &allow-other-keys)
+(defmethod query-data ((collection collection) &key query &allow-other-keys)  
   (if query
-	(naive-reduce collection #'pushx query :initial-value '())
+	(naive-reduce collection #'push* query :initial-value '())
 	(data-objects collection)))
 
 (defmethod query-data ((store store) &key collection-name query &allow-other-keys)
@@ -95,7 +105,7 @@ those objects."))
 	(error "Could not create collection ~A" collection-name)))
     
     (if query
-	(naive-reduce collection #'pushx query :initial-value '())
+	(naive-reduce collection #'push* query :initial-value '())
 	(data-objects collection))))
 
 (defgeneric query-data-object (collection &key query &allow-other-keys)
@@ -112,12 +122,12 @@ those objects."))
 
 (defmethod query-data ((list list) &key query &allow-other-keys)
   (if query
-	(reduce #'(lambda (result object)
-			    (when (apply query (list object))		
-			      (funcall #'pushx result object)))
-			list
-			:initial-value '())
-	list))
+      (reduce #'(lambda (result object)
+		  (when (apply query (list object))		
+		    (funcall #'push* result object)))
+	      list
+	      :initial-value '())
+      list))
 
 (defmethod query-data-object ((list list) &key query &allow-other-keys)
    (let ((objects (query-data list :query query)))

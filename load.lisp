@@ -4,9 +4,10 @@
   (:documentation "Loads the data objects of a collection from file."))
 
 (defmethod load-data ((collection collection) &key &allow-other-keys)
-  (let ((filename (format nil "~A/~A.log"
-			  (location collection)
-			  (name collection))))
+  (let ((filename (cl-fad:merge-pathnames-as-file
+		   (pathname (location collection))
+		   (make-pathname :name (name collection)
+				  :type "log"))))
 
     (with-open-file (in filename :if-does-not-exist :create)
       (with-standard-io-syntax      
@@ -22,7 +23,11 @@
 
 (defun load-store-collections (store with-data-p)
   "Finds and loads collection definitions for a store, with or without data objects."
-  (let ((files (directory (format nil "~A**/*.col" (location store)))))
+  (let ((files (directory
+		(cl-fad:merge-pathnames-as-file (pathname (location store))
+						(make-pathname :directory '(:relative :wild-inferiors)
+							       :name :wild
+							       :type "col")))))
     (dolist (file files)
       (let ((file-contents))
 	(with-open-file (in file :if-does-not-exist :create)
@@ -56,7 +61,11 @@
 
 (defun load-stores (universe with-collections-p with-data-p)
   "Loads a whole universe, with or without collections and data objects."
-  (let ((files (directory (format nil "~A**/*.store" (location universe)))))
+  (let ((files (directory
+		(cl-fad:merge-pathnames-as-file (pathname (location universe))
+						(make-pathname :directory '(:relative :wild-inferiors)
+							       :name :wild
+							       :type "store")))))
     (dolist (file files)
       (let ((file-contents))
 	(with-open-file (in file :if-does-not-exist :create)
@@ -95,43 +104,34 @@ the old file deleted objects are removed."))
 
 (defmethod sanitize-data-file ((collection collection) &key &allow-other-keys)
   (let ((objects (query-data
-		  collection)))
+		  collection))
+	(log-file (cl-fad:merge-pathnames-as-file
+		   (pathname (location collection))
+		   (make-pathname :name (name collection)
+				  :type "log")))
+	(new-file (cl-fad:merge-pathnames-as-file
+		   (pathname (location collection))
+		   (make-pathname :name (name collection)
+				  :type "new")))
+	(old-file (cl-fad:merge-pathnames-as-file
+		   (pathname (location collection))
+		   (make-pathname :name (name collection)
+				  :type "old")))
+	(old-old-file (cl-fad:merge-pathnames-as-file
+		   (pathname (location collection))
+		   (make-pathname :name (name collection)
+				  :type "old.old"))))
     (when (probe-file
-	   (format nil "~A/~A.old"
-		   (location collection)
-		   (name collection)))
-      (fad:copy-file
+	   old-file)
+      (fad:copy-file old-file old-old-file :overwrite t))
 
-       (format nil "~A/~A.old"
-	       (location collection)
-	       (name collection))
-       (format nil "~A/~A.old.old"
-	       (location collection)
-	       (name collection))
-       :overwrite t))
-
-    (fad:copy-file
-
-     (format nil "~A/~A.log"
-	     (location collection)
-	     (name collection))
-       
-     (format nil "~A/~A.old"
-	     (location collection)
-	     (name collection))
-     :overwrite t)
+    (fad:copy-file log-file old-file :overwrite t)
     
     (when objects
       (dolist (object objects)
 	(cl-naive-store::persist object
-				 :file (format nil "~A/~A.new"
-					       (location collection)
-					       (name collection))
+				 :file new-file
 				 :new-file-p t))
-      (fad:copy-file (format nil "~A/~A.new"
-			     (location collection)
-			     (name collection))
-		     (format nil "~A/~A.log"
-			     (location collection)
-			     (name collection))
+      (fad:copy-file new-file
+		     log-file
 		     :overwrite t))))

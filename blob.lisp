@@ -52,14 +52,14 @@
 	(in (make-string-input-stream value)))
     
     (ensure-directories-exist file)
-    
-    (with-open-file (out file
-			 :direction :output
-			 :if-exists :supersede
-			 :if-does-not-exist :create)
-      (when in
-	(loop for line = (read-line in nil)		 
-	   while line do (write-line line out) )
-	(close in))
-    
-      (close out))))
+    (with-file-lock (file)
+	(with-open-file (out file
+			     :direction :output
+			     :if-exists :supersede
+			     :if-does-not-exist :create)
+	  (when in
+	    (loop for line = (read-line in nil)		 
+	       while line do (write-line line out) )
+	    (close in))
+	  
+	  (close out)))))

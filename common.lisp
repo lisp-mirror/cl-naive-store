@@ -32,6 +32,26 @@
   (loop for (a b) on values by #'cddr 
      :collect (list a b)))
 
+;;Pilfered from Giovanni Gigante https://sourceforge.net/p/cl-cookbook/patches/8/
+(defmacro with-file-lock ((path &key interval) &body body)
+  "Get an exclusive lock on a file. If lock cannot be obtained, keep
+trying after waiting a while"
+  (let ((lock-path (gensym))
+	(lock-file (gensym)))
+    `(let ((,lock-path (format nil "~a.lock" (namestring ,path))))
+       (unwind-protect
+	    (progn
+	      (loop 
+		 :for ,lock-file = (open ,lock-path :direction :output
+					 :if-exists nil
+					 :if-does-not-exist :create)
+		 :until ,lock-file
+		 :do (sleep ,(or interval 0.1))
+		 :finally (close ,lock-file))
+	      ,@body)
+	 (ignore-errors
+	   (delete-file ,lock-path))))))
+
 (defun read-file-to-string (file)
   "Reads a file and returns the contents in a string."
   (let ((*read-eval* nil)
@@ -56,41 +76,51 @@ how a data oject is written by naive-store."))
   (pprint object stream))
 
 (defun write-to-file (file object &key (if-exists :append))
-  (with-open-file (out file
-		       :direction :output
-		       :if-exists if-exists
-		       :if-does-not-exist :create)
-    (with-standard-io-syntax
-      ;;*print-readably* set to nil so that sbcl writes strings out strings as simple strings.
-      (let (*print-readably*) 
-	(write-object object out)))
-    (close out)))
-
-(defun write-list-to-file (file list &key (if-exists :append))
-  
-  (with-open-file (out file
-		       :direction :output
-		       :if-exists if-exists
-		       :if-does-not-exist :create)
-    (with-standard-io-syntax
-      ;*print-readably* set to nil so that sbcl writes strings out strings as simple strings.
-      (let ((*print-readably*))
-	(dolist (object list)
+  (with-file-lock (file)
+    (with-open-file (out file
+			 :direction :output
+			 :if-exists if-exists
+			 :if-does-not-exist :create)
+      (with-standard-io-syntax
+	;;*print-readably* set to nil so that sbcl writes strings out strings as simple strings.
+	(let (*print-readably*) 
 	  (write-object object out)))
       (close out))))
 
+(defun write-list-to-file (file list &key (if-exists :append))
+  (with-file-lock (file)
+      (with-open-file (out file
+			   :direction :output
+			   :if-exists if-exists
+			   :if-does-not-exist :create)
+	(with-standard-io-syntax
+	  ;;*print-readably* set to nil so that sbcl writes strings out strings as simple strings.
+	  (let ((*print-readably*))
+	    (dolist (object list)
+	      (write-object object out)))
+	  (close out)))))
+
+
 (defgeneric persist (object &key &allow-other-keys)
-  (:documentation "Writes a data object to file. This method is where database like tasks like 
-checking for duplicates etc should be done. This is also where reference objects are converted
-to a reference% marker instead of writing out the actual object. Perist is also used to write 
-naive-store structural elements like data-types and collections to file."))
+  (:documentation "Persist is used to write stuff to files. It is used to write naive-store 
+structural elements like data-types and collections to file."))
 
 (defmethod persist ((list list) &key file (if-exists :append)
 				  &allow-other-keys)
   "Writes a list of data objects to a file as individual items."
-  (write-list-to-file list
-		      file
+  (write-list-to-file file
+		      list		      
 		      :if-exists if-exists))
+
+(defgeneric persist-object (collection object &key &allow-other-keys)
+  (:documentation "The default behavior is two just write what ever is given to file.
+Collection is needed to write to the right file and directory.
+
+However this is where tasks checking for duplicates should be done. This is also where 
+reference objects should be converted to a reference% marker instead of writing out the actual object. 
+Use naive-items if the later behaviour is desired.
+"))
+
 
 (defun dig-down (place indicators)
   (let* ((indicator (pop indicators))

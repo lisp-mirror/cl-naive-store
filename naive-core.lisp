@@ -98,7 +98,13 @@ collections. ")
    (data-objects :initarg :data-objects
 	  :accessor data-objects
 	  :initform nil
-	  :documentation "The objects contained by this collection.")  
+	  :documentation "The objects contained by this collection. By default naive-store uses a list. 
+
+*Note* Testing on my system (sbcl- --dynamic-space-size 12000) doing string comparisons etc while 
+querying data (ie high touch) I only saw .7 seconds diff between an array of 10 mil (3.154) and a 
+list of ten mil (3.851) plist data objects. The bulk of time is used to access a field in a data 
+object and doing comparisons, so if you are desperate for speed look there. If you are using 
+naive-store for more than 10 mil objects in a collection please let me know! ")  
    (uuid-index :initarg :uuid-index
 	  :accessor uuid-index
 	  :initform (make-hash-table :test 'equalp)
@@ -172,7 +178,10 @@ specific in other methods where it is actually needed. Alternatively meta classe
  but that opens another can of worms.")
    (location :initarg :location
 	     :accessor location
-	     :initform "~/data-universe/" 
+	     :initform (cl-fad:merge-pathnames-as-directory
+			(user-homedir-pathname)
+			(make-pathname :directory (list :relative "data-universe")))
+	 
 	     :documentation "Directory path to stores."))
   (:documentation "Stores are held by a universe to make up a database." ))
 
@@ -193,12 +202,14 @@ remove a data object from the underlying file it just marks it as deleted."))
 (defgeneric delete-data-object (collection object &key &allow-other-keys))
 
 (defmethod delete-data-object ((collection collection) object &key &allow-other-keys)
-  (setf (deleted-p object) t)
+  (setf (getf object :deleted-p) t)
+  (persist-object collection object)
   (remove-data-object collection object))
 
 (defgeneric hash (object)
   (:documentation "Returns the hash identifier for a data object. Data objects need a hash identifier
-to work with naive-store. naive-store uses a UUID in its default implementation."))
+to work with naive-store, naive-store will edit the object to add a hash identifier when adding 
+objects to a collection. naive-store uses a UUID in its default implementation."))
 
 (defmethod hash (object)
   (frmt "~A" (getf object :hash)))
@@ -206,14 +217,20 @@ to work with naive-store. naive-store uses a UUID in its default implementation.
 (defgeneric (setf hash) (value object))
 
 (defmethod (setf hash) (value object)
-  (setf (getf object :hash) (frmt "~A" value)))
+  (setf (getf object :hash) (frmt "~A" value))
+  object)
 
 (defgeneric key-values (collection values &key &allow-other-keys)
-  (:documentation "Returns a set of key values from the values of a data object."))
+  (:documentation "Returns a set of key values from the values of a data object.
+Looks for :key or uses first value."))
 
 (defmethod key-values (collection values &key &allow-other-keys)
   (or (getf values :key)
-	  (second values)))
+      (and (equalp (first values) :hash)
+	   (fourth values))
+      (and (equalp (first values) :deleted-p)
+	   (nth 5 values))
+      (second values)))
 
 (defgeneric key-values-hash (collection values  &key &allow-other-keys)
   (:documentation "Returns a hash based on the set of key values from the values of a data object."))
@@ -235,13 +252,13 @@ to work with naive-store. naive-store uses a UUID in its default implementation.
 
 (defmethod index-lookup-uuid (collection hash)
   (gethash (frmt "~A" hash)
-	     (uuid-index collection)))
+	   (uuid-index collection)))
 
 (defgeneric add-index (collection object &key &allow-other-keys)
   (:documentation "Adds an object to two indexes. The first uses a UUID that will stay with the object for
  its life time. The UUID is used when persisting the object and is never changed once created. This allows us to 
 change key values without loosing the identify of the original object. The second is a key value hash index to
- be used when looking for duplicate objects during persist."))
+ be used when looking for duplicate objects during persist. The objects hash is also set to UUID."))
 
 (defmethod add-index (collection object &key &allow-other-keys)
   (let* ((hash (uuid:make-v4-uuid))	
@@ -250,9 +267,11 @@ change key values without loosing the identify of the original object. The secon
     (when (or (empty-p (hash object))
 	      (string-equal (format nil "~A" (hash object))
 			    (format nil "~A" hashx)))
-      (setf (hash object) hash))    
+      
+      (setf object (setf (hash object) hash)))    
     
-    (setf (gethash hashx (key-value-index collection)) object)
+    ;;add the uuid to the object for persistance
+    (setf (gethash hashx (key-value-index collection)) object)    
     (setf (gethash (hash object) (uuid-index collection)) object)))
 
 
@@ -267,19 +286,15 @@ change key values without loosing the identify of the original object. The secon
 
 (defgeneric add-data-object (collection object &key &allow-other-keys)
   (:documentation "Adds data object to a collection. This method in combination with remove-data-object,
- and data-objects slot of the collection can be used to customize the container used for data objects. 
-By default naive-store uses a list. 
-
-*Note* Testing on my system doing string comparisons etc while querying data (ie high touch) 
-I only saw .7 seconds diff between an array of 10 mil (3.154) and a list of ten mil (3.851) plist data objects. 
-The bulk of time is used to access a field in a data object and doing comparisons, so if you are
- desperate for speed look there. If you are using naive-store for more than 10 mil objects in a collection
- please let me know!"))
+ and data-objects slot of the collection can be used to customize the container used for data objects. "))
 
 (defmethod add-data-object ((collection collection) object &key &allow-other-keys)
-  (remove-data-object collection object)
-  (add-index collection object)
-  (push object (data-objects collection)))
+  (let ((indexed-object))
+    (remove-data-object collection object)
+    (setf indexed-object (add-index collection object))
+    (push indexed-object
+	  (data-objects collection))
+    indexed-object))
 
 (defgeneric remove-data-object (collection object &key &allow-other-keys)
   (:documentation "Removes an object from the collection and its indexes. See add-data-object."))
@@ -288,10 +303,14 @@ The bulk of time is used to access a field in a data object and doing comparison
   (remove-index collection object)
   (setf (data-objects collection)
 	(remove object (data-objects collection)
-		:test #'(lambda (object item)
+		:test #'(lambda (object item)			 
 			  (or
 			   (eql object item)
-			   (equalp (hash item) (hash object)))))))
+			   (and (not (empty-p (hash item)))
+				(not (empty-p (hash object)))
+				(equalp (hash item) (hash object)))
+			   (equalp (key-values-hash collection item)
+				   (key-values-hash collection object)))))))
 
 (defgeneric get-store (universe store-name)
   (:documentation "Returns a store object if found in the universe."))
@@ -321,8 +340,11 @@ The bulk of time is used to access a field in a data object and doing comparison
   "Persists a store definition and not what it contains! Path to file is of this general format
 /universe/store-name/store-name.store."
   (write-to-file
-   (format nil "~A~A.store" (location store) (name store))
-   (list :name (name store)
+   (cl-fad:merge-pathnames-as-file
+	       (pathname (location store))
+	       (make-pathname :name (name store)
+			      :type "store"))
+    (list :name (name store)
 	 :location (location store))
   
    :if-exists :supersede))
@@ -339,8 +361,10 @@ The bulk of time is used to access a field in a data object and doing comparison
 					 :attributes (attributes field))))))
 
     (write-to-file
-     (format nil "~A~A.type" (location (store data-type))
-	     (name data-type))
+     (cl-fad:merge-pathnames-as-file
+	       (pathname (location (store data-type)))
+	       (make-pathname :name (name data-type)
+			      :type "type"))
      (list 
       :name (name data-type)
       :label (label data-type)
@@ -352,21 +376,27 @@ The bulk of time is used to access a field in a data object and doing comparison
   "Persists a collection definition. Path to file is of this general format
 /universe/store-name/collection-name.col."
   (write-to-file
-   (format nil "~A~A.col" (location (store collection))
-	   (name collection))
-   (list 
+   (cl-fad:merge-pathnames-as-file
+	       (pathname (location (store collection)))
+	       (make-pathname :name (name collection)
+			      :type "col"))
+    (list 
     :name (name collection)
     :location (location collection)
-    :data-type (name (data-type collection)))
+    :data-type (and (data-type collection) (name (data-type collection))))
 		 
 		 
    :if-exists :supersede))
 
 (defun persist-collection (collection)
   "Persists the objects in a collection."
-  (persist (data-objects collection) :file (format nil "~A/~A.log"
-					    (location collection)
-					    (name collection))))
+  (persist (data-objects collection)
+	   :file
+
+	   (cl-fad:merge-pathnames-as-file
+	       (pathname (location collection))
+	       (make-pathname :name (name collection)
+			      :type "log"))))
 
 (defmethod persist ((collection collection) &key def-only-p &allow-other-keys)
   "Persists a collection definition and the items in a collection. Path to file for data is this general format
@@ -375,19 +405,29 @@ The bulk of time is used to access a field in a data object and doing comparison
   (unless def-only-p
     (persist-collection collection)))
 
+(defmethod persist-object ((collection collection) object &key &allow-other-keys)
+  "Writes an data object to file. Adds it to the collection before hand to ensure hash etc."
+  (write-to-file
+   (cl-fad:merge-pathnames-as-file
+	       (pathname (location collection))
+	       (make-pathname :name (name collection)
+			      :type "log"))
+   (add-data-object collection object)))
+
 (defgeneric add-store (universe store)
   (:documentation "Adds a store object to a universe."))
 
 (defmethod add-store ((universe universe) (store store))
   (unless (get-store universe (name store))
     (when (location store)
-      (ensure-directories-exist (location store)))
+      (ensure-directories-exist (pathname (location store))))
     (unless (location store)
-      (let ((location (format nil "~A~A/" 
-			      (location universe) 
-			      (name store))))
+      (let ((location
+	     (cl-fad:merge-pathnames-as-directory
+	       (pathname (location universe))
+	       (make-pathname :directory (list :relative (name store))))))
 	(ensure-directories-exist location)
-	(setf (location store) location)))
+	(setf (location store) (pathname location))))
     
     (setf (universe store) universe)
     (persist store)
@@ -396,7 +436,11 @@ The bulk of time is used to access a field in a data object and doing comparison
 
 (defun load-store-data-types (store)
   "Finds and loads the files representing data types for a store."
-  (let ((files (directory (format nil "~A**/*.type" (location store))))
+  (let ((files (directory
+		(cl-fad:merge-pathnames-as-file (pathname (location store))
+						(make-pathname :directory '(:relative :wild-inferiors)
+							       :name :wild
+							       :type "type"))))
 	(type-contents))
     (dolist (file files)
       (with-open-file (in file :if-does-not-exist :create)
@@ -444,15 +488,16 @@ The bulk of time is used to access a field in a data object and doing comparison
     (let ((location (location collection)))
       
       (when location
-	(ensure-directories-exist location))
+	(ensure-directories-exist (pathname location)))
 
       (unless location 
-	(setf location (format nil "~A~A" 
-			       (location store) 
-			       (name collection)))
-	(ensure-directories-exist (format nil "~A/" location)))
+	(setf location
+	      (cl-fad:merge-pathnames-as-directory
+	       (pathname (location store))
+	       (make-pathname :directory (list :relative (name collection)))))
+	(ensure-directories-exist location))
       
-      (setf (location collection) location)
+      (setf (location collection) (pathname location))
       (pushnew collection (collections store))
       (setf (store collection) store)
       (persist collection :def-only-p t)))

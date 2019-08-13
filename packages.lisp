@@ -15,6 +15,7 @@
    :write-to-file
    :write-list-to-file
    :persist
+   :persist-object
    :dig
    :getx
    :digx
