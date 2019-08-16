@@ -24,38 +24,17 @@
    ;;####naive-core.lisp
    
    ;;##classes
-   :field
-   :name
-   :type-def
-   :key-p
-   :attributes
-
-      
-   :data-type
-   :store
-   ;;:name
-   :field-class
-   :label
-   :top-level-p
-   :fields  
-
-
    :collection
    :store
    ;;:name
-   ;;:data-type
    :location
    :data-objects
-   :uuid-index
-   :key-value-index
    :loaded-p
 
    ;;:store
    :universe
    ;;:name
    :collection-class
-   :data-type-class
-   :data-types
    :collections
    ;;:location
    
@@ -69,16 +48,10 @@
    :remove-data-object
    :deleted-p
    :delete-data-object
-   :hash
-   :key-values
-   :key-values-hash
-   :index-lookup-values-hash
-   :index-lookup-uuid
-   :add-index
-   :remove-index
    :get-store
    :get-data-type
    :get-collection
+
    ;;:persist
    :add-store
    :add-collection

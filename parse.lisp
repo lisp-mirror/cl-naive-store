@@ -36,9 +36,6 @@ collection."))
 
 (defmethod parse-top-level-data-object ((collection collection) object &key &allow-other-keys)
   (let ((resolved-values )
-	(looked-up-object (index-lookup-uuid 
-			   collection
-			   (dig object :hash)))
 	(final-object))
 
     (dolist (pair (plist-to-value-pairs object))
@@ -47,14 +44,9 @@ collection."))
 
     (setf final-object resolved-values)
     
-    (cond (looked-up-object
-	   (remove-data-object collection looked-up-object)	   
-	   (if (parse-object-deleted-p collection object)
-	       (setf final-object nil)
-	       (add-data-object collection final-object)))
-	  ((not looked-up-object)
-	   (unless (getf object :deleted-p)
-	     (add-data-object collection final-object))))
+    (unless (getf object :deleted-p)
+      (add-data-object collection final-object))
+    
     final-object))
 
 
@@ -87,15 +79,6 @@ happen the collection containing the referenced objects need to be loaded first.
 				      (dig object :hash)))))     
       
       (unless ref-object
-
-	#|
-
-	(break "~A~% ~A~%~A" collection (dig tree :hash) tree)
-	(break "~A" (index-lookup-uuid 
-		     collection
-		     (dig tree :hash)))
-	|#
-	
 	(write-to-file  (format nil "~Aerror.err" (location (universe (store collection))))
 			(list "Could not resolve reference  ~S" object)))
 

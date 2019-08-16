@@ -3,11 +3,27 @@
 (defpackage :cl-naive-data-types
   (:use :cl :cl-naive-store)
   (:export
+   :field
+   :name
+   :type-def
+   :key-p
+   :attributes
+
+   :data-type
+   :store
+   ;;:name
+   :field-class
+   :label
+   :top-level-p
+   :fields
+
+   :data-type-collection-mixin
+   ;;:data-type
    
-   :*example-type-defs*
-   :db-type-get-set
-   :getfx
-   :getsfx
-   :validate-sfx
-  
-   ))
+   :data-type-store-mixin
+   :data-type-class
+   :data-types
+
+   
+   :get-data-type
+   :add-data-type))
