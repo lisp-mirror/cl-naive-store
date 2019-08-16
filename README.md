@@ -90,7 +90,7 @@ Evaluation took:
   839,970,533 processor cycles
   240,054,624 bytes consed
   
-Query moster collection
+Query collection
 Evaluation took:
   0.003 seconds of real time
   0.003409 seconds of total run time (0.003409 user, 0.000000 system)
