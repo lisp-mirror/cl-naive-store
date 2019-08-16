@@ -21,9 +21,9 @@ Loading of stuff into memory is delayed as long as possible that goes for data
 and actual structural elements of the data store like type definitions.
 
 The defenitions of stores, collections and data-types are stored in their own
-files within thedirectories used to persist the data. These files helps with 
+files within the directories used to persist the data. These files helps with 
 the lazy loading of stuff. Each collection has its own directory which helps 
-with blobs and conseptually splitting up data (see cl-wfx to see how far 
+with blobs and conceptually splitting up data (see cl-wfx to see how far 
 this can be taken).
 
 
@@ -36,15 +36,15 @@ something.
 In summary this db is relatively fast and small in memory (if used right) but 
 you have to apply your mind, so use it at your own peril!
 
-For examples have a look at the [test.lisp](https://gitlab.com/Harag/cl-naive-store/blob/master/tests/tests.lisp)
+For **examples** have a look at the [test.lisp](https://gitlab.com/Harag/cl-naive-store/blob/master/tests/tests.lisp)
 it has a lot of comments.
 
 See https://gitlab.com/Harag/cl-wfx to see a very complicated use of 
 naive-store.
 
-**Some Benchmarks: **(sbcl instance with 12gigs of memory allocated to it)
+**Some Benchmarks: (sbcl instance with 12gigs of memory allocated to it)**
 
-*Indexed Collection:*
+***Indexed Collection:***
 
 Add 100000 objects to collection
 Evaluation took:
@@ -71,7 +71,7 @@ Evaluation took:
   22,772,620 processor cycles
   0 bytes consed
   
-*Non Inedexed Collection:*
+***Non Inedexed Collection:***
 
 Add 100000 objects to collection
 Evaluation took:
