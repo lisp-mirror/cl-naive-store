@@ -17,7 +17,7 @@
 
 (defmethod parse-object-deleted-p ((collection collection) object &key &allow-other-keys)
   (declare (ignore collection))
-  (getf object :deleted-p))
+  (getx object :deleted-p))
 
 (defgeneric parse-reference-object-p (collection object &key &allow-other-keys)
   (:documentation "Returns t if the raw/reference object is marked as an object referenced from another 
@@ -38,13 +38,14 @@ collection."))
   (let ((resolved-values )
 	(final-object))
 
+  
     (dolist (pair (plist-to-value-pairs object))
       (setf resolved-values (append resolved-values (list (first pair)
 							  (parse-data-object collection (second pair))))))
 
     (setf final-object resolved-values)
     
-    (unless (getf object :deleted-p)
+    (unless (getx object :deleted-p)
       (add-data-object collection final-object))
     
     final-object))
@@ -55,8 +56,8 @@ collection."))
 collection is first sanitized (just enough info to retrieve the object later from where it is stored). 
 When objects are read from a file the references need to be converted to objects but for that to 
 happen the collection containing the referenced objects need to be loaded first."
-  (let* ((store (get-store* universe (getf object-ref :store)))
-	 (collection (get-collection* store (getf object-ref :collection))))
+  (let* ((store (get-store* universe (getx object-ref :store)))
+	 (collection (get-collection* store (getx object-ref :collection))))
     
     ;;Incase the collection exists but has not been loaded try and load it.
     (when (and collection (not (data-objects collection)))
@@ -70,13 +71,20 @@ happen the collection containing the referenced objects need to be loaded first.
 (defgeneric parse-reference-data-object (parent-collection object &key &allow-other-keys)
   (:documentation "Parses the raw reference object read from file to its object reprensentation."))
 
+(defun find-object-by-hash (collection object)
+  (dolist (objectx (data-objects collection))
+    (when (string-equal
+	   (dig objectx :hash)
+	   (dig object :hash))
+      (return-from find-object-by-hash objectx))))
+
 (defmethod parse-reference-data-object ((parent-collection collection) object &key &allow-other-keys)
   (let ((universe (universe (store parent-collection))))
     
     (let* ((collection (load-object-reference-collection universe object))
-	   (ref-object (and collection (index-lookup-uuid 
-				      collection
-				      (dig object :hash)))))     
+	   (ref-object (and collection (find-object-by-hash 
+					collection
+					object))))     
       
       (unless ref-object
 	(write-to-file  (format nil "~Aerror.err" (location (universe (store collection))))

@@ -51,9 +51,9 @@
 		 (add-collection 
 		  store 
 		  (make-instance (collection-class store)
-				 :name (getf file-contents :name)
-				 :location (getf file-contents :location)			
-				 :filter (getf file-contents :filter)))))
+				 :name (getx file-contents :name)
+				 :location (getx file-contents :location)			
+				 :filter (getx file-contents :filter)))))
 	    (when with-data-p
 	      (load-data collection))))))))
 
@@ -75,8 +75,8 @@
 			universe
 			(make-instance
 			 (store-class universe)
-			 :name (getf file-contents :name)
-			 :location (getf file-contents :location)))))
+			 :name (getx file-contents :name)
+			 :location (getx file-contents :location)))))
 	    
 	    (when (or with-collections-p with-data-p)
 	      (load-store-collections store with-data-p))))))))

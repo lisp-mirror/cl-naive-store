@@ -32,7 +32,6 @@
   (loop for (a b) on values by #'cddr 
      :collect (list a b)))
 
-
 (defun dig-down (place indicators)
   (let* ((indicator (pop indicators))
 	 (next-place (if indicator

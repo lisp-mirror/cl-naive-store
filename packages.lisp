@@ -26,7 +26,7 @@
    ;;##classes
    :collection
    :store
-   ;;:name
+  :name
    :location
    :data-objects
    :loaded-p
@@ -51,6 +51,7 @@
    :get-store
    :get-data-type
    :get-collection
+   :find-collection-definitions
 
    ;;:persist
    :add-store
@@ -74,6 +75,7 @@
    :write-blob
 
    ;;####parse.lisp
+   :load-object-reference-collection
    :parse-object-deleted-p
    :parse-object-p
    :parse-reference-object-p

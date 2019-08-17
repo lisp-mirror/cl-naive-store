@@ -6,4 +6,5 @@
    :*example-type-defs*
    :getfx
    :getsfx
-   :validate-sfx))
+   :validate-sfx
+   :db-type-get-set))

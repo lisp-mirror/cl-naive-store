@@ -83,17 +83,17 @@
 
 
 (defun db-type-get-set (field)
-  (cond ((listp (getf field :db-type))
-	 (cond ((equalp (getf (getf field :db-type) :complex-type)
+  (cond ((listp (getx field :db-type))
+	 (cond ((equalp (getx (getx field :db-type) :complex-type)
 			:value-list)
-		(getf (getf field :db-type) :type))
-	       ((equalp (getf (getf field :db-type) :complex-type)
+		(getx (getx field :db-type) :type))
+	       ((equalp (getx (getx field :db-type) :complex-type)
 			:key-value-list)
-		(getf (getf field :db-type) :type))
+		(getx (getx field :db-type) :type))
 	       (t
-		(getf (getf field :db-type) :complex-type))))
+		(getx (getx field :db-type) :complex-type))))
 	(t
-	 (getf field :db-type))))
+	 (getx field :db-type))))
 
 (defgeneric getfx (object field &key &allow-other-keys)
   (:documentation "Returns the value of an object, but takes the field definition and not just the name."))
@@ -210,7 +210,7 @@
 	(getf type key))))
 
 (defun set-getsfx* (field object value)
-  (let* ((name (getf field :name)))
+  (let* ((name (getx field :name)))
     (setf (getx object name) value)))
 
 (defun setsfx-read* (field object value type-test read-error)
@@ -348,7 +348,7 @@
 (defmethod (setf getsfx) (value (type (eql :collection)) field object
 			  &key &allow-other-keys)
 
-  (let ((name (getf field :name))
+  (let ((name (getx field :name))
 	(final-val))
     (if (not (empty-p value))
 	(setf final-val value))
@@ -357,7 +357,7 @@
 (defmethod (setf getsfx) (value (type (eql :object)) field object
 			  &key &allow-other-keys)
 
-  (let ((name (getf field :name))
+  (let ((name (getx field :name))
 	(final-val))
     (if (not (empty-p value))
 	(setf final-val value))
@@ -397,7 +397,7 @@
 
 (defmethod (setf getsfx) (value (type (eql :value-string-list)) field object   
 			 &key &allow-other-keys)
-  (let* ((name (getf field :name))
+  (let* ((name (getx field :name))
 	 (delimiter (if (stringp (dig field :db-type :delimiter))
 			(coerce (dig field :db-type :delimiter)
 				'character)
@@ -443,7 +443,7 @@
 
 (defmethod (setf getsfx) (value (type (eql :value-list)) field object 
 			 &key &allow-other-keys)
-  (let* ((name (getf field :name))
+  (let* ((name (getx field :name))
 	 (list (or (and (dig field :db-type :values-script)
 			(eval (dig field :db-type :values-script)))
 		   (dig field :db-type :values)))
@@ -476,7 +476,7 @@
 
 (defmethod (setf getsfx) (value (type (eql :contained-object)) field object   
 			 &key &allow-other-keys)
-  (let ((name (getf field :name))
+  (let ((name (getx field :name))
 	(final-val))
     
     (setf final-val value)
@@ -484,7 +484,7 @@
 
 (defmethod (setf getsfx) (value (type (eql :collection-contained-object))
 			  field object   &key &allow-other-keys)
-  (let ((name (getf field :name))
+  (let ((name (getx field :name))
 	(final-val))
     
     (setf final-val value)

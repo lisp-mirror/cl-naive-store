@@ -6,7 +6,7 @@
 
 (defmethod parse-object-deleted-p ((collection item-collection) object &key &allow-other-keys)
   (declare (ignore collection))
-  (getf object :deleted-p))
+  (getx object :deleted-p))
 
 (defmethod parse-object-p ((collection item-collection) object &key &allow-other-keys)
   (declare (ignore collection))
@@ -58,9 +58,7 @@
 		    :hash (frmt "~A" (dig object :hash))
 		    :values resolved-values))
 
-	     (push final-item (data-objects collection))
-		
-	     (add-index collection final-item)
+	     (add-data-object collection final-item)
 
 	     (unless (string-equal (frmt "~A" (dig object :hash)) (item-hash final-item))
 	       (write-to-file (format nil "~Ashash.err" (location (universe (store collection))))
@@ -70,7 +68,7 @@
 			       (format nil "~A" (dig object :hash))))
 			  
 	       (setf (gethash (dig object :hash)
-			      (uuid-index (item-collection final-item)))
+			      (data-objects (item-collection final-item)))
 		     final-item)))
 		    
 	   (unless final-item

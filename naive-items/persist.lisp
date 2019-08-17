@@ -131,7 +131,7 @@
 					    (blob-location val))
 
 				       (cl-fad:merge-pathnames-as-file
-					(pathname (location universe))
+					(pathname (location item))
 					(make-pathname :directory (list :relative location key)
 						       :name (item-hash item)
 						       :type (blob-file-ext val))))))
@@ -411,7 +411,7 @@
     
     final-item))
 
-(defun parse-persist-item (file item)
+(defun parse-persist-object (file item)
   ;;Parse item to persistable format
   (let ((item-to-persist (parse-to-references item (directory-namestring file))))
     (when  item-to-persist
@@ -449,13 +449,13 @@
       (cond (changed-item
 	     (setf item changed-item)
 	     (setf item (add-data-object (item-collection item) item))
-	     (parse-persist-item (or file derived-file)
+	     (parse-persist-object (or file derived-file)
 				 item))
 	    ((item-deleted-p item)
 	     ;;The remove must be done much earlier in the process, take care of it in item persist
 	     ;;rewrite.
 	     (remove-data-object (item-collection item) item)
-	     (parse-persist-item (or file derived-file)
+	     (parse-persist-object (or file derived-file)
 				 item))
 	    (t
 	     item)))))

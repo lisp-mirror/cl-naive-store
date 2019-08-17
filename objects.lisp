@@ -11,8 +11,20 @@ the object without having to rewrite/change a lot of code."))
 (defgeneric (setf getx) (value item field-name &key &allow-other-keys)
   (:documentation "Sets the value of an field in an object."))
 
+;;The innards of this puppy is courtesy of @stassats, thanx dewd. This does not mean
+;;that he approves of getx or this library! ;)
 (defmethod (setf getx) (value object field-name &key &allow-other-keys)
-  (setf (getf object field-name) value))
+  "This implementation of getx is basically (setf getf) but it cannot handle object = nil"
+  (declare (cons object))
+  (loop for cons = object then (cddr cons)
+        for (key nil . rest) = cons
+        when (eq key field-name)
+        do (setf (cadr cons) value)
+           (return)
+        unless rest
+        do (setf (cddr cons) (list field-name value))
+       (return))
+  value)
 
 (defgeneric digx (place &rest indicators)
   (:documentation "Returns the value of an field in a hierarchical data object. By using getx and digx
@@ -60,12 +72,12 @@ naive-store writes data to file sequentially and when deleting data objects it d
 remove a data object from the underlying file it just marks it as deleted."))
 
 (defmethod deleted-p (object)
-  (getf object :deleted-p))
+  (getx object :deleted-p))
 
 (defgeneric (setf deleted-p) (value object &key &allow-other-keys))
 
 (defmethod (setf deleted-p) (value object &key &allow-other-keys)
-  (setf (getf object :deleted-p) value)
+  (setf (getx object :deleted-p) value)
   object)
 
 (defgeneric remove-data-object (collection object &key &allow-other-keys)
@@ -80,7 +92,7 @@ remove a data object from the underlying file it just marks it as deleted."))
 
 (defmethod delete-data-object ((collection collection) object &key &allow-other-keys)
     (remove-data-object collection object)
-    (setf (getf object :deleted-p) t)
+    (setf (getx object :deleted-p) t)
     (persist-object collection object :delete-p t))
 
 (defgeneric add-data-object (collection object &key &allow-other-keys)

@@ -87,11 +87,12 @@ structural elements like data-types and collections to file."))
 			   :direction :output
 			   :if-exists if-exists
 			   :if-does-not-exist :create)
+
 	(with-standard-io-syntax
 	  ;;*print-readably* set to nil so that sbcl writes strings out strings as simple strings.
 	  (let ((*print-readably*))
 	    (maphash (lambda (key object)
-		       (declare (ignore key))
+		       (declare (ignore key))		       
 		       (write-object object out))
 		     hash))
 	  (close out)))))

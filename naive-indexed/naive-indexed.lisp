@@ -19,20 +19,19 @@ to work with naive-store-indexed. naive-store-indexed will edit the object to ad
 objects to a collection. naive-store-indexed uses a UUID in its default implementation."))
 
 (defmethod hash (object)
-  (frmt "~A" (getf object :hash)))
+  (frmt "~A" (getx object :hash)))
 
 (defgeneric (setf hash) (value object))
 
 (defmethod (setf hash) (value object)
-  (setf (getf object :hash) (frmt "~A" value))
-  object)
+  (setf (getx object :hash) (frmt "~A" value)))
 
 (defgeneric key-values (collection values &key &allow-other-keys)
   (:documentation "Returns a set of key values from the values of a data object.
 Looks for :key or uses first value."))
 
 (defmethod key-values (collection values &key &allow-other-keys)
-  (or (getf values :key)
+  (or (getx values :key)
       (and (equalp (first values) :hash)
 	   (fourth values))
       (and (equalp (first values) :deleted-p)
@@ -62,6 +61,20 @@ Looks for :key or uses first value."))
   (gethash (frmt "~A" hash)
 	   (data-objects collection)))
 
+(defmethod parse-reference-data-object ((parent-collection indexed-collection-mixin) object &key &allow-other-keys)
+  (let ((universe (universe (store parent-collection))))
+    
+    (let* ((collection (load-object-reference-collection universe object))
+	   (ref-object (and collection (index-lookup-uuid 
+					collection
+					(dig object :hash)))))     
+      
+      (unless ref-object
+	(write-to-file  (format nil "~Aerror.err" (location (universe (store collection))))
+			(list "Could not resolve reference  ~S" object)))
+
+      ref-object)))
+
 (defmethod parse-top-level-data-object ((collection indexed-collection-mixin) object &key &allow-other-keys)
   (let ((resolved-values )
 	(looked-up-object (index-lookup-uuid 
@@ -81,7 +94,7 @@ Looks for :key or uses first value."))
 	       (setf final-object nil)
 	       (add-data-object collection final-object)))
 	  ((not looked-up-object)
-	   (unless (getf object :deleted-p)
+	   (unless (getx object :deleted-p)
 	     (add-data-object collection final-object))))
     final-object))
 
@@ -92,20 +105,22 @@ change key values without loosing the identify of the original object. The secon
  be used when looking for duplicate objects during persist. The objects hash is also set to UUID."))
 
 (defmethod add-index ((collection indexed-collection-mixin) object &key &allow-other-keys)
-  (let* ((indexed-object (if (hash object)
-			     (index-lookup-uuid collection (getf object :hash))
+    (let* ((indexed-object (if (hash object)
+			     (index-lookup-uuid collection (hash object))
 			     (index-lookup-values-hash collection object)))
-	 (hash (uuid:make-v4-uuid))	
 	 (hashx (key-values-hash collection object)))
-    
+   
     (when (or
-	   (and
-	    (not indexed-object)
-	    (empty-p (hash object)))
-	   (string-equal (format nil "~A" (hash object))
-			 (format nil "~A" hashx)))
-      ;;add the uuid to the object for persistance
-      (setf object (setf (hash object) hash)))    
+	   (not indexed-object)
+	   (empty-p (hash object))
+	   ;;TODO: This needs to be removed some time
+	   ;;it was used to replace sxhash with UUID's
+	   ;;when naive was changed to UUID
+	   (string-equal (format nil "~A" (hash object)) (format nil "~A" hashx)))
+      
+      (let ((uuid (uuid:make-v4-uuid)))
+	;;add the uuid to the object for persistance
+	(setf (hash object) uuid)))    
     
     (setf (gethash hashx (key-value-index collection)) object)    
     (setf (gethash (hash object) (data-objects collection)) object)))
@@ -121,35 +136,10 @@ change key values without loosing the identify of the original object. The secon
 
 
 (defmethod remove-data-object ((collection indexed-collection-mixin) object &key &allow-other-keys)
-  (remove-index collection object)
-  #|
-  (setf (data-objects collection)
-	(remove object (data-objects collection)
-		:test #'(lambda (object item)			 
-			  (or
-			   (eql object item)
-			   (and (not (empty-p (hash item)))
-				(not (empty-p (hash object)))
-				(equalp (hash item) (hash object)))
-			   (equalp (key-values-hash collection item)
-				   (key-values-hash collection object))))))
-  |#
-  )
+  (remove-index collection object))
 
 (defmethod add-data-object ((collection indexed-collection-mixin) object &key &allow-other-keys)
-  (let ((indexed-object))
-
-    ;;(remove-data-object collection object)
-    ;;(setf indexed-object object)
-
-    (setf indexed-object (add-index collection object))
-    
-    #|(progn
-      (setf indexed-object (add-index collection object))
-      (push indexed-object
-	       (data-objects collection)))
-    |#
-    indexed-object))
+  (add-index collection object))
 
 (defmethod naive-reduce ((collection indexed-collection-mixin) function query &key initial-value)
     ;;Load if not loaded

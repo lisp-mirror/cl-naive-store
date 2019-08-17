@@ -18,8 +18,8 @@
     (when store-def
       (setf store
 	    (make-instance (store-class universe)
-			   :name (getf store-def :name)		    
-			   :location (getf store-def :location))))
+			   :name (getx store-def :name)		    
+			   :location (getx store-def :location))))
     store))
 
 
@@ -42,8 +42,8 @@
     (when collection-def
       (make-instance (collection-class store)
 			 :store store
-			 :name (getf collection-def :name)
-			 :location (getf collection-def :location)))))
+			 :name (getx collection-def :name)
+			 :location (getx collection-def :location)))))
 
 (defgeneric naive-reduce (collection function query &key initial-value &allow-other-keys)
   (:documentation "Uses query to select data objects from a collection and then applies the function to 
@@ -71,7 +71,7 @@ those objects."))
 (defmethod query-data ((collection collection) &key query &allow-other-keys)  
   (if query
 	(naive-reduce collection nil query :initial-value '())
-	(data-objects collection)))
+	(query-data (data-objects collection))))
 
 (defmethod query-data ((store store) &key collection-name query &allow-other-keys)
   (let ((collection (get-collection store collection-name)))
@@ -108,6 +108,18 @@ those objects."))
 	      list
 	      :initial-value '())
       list))
+
+(defmethod query-data ((hashtable hash-table) &key query &allow-other-keys)
+  (let ((objects))
+    (maphash
+     (lambda (key object)
+       (declare (ignore key))
+       (if query
+	   (when (funcall query object)
+	     (push object objects))
+	   (push object objects)))
+     hashtable)
+    objects))
 
 (defmethod query-data-object ((list list) &key query &allow-other-keys)
    (let ((objects (query-data list :query query)))

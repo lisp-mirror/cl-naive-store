@@ -3,7 +3,7 @@
   :version "0.0.1"
   :author "Phil Marneweck <phil@psychedelic.co.za>"
   :licence "MIT"
-  :depends-on ("cl-naive-store" "cl-naive-data-types")
+  :depends-on ("cl-naive-store" "cl-naive-indexed" "cl-naive-data-types" "cl-naive-data-type-defs")
   :components ((:file "packages")
 	       (:file "common" :depends-on ("packages"))
 	       

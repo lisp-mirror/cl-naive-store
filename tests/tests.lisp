@@ -76,7 +76,7 @@ which contain the actual data. Each collection will have its own directory and f
 				    "simple-collection")))
     
     (query-data collection :query (lambda (data-object)				    
-				    (<= (getf data-object :key) 50)))))
+				    (<= (getx data-object :key) 50)))))
 
 (defun simple-example (persist-p)
   "This example sets up a store and populates a collection with a 100 data objects and then queries 
@@ -94,7 +94,6 @@ Only peristed if persist-p is t."
 (defun test-simple ()
   (let ((test-results)
 	(query-results (simple-example t)))
-
     
     (push (list :universe-directory-exists
 		(probe-file
@@ -213,14 +212,14 @@ Only peristed if persist-p is t."
     
     (query-data collection :query (lambda (data-object)				    
 				    (or (and
-					 (>= (getf data-object :key) 50)
-					 (<= (getf data-object :key) 100))
+					 (>= (getx data-object :key) 50)
+					 (<= (getx data-object :key) 100))
 					(and
-					 (>= (getf data-object :key) 500000)
-					 (<= (getf data-object :key) 500100))
+					 (>= (getx data-object :key) 500000)
+					 (<= (getx data-object :key) 500100))
 					(and
-					 (>= (getf data-object :key) 999950)
-					 (<= (getf data-object :key) 1000000)))))))
+					 (>= (getx data-object :key) 999950)
+					 (<= (getx data-object :key) 1000000)))))))
 
 (defun populate-monster-data (persist-p &key (size 100))
   (let ((collection (get-collection (get-store *universe* "simple-store")

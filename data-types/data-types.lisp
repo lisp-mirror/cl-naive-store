@@ -146,10 +146,10 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
 	  (close in))))
 
     (when collection-def
-      (let ((data-type (get-data-type store (getf collection-def :data-type))))
+      (let ((data-type (get-data-type store (getx collection-def :data-type))))
 	(unless data-type
 	  (load-store-data-types store)
-	  (setf data-type (get-data-type store (getf collection-def :data-type))))
+	  (setf data-type (get-data-type store (getx collection-def :data-type))))
 
 	(unless data-type
 	  (error "Collection data-type could not be found."))
@@ -158,8 +158,8 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
 	  
 	  (make-instance (collection-class store)
 			 :store store
-			 :name (getf collection-def :name)
-			 :location (getf collection-def :location)
+			 :name (getx collection-def :name)
+			 :location (getx collection-def :location)
 			 :data-type data-type))))))
 
 (defgeneric get-data-type (store type-name)
@@ -200,20 +200,20 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
 	    (data-type (add-data-type 
 			store 
 			(make-instance (data-type-class store)
-				       :name (getf type-contents :name)
-				       :label (getf type-contents :label)
-				       :top-level-p (getf type-contents :top-level-p)
+				       :name (getx type-contents :name)
+				       :label (getx type-contents :label)
+				       :top-level-p (getx type-contents :top-level-p)
 				       :fields nil))))
 	
-	(dolist (field (getf type-contents :fields))
+	(dolist (field (getx type-contents :fields))
 	 (setf fields 
 		(append fields 
 			(list (make-instance
 			       (field-class data-type)
-			       :name (getf field :name)
-			       :key-p (getf field :key-p)
-			       :type-def (getf field :type-def)
-			       :attributes (getf field :attributes)))))
+			       :name (getx field :name)
+			       :key-p (getx field :key-p)
+			       :type-def (getx field :type-def)
+			       :attributes (getx field :attributes)))))
 	  
 	  setf fields )
 	(setf (fields data-type) fields)))))
@@ -232,12 +232,12 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
 	
 	(when file-contents
 	  
-	  (let ((data-type (get-data-type store (getf file-contents :data-type)))
+	  (let ((data-type (get-data-type store (getx file-contents :data-type)))
 		(collection))
 	    
 	    (unless data-type
 	      (load-store-data-types store)
-	      (setf data-type (get-data-type store (getf file-contents :data-type))))
+	      (setf data-type (get-data-type store (getx file-contents :data-type))))
 
 	    (unless data-type
 	      (error "Collection data-type not found."))
@@ -246,10 +246,10 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
 	      (setf collection (add-collection 
 				store 
 				(make-instance (collection-class store)
-					       :name (getf file-contents :name)
-					       :location (getf file-contents :location)
+					       :name (getx file-contents :name)
+					       :location (getx file-contents :location)
 					       :data-type data-type
-					       :filter (getf file-contents :filter))))
+					       :filter (getx file-contents :filter))))
 	      (when with-data-p
 		(load-data collection)))))))))
 

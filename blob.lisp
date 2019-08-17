@@ -31,7 +31,7 @@
 	(out (make-string-output-stream))
 	(str ""))
 
-    (with-open-file (in (getf blob-ref-values :location)
+    (with-open-file (in (getx blob-ref-values :location)
 			:direction :input		     
 			:if-does-not-exist nil)
       (when in
@@ -42,9 +42,9 @@
       (close out))
     
     (make-blob
-     :file-type (getf blob-ref-values :file-type)
-     :file-ext (getf blob-ref-values :file-ext)
-     :location (getf blob-ref-values :location)
+     :file-type (getx blob-ref-values :file-type)
+     :file-ext (getx blob-ref-values :file-ext)
+     :location (getx blob-ref-values :location)
      :raw str)))
 
 (defun write-blob (file value)

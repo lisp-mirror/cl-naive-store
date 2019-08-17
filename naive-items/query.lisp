@@ -1,10 +1,8 @@
 (in-package :cl-naive-items)
 
-
 ;;TODO: Changed getx to return changes instead of values when available... dont know what subtle
 ;;bugs this will create in software currently using naive-store.... making this note as a reminder
-;;for when stranges thing start happending.
-
+;;for when strange thing start happending.
 (defmethod getx ((item item) field-name)
   (or
    (getf (item-changes item) field-name)
@@ -65,13 +63,12 @@
   (set-naive-dig place indicators value))
 
 
-
 ;;((:name arst :value arts) (:name ...))
 (defun find-item-by-value (item-list field-values)
   (let ((exists nil))
     (dolist (item item-list)
       (dolist (field field-values)
-	(if (equalp (getx item (getf field :name)) (getf field :value)) 
+	(if (equalp (getx item (getf field :name)) (getx field :value)) 
 	    (push t exists)
 	    (push nil exists)))
       (unless (position nil exists)
