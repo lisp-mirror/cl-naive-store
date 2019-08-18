@@ -1,5 +1,6 @@
 # cl-naive-store
-**This is a naive, persisted, in memory (lazy loading) data store for Common Lisp.**
+**TThis is a naive (simple, not full of bloat), persisted, in memory 
+(lazy loading), indexed, data store for Common Lisp.**
 
 cl-naive-store is designed so that you can decide how much of the avaible
 functionality you want to use. For example cl-naive-store starts out as non
