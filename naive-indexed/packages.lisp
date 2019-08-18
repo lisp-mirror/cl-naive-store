@@ -8,10 +8,12 @@
    :uuid-index
    :key-value-index
    
+   :indexes
+   
    :hash
    :key-values
-   :key-values-hash
-   :index-lookup-values-hash
+   :index-values
+   :index-lookup-values
    :index-lookup-uuid
    :add-index
    :remove-index))

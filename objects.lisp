@@ -1,50 +1,5 @@
 (in-package :cl-naive-store)
 
-(defgeneric getx (object field-name)
-  (:documentation "Returns the value of an field in a data object. By using getx and digx instead of 
-accessing, object values directly the user has the opportunity to change the underlying structure/type of 
-the object without having to rewrite/change a lot of code."))
-
-(defmethod getx (object field-name)
-  (getf object field-name))
-
-(defgeneric (setf getx) (value item field-name &key &allow-other-keys)
-  (:documentation "Sets the value of an field in an object."))
-
-;;The innards of this puppy is courtesy of @stassats, thanx dewd. This does not mean
-;;that he approves of getx or this library! ;)
-(defmethod (setf getx) (value object field-name &key &allow-other-keys)
-  "This implementation of getx is basically (setf getf) but it cannot handle object = nil"
-  (declare (cons object))
-  (loop for cons = object then (cddr cons)
-        for (key nil . rest) = cons
-        when (eq key field-name)
-        do (setf (cadr cons) value)
-           (return)
-        unless rest
-        do (setf (cddr cons) (list field-name value))
-       (return))
-  value)
-
-(defgeneric digx (place &rest indicators)
-  (:documentation "Returns the value of an field in a hierarchical data object. By using getx and digx
- instead of accessing, object values directly the user has the opportunity to change the underlying 
-structure of the object without having to rewrite a lot of code."))
-
-(defmethod digx (place &rest indicators)
-  (apply 'dig place indicators))
-
-(defgeneric (setf digx) (value place &rest indicators))
-
-(defmethod (setf digx) (value place &rest indicators)
-  (setf (dig place indicators) value))
-
-(defgeneric exists-p (object field-name)
-  (:documentation "Returns t if the data-object has such a field."))
-
-(defmethod exists-p (object field-name)
-  (get-properties object (list field-name)))
-
 (defgeneric persist-object (collection object &key &allow-other-keys)
   (:documentation "The default behavior is two just write what ever is given to file.
 Collection is needed to write to the right file and directory.
@@ -63,7 +18,6 @@ Use naive-items if the later behaviour is desired."))
    (if (not delete-p)
        (add-data-object collection object :handle-dupliates-p handle-duplicates-p)
        object)))
-
 
 (defgeneric deleted-p (object)
   (:documentation "Indicates if a data object has been marked as deleted. 
@@ -92,7 +46,7 @@ remove a data object from the underlying file it just marks it as deleted."))
 
 (defmethod delete-data-object ((collection collection) object &key &allow-other-keys)
     (remove-data-object collection object)
-    (setf (getx object :deleted-p) t)
+    (setf (deleted-p object) t)
     (persist-object collection object :delete-p t))
 
 (defgeneric add-data-object (collection object &key &allow-other-keys)

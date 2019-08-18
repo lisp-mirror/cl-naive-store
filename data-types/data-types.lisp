@@ -62,7 +62,8 @@ cl-wfx uses this to structure data in a hierarchical grid.")
    (fields :initarg :fields
 	   :accessor fields
 	   :initform nil
-	   :documentation "Field definitions that represents a data unit."))
+	   :documentation "Field definitions that represents a data unit.")
+   )
   (:documentation "A class that can be use to that represents a complex data unit.
 
 The default implementation of cl-naive-store is unaware of data-types when reading and 
@@ -256,3 +257,4 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
 (defmethod load-store ((store data-type-store-mixin) &key with-data-p &allow-other-keys)
   (load-store-data-types store)
   (load-store-collections store with-data-p))
+

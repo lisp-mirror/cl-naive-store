@@ -7,9 +7,7 @@
       (declare (ignore c))
       (make-pathname :directory '(:absolute "tmp")))))
 
-
 (defparameter *universe* nil)
-
 
 (defparameter *store-class* 'store)
 
@@ -17,10 +15,75 @@
 			  (get-temp)
 			  (make-pathname :directory '(:relative "data-universe"))))
 
+(defparameter *object-type* :plist)
+
 (defclass collection-indexed (indexed-collection-mixin collection)
   ())
 
-(defparameter *collection-class* 'collection-indexed)
+(defparameter *collection-class* 'collection)
+
+(defun data-type-def ()
+  '(:name "employee"
+       :label "Employee"
+       :top-level-p t
+       :fields ((:name :emp-no
+		       :label "Employee No"
+		       :db-type :string
+		       :key-p t
+		       :attributes (:display t :editable t)) 
+		(:name :gender
+		       :label "Gender"
+		       :db-type (:type :string
+				       :complex-type :value-list
+				       :values ("Male"
+						"Female"))
+		       :attributes (:display t :editable t))
+		(:name :race
+		       :label "Race"
+		       :db-type (:type :string
+				       :complex-type :value-list
+				       :values ("African"
+						"White"
+						"Indian"
+						"Chinese"
+						"Coloured"))
+		       :attributes (:display t :editable t))
+
+		(:name :name
+		       :label "Name"
+		       :db-type :string
+		       :attributes (:display t :editable t))
+		(:name :surname
+		       :label "Surname"
+		       :db-type :string
+		       :attributes (:display t :editable t)))
+        :documentation "This type represents a simple employee master."))
+
+(defun init-data-type (store)
+  (let ((data-type-def (data-type-def))
+	(fields))
+
+    
+    (dolist (field (getf data-type-def :fields))
+      (setf
+       fields 
+       (append fields 
+	       (list (make-instance 
+		      'field
+		      :name (getf field :name)
+		      :key-p (getf field :key-p)
+		      :type-def (getf field :type-def)
+		      :attributes (getf field :attributes))))))
+
+    (add-data-type
+     store
+     (make-instance 
+      'data-type
+      :name (getf data-type-def :name)
+      :label (getf data-type-def :label)
+      :top-level-p
+      (getf data-type-def :top-level-p)
+      :fields fields))))
 
 (defun setup-universe (&optional location)
   "Sets up the the simple universe that will contain the data. Use the add-* functions to add 
@@ -31,17 +94,36 @@ which contain the actual data. Each collection will have its own directory and f
   (setf *universe* (make-instance 
 			  'universe
 			  :location *location*
-			  :store-class *store-class*))
+			  :store-class (if (equalp *object-type* 'item)
+					   'item-store
+					*store-class*)))
   (when location
     (setf (location *universe*) location))
   
   (let* ((store (add-store *universe*
-			   (make-instance *store-class*
+			   (make-instance (if (equalp *object-type* 'item)
+					      'item-store
+					      *store-class*)
 					  :name "simple-store"
-					  :collection-class *collection-class*))))
+					  :collection-class *collection-class*)))
+	 (data-type (if (equalp *object-type* 'item)
+			(init-data-type store))))
+    
     (add-collection store
-		    (make-instance *collection-class*
-				   :name "simple-collection"))))
+		    (if (equalp *object-type* 'item)
+			(make-instance 'item-collection
+				       :name "simple-collection"
+				       :data-type data-type
+				       :indexes '(:gender :race :surname))
+			(if (equalp *collection-class* 'collection-indexed)
+			 (make-instance *collection-class*
+					:name "simple-collection"
+					:indexes '(:gender :race :surname))
+			 (make-instance *collection-class*
+					:name "simple-collection"))
+			))
+    
+    ))
 
 (defun tare-down-universe ()
   "Deletes any peristed data from exmaples."
@@ -49,9 +131,21 @@ which contain the actual data. Each collection will have its own directory and f
     (cl-fad:delete-directory-and-files (location *universe*) :if-does-not-exist :ignore)
     (setf *universe* nil)))
 
+(defun random-from-list (list)
+  (nth (random (length list)) list))
+
 (defun populate-simple-data (persist-p &key (size 100))
   (let ((collection (get-collection (get-store *universe* "simple-store")
-				    "simple-collection")))
+				    "simple-collection"))
+	(emp-race '("African" "White" "Indian" "Chinese" "Coloured"))
+	(emp-gender '("Male" "Female"))
+	(emp-surnames '("Smith"
+			"Johnson"
+			"Williams"
+			"Jones"
+			"Brown"
+			"Davis"
+			"Miller")))
 
     ;;Make sure that any previously persisted objects are already loaded from disk.
     (unless (loaded-p collection)
@@ -60,27 +154,40 @@ which contain the actual data. Each collection will have its own directory and f
     ;;Add data objects in the form of plists to the collection. naive-store expects plists
     ;;by default. 
     (dotimes (x size)
-      (let* ((object (list :key x
-			   :name (format nil "Slave No ~A" x))))
+      (let* ((object (list 
+			   :race (random-from-list emp-race)
+			   :gender (random-from-list emp-gender)
+			   :surname (random-from-list emp-surnames)
+			   :name (format nil "Slave No ~A" x)			   
+			   :emp-no x)))
+	
 	;;Persist adds the object to the collection for you but if you dont want to persist
 	;;you need to use add-data-object directly.
 	;;Persisting individual objects in a loop like this is slow, because the file is opened
 	;;closed each time. Use (persist collection) if you are going to add lots of data, see
 	;;populate-monster-data if you want to see how to use it.
 	(if persist-p	  
-	  (persist-object collection object)
-	  (add-data-object collection object))))))
+	    (persist-object collection object)
+	    (if (equalp *object-type* 'item)
+		(add-data-object collection (make-item 
+					     :store (store collection)
+					     :collection collection
+					     :data-type (if (stringp (data-type collection))
+							    (item-data-type (data-type collection))
+							    (name (data-type collection)))		
+					     :values object))
+		(add-data-object collection object)))))))
 
 (defun query-simple-data ()
   (let ((collection (get-collection (get-store *universe* "simple-store")
 				    "simple-collection")))
     
     (query-data collection :query (lambda (data-object)				    
-				    (<= (getx data-object :key) 50)))))
+				    (<= (getx data-object :emp-no) 50)))))
 
 (defun simple-example (persist-p)
   "This example sets up a store and populates a collection with a 100 data objects and then queries 
-the collection to retrieve the the 50 objects that have a :key >= 50.
+the collection to retrieve the the 50 objects that have a :emp-no >= 50.
 Only peristed if persist-p is t."
   ;;Clear any risidual 
   (tare-down-universe)
@@ -180,7 +287,6 @@ Only peristed if persist-p is t."
   ;;Query the data in the universe for the top 51 that has been deleted.
   (query-simple-data))
 
-
 (defun test-delete ()
   (let ((test-results)
 	(query-results (simple-example-delete)))
@@ -189,22 +295,20 @@ Only peristed if persist-p is t."
     
     test-results))
 
-(defun test-all ()
+(defun test-all-simple ()
   (let ((results))
     (setf results (append results (test-simple)))
     (setf results (append results (test-lazy-loading)))
     (setf results (append results (test-delete)))))
 
-(defun test-all-indexed ()
+(defun test-all-simple-indexed ()
   (let ((*collection-class* 'collection-indexed))
-    (test-all)))
+    (test-all-simple)))
 
-(defun test-passed-p (results)
-  (let ((passed-p t))
-    (dolist (test results)
-      (unless (second test)
-	(setf passed-p nil)))
-    passed-p))
+(defun test-all-simple-items ()
+  (let ((*object-type* 'item))
+    (test-all-simple)))
+
 
 (defun query-monster-data ()
   (let ((collection (get-collection (get-store *universe* "simple-store")
@@ -212,18 +316,27 @@ Only peristed if persist-p is t."
     
     (query-data collection :query (lambda (data-object)				    
 				    (or (and
-					 (>= (getx data-object :key) 50)
-					 (<= (getx data-object :key) 100))
+					 (>= (getx data-object :emp-no) 50)
+					 (<= (getx data-object :emp-no) 100))
 					(and
-					 (>= (getx data-object :key) 500000)
-					 (<= (getx data-object :key) 500100))
+					 (>= (getx data-object :emp-no) 500000)
+					 (<= (getx data-object :emp-no) 500100))
 					(and
-					 (>= (getx data-object :key) 999950)
-					 (<= (getx data-object :key) 1000000)))))))
+					 (>= (getx data-object :emp-no) 999950)
+					 (<= (getx data-object :emp-no) 1000000)))))))
 
 (defun populate-monster-data (persist-p &key (size 100))
   (let ((collection (get-collection (get-store *universe* "simple-store")
-				    "simple-collection")))
+				    "simple-collection"))
+	(emp-race '("African" "White" "Indian" "Chinese" "Coloured"))
+	(emp-gender '("Male" "Female"))
+	(emp-surnames '("Smith"
+			"Johnson"
+			"Williams"
+			"Jones"
+			"Brown"
+			"Davis"
+			"Miller")))
 
     ;;Make sure that any previously persisted objects are already loaded from disk.
     (unless (loaded-p collection)
@@ -235,39 +348,32 @@ Only peristed if persist-p is t."
     (time
      (progn
        (dotimes (x size)
-	 (let* ((object (list :key x
-			      :name (format nil "Slave No ~A" x)
-			      :random (random size))))
+	 (let* ((object (list 
+			   :race (random-from-list emp-race)
+			   :gender (random-from-list emp-gender)
+			   :surname (random-from-list emp-surnames)
+			   :name (format nil "Slave No ~A" x)			   
+			   :emp-no x)))
 	   ;;Add objects to collcetion
-	   (add-data-object collection object)))))
+	   (if (equalp *object-type* 'item)
+	       (add-data-object collection (make-item 
+					    :store (store collection)
+					    :collection collection
+					    :data-type (if (stringp (data-type collection))
+							   (item-data-type (data-type collection))
+							   (name (data-type collection)))		
+					    :values object))
+	       (add-data-object collection object))))))
 
     (format t "Persist collection")
     (time
      (when persist-p	  
        (persist collection)))))
 
-(defun monster-example-lazy-loading ()
-  "naive-store does lazy loading of data from disk when doing queries."
-  
-  (when *universe*
-    ;;Unload the collection (contains the data) if it is already loaded.
-    (let ((collection (get-collection (get-store *universe* "simple-store")
-				      "simple-collection")))
-      ;;Clear the collection
-      (when (loaded-p collection)
-	(setf collection (make-instance 'collection
-					:name "simple-collection")))))
-  (unless *universe*
-    (setup-universe))
-
-  (get-collection (get-store *universe* "simple-store")
-		  "simple-collection")
-  ;;Query the data in the universe
-  (query-simple-data))
 
 (defun monster-size-example (persist-p)
   "This example sets up a store and populates a collection with a 100 data objects and then queries 
-the collection to retrieve the the 50 objects that have a :key >= 50.
+the collection to retrieve the the 50 objects that have a :emp-no >= 50.
 Only peristed if persist-p is t."
   ;;Clear any risidual 
   (tare-down-universe)
@@ -281,13 +387,267 @@ Only peristed if persist-p is t."
   (time
    (query-monster-data)))
 
+
+(defun test-monster-size ()
+  (let* ((test-results)
+	 (query-results (monster-size-example t))
+	 (query-length (length query-results)))
+    
+    (push (list :universe-directory-exists
+		(probe-file
+		 (cl-fad:merge-pathnames-as-directory
+				     (get-temp)
+				     (make-pathname :directory '(:relative "data-universe" "simple-store")))))
+	  test-results)
+   
+    (push (list :collection-log-exists
+		(probe-file
+		 (cl-fad:merge-pathnames-as-file
+		  (get-temp)
+		  (make-pathname :directory '(:relative "data-universe" "simple-store" "simple-collection")
+				 :name "simple-collection"
+				 :type "log"))))
+	  test-results)
+    (let ((objects (data-objects
+			    (get-collection (get-store *universe* "simple-store")
+					    "simple-collection"))))
+       (push (list :data-objects-count-1000000
+		  (= (if (hash-table-p objects)
+			 (hash-table-count objects)
+			 (length objects))
+		     1000000))
+	    test-results))
+
+    (push (list :query-result-count-202 (= query-length 202))
+	   test-results)
+    (tare-down-universe)
+    test-results))
+
+
+
+(defun monster-example-lazy-loading ()
+  "naive-store does lazy loading of data from disk when doing queries."
+
+   ;;Clear any risidual 
+  (tare-down-universe)
+  ;;Setup the data universe aka the objects that will contain the data
+  (setup-universe)
+  ;;Generate some data and put it in the universe objects
+  (populate-monster-data t :size 1000000)
+  
+  (when *universe*
+    ;;Unload the collection (contains the data) if it is already loaded.
+    (let ((collection (get-collection (get-store *universe* "simple-store")
+				      "simple-collection")))
+      ;;Clear the collection
+      (when (loaded-p collection)
+	(setf collection (make-instance 'collection
+					:name "simple-collection")))))
+  
+  ;;Query the data in the universe
+  (query-simple-data))
+
+(defun test-monster-lazy-loading ()
+  (let ((test-results)
+	(query-results (monster-example-lazy-loading)))
+ 
+    (push (list :lazy-query-result-count-51 (= (length query-results) 51))
+	   test-results)
+    test-results))
+
+(defun test-all-monster ()
+  (let ((*collection-class* 'collection))
+    (let ((results))
+      (setf results (append results (test-monster-size)))
+      (setf results (append results (test-monster-lazy-loading)))
+      (tare-down-universe)
+      results)))
+
+(defun test-all-monster-indexed ()
+    (let ((*collection-class* 'collection-indexed))
+      (let ((results))
+	(setf results (append results (test-monster-size)))
+	(setf results (append results (test-monster-lazy-loading)))
+	(tare-down-universe)
+	results)))
+
+(defun test-all-monster-items ()
+  (let ((*object-type* 'item))
+    (let ((results))
+	(setf results (append results (test-monster-size)))
+	(setf results (append results (test-monster-lazy-loading)))
+	;;(tare-down-universe)
+	results)))
+
+(defun key-values-lookup (values)
+  "naive-index use index to get data objects"
+  (unless *universe*
+    (setup-universe))
+
+  (let ((collection (get-collection (get-store *universe* "simple-store")
+				    "simple-collection")))
+    (unless (data-objects collection)     
+      (load-data collection))
+
+    ;;Get objects from index values
+    (index-lookup-values collection values)))
+
+(defun indexed-query (index-values query)
+   "naive-index use index to get and query values"
+  (unless *universe*
+    (setup-universe))
+
+  (let ((collection (get-collection (get-store *universe* "simple-store")
+				    "simple-collection")))
+    (unless (data-objects collection)     
+      (load-data collection))
+
+    (query-data collection
+		:query query
+		:index-values index-values)))
+
+(defun indexed-reduce (index-values query function initial-value)
+   "naive-index use index to get and query values"
+  (unless *universe*
+    (setup-universe))
+
+  (let ((collection (get-collection (get-store *universe* "simple-store")
+				    "simple-collection")))
+    (unless (data-objects collection)     
+      (load-data collection))
+
+    (naive-reduce collection
+		  :index-values index-values
+		  :query query		
+		  :function function
+		  :initial-value initial-value)))
+
+(defun indexed-query-examples ()
+  (let ((cl-naive-store-tests::*collection-class* 'cl-naive-store-tests::collection-indexed)
+	(results))
+    
+    (cl-naive-store-tests::monster-size-example t)
+    (format t "Key value Lookup surname Davis")
+    (time (push (list
+		 :how-many-davises?
+		 (length (cl-naive-store-tests::key-values-lookup  (list :surname "Davis"))))
+		results))
+    (format t "Key value Lookup Indian males.")
+    (time (push (list
+		 :how-many-indian-males?
+		 (length (cl-naive-store-tests::key-values-lookup
+			  (list (list :race "Indian" )
+				(list :gender "Male")))))
+		results))
+    
+    (format t "Indexed Query Indian males with the surname Davis")
+    (time (push (list
+		 :how-many-indian-davises?
+		 (length (cl-naive-store-tests::indexed-query 
+			  (list (list :race "Indian") 	
+				(list :gender "Male"))		
+			  (lambda (object)		
+			    (string-equal (cl-naive-store:getx object :surname) "Davis")))))
+		results))
+    
+    (format t "Indexed Reduce, sum of emp-no's for Indian males with the surname Davis")
+    (time (push (list
+		 :sum-emp-no-indian-davise
+		 (cl-naive-store-tests::indexed-reduce
+		  (list (list :race "Indian") 	
+			(list :gender "Male"))		
+		  (lambda (object)		
+		    (string-equal (cl-naive-store:getx object :surname) "Davis"))
+		  (lambda (result object)
+		    (incf result (cl-naive-store:getx object :emp-no)))
+		  0))
+	   results))
+    results))
+
+
+(defun test-all-monster-indexed-queries ()
+  (let ((test-results))
+    (dolist (result (indexed-query-examples))
+      (push  (list (first result)
+		   (if (and (second result)
+			    (> (second result)
+			       0))
+		       t))
+	     test-results))
+    test-results))
+
+(defun indexed-query-examples-items ()
+  
+  (let ((*object-type* 'item)
+	(results))
+    
+    (cl-naive-store-tests::monster-size-example t)
+    (format t "Key value Lookup surname Davis")
+    (time (push (list
+		 :how-many-davises?
+		 (length (cl-naive-store-tests::key-values-lookup  (list :surname "Davis"))))
+		results))
+    (format t "Key value Lookup Indian males.")
+    (time (push (list
+		 :how-many-indian-males?
+		 (length (cl-naive-store-tests::key-values-lookup
+			  (list (list :race "Indian" )
+				(list :gender "Male")))))
+		results))
+    
+    (format t "Indexed Query Indian males with the surname Davis")
+    (time (push (list
+		 :how-many-indian-davises?
+		 (length (cl-naive-store-tests::indexed-query 
+			  (list (list :race "Indian") 	
+				(list :gender "Male"))		
+			  (lambda (object)		
+			    (string-equal (cl-naive-store:getx object :surname) "Davis")))))
+		results))
+    
+    (format t "Indexed Reduce, sum of emp-no's for Indian males with the surname Davis")
+    (time (push (list
+		 :sum-emp-no-indian-davise
+		 (cl-naive-store-tests::indexed-reduce
+		  (list (list :race "Indian") 	
+			(list :gender "Male"))		
+		  (lambda (object)		
+		    (string-equal (cl-naive-store:getx object :surname) "Davis"))
+		  (lambda (result object)
+		    (incf result (cl-naive-store:getx object :emp-no)))
+		  0))
+	   results))
+    results))
+
+(defun test-all-monster-item-queries ()
+  
+  (let ((*object-type* 'item)
+	(test-results))
+    (dolist (result (indexed-query-examples-items))
+      (push  (list (first result)
+		   (if (and (second result)
+			    (> (second result)
+			       0))
+		       t))
+	     test-results))
+    test-results))
+
+
+(defun test-passed-p (results)
+  (let ((passed-p t))
+    (dolist (test results)
+      (unless (second test)
+	(setf passed-p nil)))
+    passed-p))
+
 #|
-
-(let ((cl-naive-store-tests::*collection-class* 'cl-naive-store::collection))
-  (time (cl-naive-store-tests::monster-size-example t)))
-
-(let ((cl-naive-store-tests::*collection-class* 'cl-naive-store-tests::collection-indexed))
-  (time (cl-naive-store-tests::monster-size-example t)))
-
+(cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-simple))
+(cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-simple-indexed))
+(cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-simple-items))
+(cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster))
+(cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-indexed))
+(cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-indexed-queries))
+(cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-items))
+(cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-item-queries))
 
 |#

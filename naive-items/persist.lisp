@@ -4,7 +4,7 @@
   "Used to write an item."
   (pprint 
    (list
-    :store (name (item-store object))
+    :store (name (store (item-collection object)))
     :collection (name (item-collection object))
     :data-type (if (stringp (item-data-type object))
 		   (item-data-type object)
@@ -23,30 +23,24 @@
 	    (push (getx values (name field)) keys))))
     (reverse keys)))
 
+
+(defmethod index-values ((collection item-collection) (values item) &key &allow-other-keys)
+  (loop for (a b) on (item-values values) by #'cddr
+       when (find a (indexes collection) :test 'equalp)
+
+     :collect (list a b)))
+
+
 (defmethod key-values ((collection item-collection) values &key &allow-other-keys)
   (let ((data-type (data-type collection)))
     (unless data-type
     ;;Raising an error here because its problem with datatype specifications some where.
-      (error "index-keys called with data-type = nil. If this happened on a save look for a mismatch between a collection and its data-type's destinations"))
+      (error "index-keys called with data-type = nil. 
+cl-wfx tip: If this happened on a save look for a mismatch between a collection and its data-type's destinations"))
     (if (item-p values)
 	(key-values% (fields data-type) (item-values values))
 	(key-values% (fields data-type) values))))
 
-
-(defmethod persist-object ((collection collection) item &key allow-key-change-p)
-   (if (item-p item) 
-      (persist item
-	       :collection collection
-	       :allow-key-change-p allow-key-change-p)
-      (persist (make-item 
-		:store (store collection)
-		:collection collection
-		:data-type (if (stringp (data-type collection))
-			       (item-data-type (data-type collection))
-			       (name (data-type collection)))
-		
-		:values item)
-	       :allow-key-change-p allow-key-change-p)))
 
 (defun check-location (item &key collection)
   (let ((col (or collection (item-collection item))))    
@@ -65,7 +59,6 @@
   (plist-to-value-pairs (if (item-p item)
 			   (item-values item)
 			   item)))
-
 (defun set-hash (item)
   
   (unless (item-hash item)
@@ -200,8 +193,8 @@
     
     (dolist (item values)
       (when (item-p item)
-	(let ((hash (key-values-hash collection
-				     (or (item-changes item) (item-values item)))))
+	(let ((hash (key-values collection
+				(or (item-changes item) (item-values item)))))
 	  
 	  (if (gethash hash keyhash)
 	      (setf matching-hashes (push hash matching-hashes)))
@@ -263,9 +256,9 @@
   (let ((change-p (and (item-changes item) (change-in-item-p item)))
 	(lookup-old (or (index-lookup-uuid (item-collection item)
 					   (item-hash item))
-			(index-lookup-values-hash (item-collection item)
+			(index-lookup-values (item-collection item)
 				      (item-values item))))
-	(lookup-new (index-lookup-values-hash (item-collection item)
+	(lookup-new (index-lookup-values (item-collection item)
 				  (item-changes item)))
 	(final-item))
 
@@ -298,7 +291,7 @@
 	      (setf (item-values lookup-old)
 		    (check-item-values% (item-collection item)
 					(item-changes item)
-					allow-key-change-p))
+					allow-key-change-p))	      
 	      (remove-data-object (item-collection item) lookup-old)	      
 	      (push item (data-objects (item-collection lookup-old)))
 	      
@@ -407,6 +400,7 @@
 	 (setf final-item item)))
     
     (when final-item
+      
       (setf (item-deleted-p final-item) (item-deleted-p item)))
     
     final-item))
@@ -446,17 +440,18 @@
 			    item
 			    (check-item-values item allow-key-change-p))))
 
-      (cond (changed-item
-	     (setf item changed-item)
-	     (setf item (add-data-object (item-collection item) item))
-	     (parse-persist-object (or file derived-file)
-				 item))
-	    ((item-deleted-p item)
+      (cond ((item-deleted-p item)
 	     ;;The remove must be done much earlier in the process, take care of it in item persist
 	     ;;rewrite.
 	     (remove-data-object (item-collection item) item)
 	     (parse-persist-object (or file derived-file)
-				 item))
+				   item))
+	    (changed-item
+	     (setf item changed-item)
+	     (setf item (add-data-object (item-collection item) item))
+	     (parse-persist-object (or file derived-file)
+				   item))
+	    
 	    (t
 	     item)))))
 

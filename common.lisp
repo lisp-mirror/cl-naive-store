@@ -60,3 +60,49 @@
       (set-dig-down place (first indicators) value)
       (set-dig-down place indicators value)))
 
+
+(defgeneric getx (object field-name)
+  (:documentation "Returns the value of an field in a data object. By using getx and digx instead of 
+accessing, object values directly the user has the opportunity to change the underlying structure/type of 
+the object without having to rewrite/change a lot of code."))
+
+(defmethod getx (object field-name)
+  (getf object field-name))
+
+(defgeneric (setf getx) (value item field-name &key &allow-other-keys)
+  (:documentation "Sets the value of an field in an object."))
+
+;;The innards of this puppy is courtesy of @stassats, thanx dewd. This does not mean
+;;that he approves of getx or this library! ;)
+(defmethod (setf getx) (value object field-name &key &allow-other-keys)
+  "This implementation of getx is basically (setf getf) but it cannot handle object = nil"
+  (declare (cons object))
+  (loop for cons = object then (cddr cons)
+        for (key nil . rest) = cons
+        when (eq key field-name)
+        do (setf (cadr cons) value)
+           (return)
+        unless rest
+        do (setf (cddr cons) (list field-name value))
+       (return))
+  value)
+
+(defgeneric digx (place &rest indicators)
+  (:documentation "Returns the value of an field in a hierarchical data object. By using getx and digx
+ instead of accessing, object values directly the user has the opportunity to change the underlying 
+structure of the object without having to rewrite a lot of code."))
+
+(defmethod digx (place &rest indicators)
+  (apply 'dig place indicators))
+
+(defgeneric (setf digx) (value place &rest indicators))
+
+(defmethod (setf digx) (value place &rest indicators)
+  (setf (dig place indicators) value))
+
+(defgeneric exists-p (object field-name)
+  (:documentation "Returns t if the data-object has such a field."))
+
+(defmethod exists-p (object field-name)
+  (get-properties object (list field-name)))
+

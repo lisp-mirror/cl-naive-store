@@ -45,33 +45,59 @@
 			 :name (getx collection-def :name)
 			 :location (getx collection-def :location)))))
 
-(defgeneric naive-reduce (collection function query &key initial-value &allow-other-keys)
-  (:documentation "Uses query to select data objects from a collection and then applies the function to 
-those objects."))
+(defgeneric naive-reduce (collection &key query function initial-value &allow-other-keys)
+  (:documentation "Uses query to select data objects from a collection and applies the function to 
+those objects returning the result."))
 
-(defmethod naive-reduce ((collection collection) function query &key initial-value)
+(defmethod naive-reduce ((collection collection) &key query function initial-value  &allow-other-keys)
     ;;Load if not loaded
     (when (or
 	   (not (data-objects collection))
 	   (not (loaded-p collection)))
       (load-data collection))
 
-    (reverse (reduce #'(lambda (result object)
-			  (if (apply query (list object))
-			    (if function		       
-				(funcall function result object)
-				(push object result))
-			    result))
-		      (data-objects collection)
-		      :initial-value initial-value)))
+    (naive-reduce (data-objects collection)
+			:query query
+			:function function
+			:initial-value initial-value))
+
+(defmethod naive-reduce ((hash-table hash-table) &key query function initial-value  &allow-other-keys)
+  (let ((result initial-value))
+    (maphash
+	      (lambda (key object)
+		(declare (ignore key))
+		(if query
+		    (when (funcall query object)
+		      (if function		       
+			  (setf result (funcall function result object))
+			  (push object result)))
+		    (if function
+			(setf result (funcall function result object))
+			(push object result))))
+	      hash-table)))
+
+(defmethod naive-reduce ((list list) &key query function initial-value  &allow-other-keys)
+  (reduce #'(lambda (result object)
+		       (if (apply query (list object))
+			   (if function		       
+			       (funcall function result object)
+			       (push object result))
+			   result))
+		   list
+		   :initial-value initial-value))
 
 (defgeneric query-data (collection &key query &allow-other-keys)
   (:documentation "Returns the data that satisfies the query"))
 
-(defmethod query-data ((collection collection) &key query &allow-other-keys)  
-  (if query
-	(naive-reduce collection nil query :initial-value '())
-	(query-data (data-objects collection))))
+(defmethod query-data ((collection collection) &key query &allow-other-keys)
+  (when (or
+	 (not (data-objects collection))
+	 (not (loaded-p collection)))
+
+    (load-data collection))
+
+  (query-data (data-objects collection)
+		  :query query))
 
 (defmethod query-data ((store store) &key collection-name query &allow-other-keys)
   (let ((collection (get-collection store collection-name)))
@@ -86,7 +112,9 @@ those objects."))
 	(error "Could not create collection ~A" collection-name)))
     
     (if query
-	(naive-reduce collection nil query :initial-value '())
+	(naive-reduce collection
+		      :query query
+		      :initial-value '())
 	(data-objects collection))))
 
 (defgeneric query-data-object (collection &key query &allow-other-keys)
@@ -101,15 +129,20 @@ those objects."))
     (values (first objects) (rest objects))))
 
 (defmethod query-data ((list list) &key query &allow-other-keys)
-  (if query
-      (reduce #'(lambda (result object)
-		  (when (apply query (list object))		
-		    (push result object)))
-	      list
-	      :initial-value '())
-      list))
 
-(defmethod query-data ((hashtable hash-table) &key query &allow-other-keys)
+  (let ((results))
+    
+    (if query
+	(setf results (reduce #'(lambda (result object)		 
+				  (if (apply query (list object))
+				    (push object result)
+				    result))
+			      list
+			      :initial-value '()))
+	list)
+     results))
+
+(defmethod query-data ((hash-table hash-table) &key query &allow-other-keys)
   (let ((objects))
     (maphash
      (lambda (key object)
@@ -118,19 +151,19 @@ those objects."))
 	   (when (funcall query object)
 	     (push object objects))
 	   (push object objects)))
-     hashtable)
+     hash-table)
     objects))
 
 (defmethod query-data-object ((list list) &key query &allow-other-keys)
    (let ((objects (query-data list :query query)))
     (values (first objects) (rest objects))))
 
-(defmethod query-data-object ((hashtable hash-table) &key query &allow-other-keys)
+(defmethod query-data-object ((hash-table hash-table) &key query &allow-other-keys)
   (let ((objects))
     (maphash
      (lambda (key object)
        (declare (ignore key))
        (when (funcall query object)
 	 (push object objects)))
-     hashtable)
+     hash-table)
     (values (first objects) (rest objects))))

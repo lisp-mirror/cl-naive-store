@@ -87,11 +87,14 @@ happen the collection containing the referenced objects need to be loaded first.
 					object))))     
       
       (unless ref-object
-	(write-to-file  (format nil "~Aerror.err" (location (universe (store collection))))
-			(list "Could not resolve reference  ~S" object)))
+	(write-to-file
+	 (cl-fad:merge-pathnames-as-file
+	  (pathname (location (universe (store collection))))
+	  (make-pathname :name "error"
+			 :type "err"))
+			(list "Could not resolve reference  ~S~%" object)))
 
       ref-object)))
-
 
 (defgeneric parse-child-data-object (parent-collection object &key &allow-other-keys)
   (:documentation "Parses the raw child object read from file to its object reprensentation."))
