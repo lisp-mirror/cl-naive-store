@@ -155,11 +155,11 @@ which contain the actual data. Each collection will have its own directory and f
     ;;by default. 
     (dotimes (x size)
       (let* ((object (list 
-			   :race (random-from-list emp-race)
-			   :gender (random-from-list emp-gender)
-			   :surname (random-from-list emp-surnames)
-			   :name (format nil "Slave No ~A" x)			   
-			   :emp-no x)))
+		      :race (random-from-list emp-race)
+		      :gender (random-from-list emp-gender)
+		      :surname (random-from-list emp-surnames)
+		      :name (format nil "Slave No ~A" x)			   
+		      :emp-no x)))
 	
 	;;Persist adds the object to the collection for you but if you dont want to persist
 	;;you need to use add-data-object directly.
@@ -295,9 +295,56 @@ Only peristed if persist-p is t."
     
     test-results))
 
+(defun test-simple-duplicates ()
+  (let ((test-results)
+	(data))
+    ;;Clear any risidual 
+    (tare-down-universe)
+    ;;Setup the data universe aka the objects that will contain the data
+    (setup-universe)
+    ;;Generate some data and put it in the universe objects
+    (populate-simple-data t :size 100)
+    
+
+    ;;Query the data in the universe
+     (setf data (query-simple-data))
+
+    (let ((collection (get-collection (get-store *universe* "simple-store")
+				      "simple-collection")))
+
+      (dolist (object data)
+	(if (equalp *object-type* 'item)
+	    (persist-object collection (make-item 
+					 :store (store collection)
+					 :collection collection
+					 :data-type (if (stringp (data-type collection))
+							(item-data-type (data-type collection))
+							(name (data-type collection)))		
+					 :values (item-values object))
+			    :handle-duplicates-p t)
+	    (persist-object collection 
+			     (list 
+			      :race (getf object :race)
+			      :gender (getf object :gender)
+			      :surname (getf object :surname)
+			      :name (getf object :name)			   
+			      :emp-no (getf object :emp-no))
+			     :handle-duplicates-p t)))
+      
+      ;;Unload the collection (contains the data) if it is already loaded.
+      (when (loaded-p collection)
+	(setf collection (make-instance 'collection
+					:name "simple-collection"))))
+    ;;Query the data in the universe
+    (setf test-results (query-simple-data) )
+
+    (list (list :no-duplicates (= (length data)
+				  (length test-results))))))
+
 (defun test-all-simple ()
   (let ((results))
     (setf results (append results (test-simple)))
+    (setf results (append results (test-simple-duplicates)))
     (setf results (append results (test-lazy-loading)))
     (setf results (append results (test-delete)))))
 
@@ -650,4 +697,28 @@ Only peristed if persist-p is t."
 (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-items))
 (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-item-queries))
 
+
+;;;IGNORE - Used to manually check stuff when writing tests
+(let ((cl-naive-store-tests::*collection-class* 'cl-naive-store::collection))
+    (cl-naive-store-tests::test-simple-duplicates))
+
+(let ((cl-naive-store-tests::*collection-class* 'cl-naive-store-tests::collection-indexed))
+    (cl-naive-store-tests::test-simple-duplicates))
+
+
+(let ((cl-naive-store-tests::*object-type* 'cl-naive-store-tests::item))
+    (cl-naive-store-tests::test-simple-duplicates))
+
+
+(let ((cl-naive-store-tests::*collection-class* 'cl-naive-store-tests::collection-indexed))
+(cl-naive-store-tests::test-simple))
+
+(let ((cl-naive-store-tests::*collection-class* 'cl-naive-store-tests::collection-indexed))
+(cl-naive-store-tests::simple-example))
+
+(cl-naive-store-tests::key-values-lookup  (list :surname "Davis"))
+
+(cl-naive-store-tests::key-values-lookup  (list :race "African" :gender "Male" :surname "Davis" :name "Slave No 3" ))
+
 |#
+

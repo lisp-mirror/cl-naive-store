@@ -416,7 +416,10 @@ cl-wfx tip: If this happened on a save look for a mismatch between a collection 
       (setf (item-persisted-p item) t))
     item))
 
-(defmethod persist ((item item) &key collection file allow-key-change-p
+(defmethod persist ((item item) &key
+				  collection
+				  file
+				  allow-key-change-p
 				  new-file-p
 				  &allow-other-keys)
   (let ((*persist-p* nil)

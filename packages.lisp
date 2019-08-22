@@ -44,6 +44,7 @@
    :store-class
 
    ;;##methods
+   :key-values
    :add-data-object
    :remove-data-object
    :deleted-p

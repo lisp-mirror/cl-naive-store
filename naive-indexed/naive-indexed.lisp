@@ -30,17 +30,7 @@ objects to a collection. naive-store-indexed uses a UUID in its default implemen
 (defmethod (setf hash) (value object)
   (setf (getx object :hash) (frmt "~A" value)))
 
-(defgeneric key-values (collection values &key &allow-other-keys)
-  (:documentation "Returns a set of key values from the values of a data object.
-Looks for :key or uses first value."))
 
-(defmethod key-values (collection values &key &allow-other-keys)
-  (first (loop for (a b) on values by #'cddr
-	    when (equalp a :key)
-	    do (return (list (list a b)))
-	    unless (or (equalp a :hash)
-		       (equalp a :deleted-p))
-	    :collect (list a b))))
 
 (defgeneric index-values (collection values &key &allow-other-keys)
   (:documentation "Returns a set of index values from the values of a data object."))
@@ -51,10 +41,6 @@ Looks for :key or uses first value."))
   (loop for (a b) on values by #'cddr
      when (find a (indexes collection) :test 'equalp)
      :collect (list a b)))
-
-
-
-
 
 (defgeneric index-lookup-values (collection values &key &allow-other-keys)
   (:documentation "Looks up object in key value hash index.
@@ -91,7 +77,7 @@ is set."))
 	(compounded-count 1))
     (dolist (pair index-values)
       ;;Sanity needs to be maintained
-      ;;TODO: Need to make this number configurable, can see some one wanting index
+      ;;TODO: Need to make this number configurable, can see some one wanting to index
       ;;every value for some obscure reason.
       (if (< compounded-count 4)
 	  (progn
@@ -107,25 +93,25 @@ is set."))
 	  (return)))))
 
 (defmethod add-index ((collection indexed-collection-mixin) object &key &allow-other-keys)
-    (let* ((indexed-object (if (hash object)
-			     (index-lookup-uuid collection (hash object))
-			     (index-lookup-values collection object)))
-	   (key-values (key-values collection object))
-	   (index-values (index-values collection object)))
-   
-    (when (or
-	   (not indexed-object)
-	   (empty-p (hash object))
-	   ;;TODO: This needs to be moved to maintenance some time
-	   ;;it was used to replace sxhash with UUID's
-	   ;;when naive was changed to UUID	   
-	   ;;(string-equal (format nil "~A" (hash object)) (format nil "~A" hashx))
-	   )
-      
+
+  (let* ((key-values (key-values collection object))
+	 (indexed-object (or
+			  (index-lookup-uuid collection (hash object))
+			  (first (index-lookup-values collection key-values))))
+	 (index-values (index-values collection object)))
+
+    (when indexed-object
+	(setf (hash object) (hash indexed-object)))
+    
+    (if (empty-p (hash object))
+	
       (let ((uuid (uuid:make-v4-uuid)))
 	;;add the uuid to the object for persistance
 	(setf (hash object) uuid)))
 
+    ;;Used to do object value comparisons to find index-object
+    (setf (gethash  key-values (key-value-index collection))
+	  (list object))
     
     (populate-value-index collection key-values object)
     (populate-value-index collection index-values object)
@@ -143,7 +129,7 @@ is set."))
     
     (dolist (pair index-values)
       ;;Sanity needs to be maintained
-      ;;TODO: Need to make this number configurable, can see some one wanting index
+      ;;TODO: Need to make this number configurable, can see some one wanting to index
       ;;every value for some obscure reason.
       (if (< compounded-count 4)
 	  (progn
@@ -170,6 +156,7 @@ is set."))
   (remove-index collection object))
 
 (defmethod add-data-object ((collection indexed-collection-mixin) object &key &allow-other-keys)
+  "If the an object with the same keys exists the collection it will be overridden."
   (add-index collection object))
 
 

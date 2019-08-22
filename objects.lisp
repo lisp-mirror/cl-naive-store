@@ -15,8 +15,9 @@ Use naive-items if the later behaviour is desired."))
 	       (pathname (location collection))
 	       (make-pathname :name (name collection)
 			      :type "log"))
+   
    (if (not delete-p)
-       (add-data-object collection object :handle-dupliates-p handle-duplicates-p)
+       (add-data-object collection object :handle-duplicates-p handle-duplicates-p)
        object)))
 
 (defgeneric deleted-p (object)
@@ -54,12 +55,28 @@ remove a data object from the underlying file it just marks it as deleted."))
  and data-objects slot of the collection can be used to customize the container (list,array,hash etc) 
 used for data objects. "))
 
+(defgeneric key-values (collection values &key &allow-other-keys)
+  (:documentation "Returns a set of key values from the values of a data object.
+Looks for :key or uses all values"))
+
+(defmethod key-values (collection values &key &allow-other-keys)
+  (declare (ignore collection))
+  (loop for (a b) on values by #'cddr
+	    when (equalp a :key)
+	    do (return (list (list a b)))
+	    unless (or (equalp a :hash)
+		       (equalp a :deleted-p))
+	    :collect (list a b)))
+
 (defmethod add-data-object ((collection collection) object &key (handle-duplicates-p nil) &allow-other-keys)
   "Handling duplicates makes adding objects exponentially slower!! If there are a lot of objects in your
 collections and you need duplicate handling use naive-store-indexed."
+  
   (if handle-duplicates-p
       (pushnew object
-	       (data-objects collection))
+		 (data-objects collection)
+		 :test (lambda (x y)
+			 (equalp (key-values collection x) (key-values collection y))))
       (push object
 	    (data-objects collection)))
   object)

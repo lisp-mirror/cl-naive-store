@@ -11,7 +11,7 @@
    :indexes
    
    :hash
-   :key-values
+
    :index-values
    :index-lookup-values
    :index-lookup-uuid
