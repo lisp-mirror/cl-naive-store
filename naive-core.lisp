@@ -202,15 +202,15 @@ specific in other methods where it is actually needed. Alternatively meta classe
 
 (defun get-collection* (store name)
   "Used internally to find or create a new collection."
+  
   (let ((collection (get-collection store name)))
     (unless collection
       (setf collection (get-collection-from-def store name))
-      
-      (when collection
+       (when collection
 	(add-collection store collection))
       
       (unless collection
-	  (error "Could not create collection ~A" name)))
+	  (error "Could not create collection ~A in store ~A" name (and store (name store)) )))
     collection))
 
 (defgeneric load-data (collection &key &allow-other-keys)

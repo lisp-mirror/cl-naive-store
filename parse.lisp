@@ -37,7 +37,6 @@ collection."))
 (defmethod parse-top-level-data-object ((collection collection) object &key &allow-other-keys)
   (let ((resolved-values )
 	(final-object))
-
   
     (dolist (pair (plist-to-value-pairs object))
       (setf resolved-values (append resolved-values (list (first pair)
@@ -84,8 +83,7 @@ happen the collection containing the referenced objects need to be loaded first.
     (let* ((collection (load-object-reference-collection universe object))
 	   (ref-object (and collection (find-object-by-hash 
 					collection
-					object))))     
-      
+					object))))           
       (unless ref-object
 	(write-to-file
 	 (cl-fad:merge-pathnames-as-file

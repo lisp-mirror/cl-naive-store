@@ -1,4 +1,5 @@
 (in-package :cl-naive-items)
+;;;;There is a lot of legacy code in this file that needs to be redone!!!!
 
 (defmethod write-object ((object item) stream)
   "Used to write an item."
@@ -19,17 +20,14 @@
     (dolist (field fields)     
       (when (key-p field)
 	(if (item-p (getx values (name field)))
-	    (push (item-hash (getx values (name field))) keys)
-	    (push (getx values (name field)) keys))))
+	    (push (list (name field) (item-hash (getx values (name field)))) keys)
+	    (push (list (name field) (getx values (name field))) keys))))
     (reverse keys)))
-
 
 (defmethod index-values ((collection item-collection) (values item) &key &allow-other-keys)
   (loop for (a b) on (item-values values) by #'cddr
        when (find a (indexes collection) :test 'equalp)
-
      :collect (list a b)))
-
 
 (defmethod key-values ((collection item-collection) values &key &allow-other-keys)
   (let ((data-type (data-type collection)))
@@ -37,10 +35,7 @@
     ;;Raising an error here because its problem with datatype specifications some where.
       (error "index-keys called with data-type = nil. 
 cl-wfx tip: If this happened on a save look for a mismatch between a collection and its data-type's destinations"))
-    (if (item-p values)
-	(key-values% (fields data-type) (item-values values))
-	(key-values% (fields data-type) values))))
-
+    (key-values% (fields data-type) (item-values% values))))
 
 (defun check-location (item &key collection)
   (let ((col (or collection (item-collection item))))    
@@ -56,11 +51,9 @@ cl-wfx tip: If this happened on a save look for a mismatch between a collection 
   item)
 
 (defun parse-item (item)
-  (plist-to-value-pairs (if (item-p item)
-			   (item-values item)
-			   item)))
+  (plist-to-value-pairs (item-values% item)))
+
 (defun set-hash (item)
-  
   (unless (item-hash item)
     (let* ((hash (uuid:make-v4-uuid)))
       (setf (item-hash item) hash)
@@ -91,9 +84,9 @@ cl-wfx tip: If this happened on a save look for a mismatch between a collection 
       item))
 
 (defun parse-to-references% (item values location)
-  (let (
-	(final)
+  (let ((final)
 	(value-pairs (parse-item values)))
+
     
     (dolist (pair value-pairs)
       (let ((key (first pair))
@@ -102,7 +95,6 @@ cl-wfx tip: If this happened on a save look for a mismatch between a collection 
 	(if (item-p val)
 	    (setf final (append final
 				(list key (item-to-reference
-					 
 					   val
 					   location))))
 	    (if (or (and val (listp val) (listp (first val)))
@@ -124,12 +116,13 @@ cl-wfx tip: If this happened on a save look for a mismatch between a collection 
 					    (blob-location val))
 
 				       (cl-fad:merge-pathnames-as-file
-					(pathname (location item))
-					(make-pathname :directory (list :relative location key)
-						       :name (item-hash item)
-						       :type (blob-file-ext val))))))
-			   ;;string-blob was converted to stream for persistence
-			   ;;have to reset it to string-blob
+						    (pathname location)
+						    (make-pathname :directory (list :relative  (frmt "~A" key))
+								   :name (item-hash item)
+								   :type (blob-file-ext val))))))
+		
+			 ;;string-blob was converted to stream for persistence
+			 ;;have to reset it to string-blob
 			 (write-blob file (blob-raw val))
 			 (setf final (append final (list key
 							 (list :blob%
@@ -137,8 +130,8 @@ cl-wfx tip: If this happened on a save look for a mismatch between a collection 
 								     :file-type (blob-file-ext val)
 								     :location file)))))))
 			
-			(t
-			 (setf final (append final (list key val)))))))))
+		      (t
+		       (setf final (append final (list key val)))))))))
     final))
 
 
@@ -193,12 +186,12 @@ cl-wfx tip: If this happened on a save look for a mismatch between a collection 
     
     (dolist (item values)
       (when (item-p item)
-	(let ((hash (key-values collection
+	(let ((key-values (key-values collection
 				(or (item-changes item) (item-values item)))))
 	  
-	  (if (gethash hash keyhash)
-	      (setf matching-hashes (push hash matching-hashes)))
-	  (setf (gethash hash keyhash) (push item (gethash hash keyhash))))))
+	  (if (gethash key-values keyhash)
+	      (setf matching-hashes (push key-values matching-hashes)))
+	  (setf (gethash key-values keyhash) (push item (gethash key-values keyhash))))))
 
     (setf matching-hashes nil)
     (dolist (match matching-hashes)
@@ -256,10 +249,10 @@ cl-wfx tip: If this happened on a save look for a mismatch between a collection 
   (let ((change-p (and (item-changes item) (change-in-item-p item)))
 	(lookup-old (or (index-lookup-uuid (item-collection item)
 					   (item-hash item))
-			(index-lookup-values (item-collection item)
-				      (item-values item))))
-	(lookup-new (index-lookup-values (item-collection item)
-				  (item-changes item)))
+			(first (index-lookup-values (item-collection item)
+						    (item-values item)))))
+	(lookup-new (first (index-lookup-values (item-collection item)
+						(item-changes item))))
 	(final-item))
 
     (when change-p
@@ -416,6 +409,10 @@ cl-wfx tip: If this happened on a save look for a mismatch between a collection 
       (setf (item-persisted-p item) t))
     item))
 
+
+
+
+
 (defmethod persist ((item item) &key
 				  collection
 				  file
@@ -424,6 +421,8 @@ cl-wfx tip: If this happened on a save look for a mismatch between a collection 
 				  &allow-other-keys)
   (let ((*persist-p* nil)
 	(derived-file))
+
+ 
     
     (unless file
       ;;Resolve the location of the item
@@ -438,11 +437,12 @@ cl-wfx tip: If this happened on a save look for a mismatch between a collection 
 			  (pathname (location (item-collection item)))
 			  (make-pathname :name (name (item-collection item))
 					 :type "log"))))
-    
+  
     (let ((changed-item (if new-file-p
 			    item
 			    (check-item-values item allow-key-change-p))))
 
+      
       (cond ((item-deleted-p item)
 	     ;;The remove must be done much earlier in the process, take care of it in item persist
 	     ;;rewrite.
@@ -450,6 +450,7 @@ cl-wfx tip: If this happened on a save look for a mismatch between a collection 
 	     (parse-persist-object (or file derived-file)
 				   item))
 	    (changed-item
+
 	     (setf item changed-item)
 	     (setf item (add-data-object (item-collection item) item))
 	     (parse-persist-object (or file derived-file)
@@ -460,3 +461,71 @@ cl-wfx tip: If this happened on a save look for a mismatch between a collection 
 
 
 
+#|
+
+
+;;Started on rewrite
+
+(defgeneric parse-item-to-file-rep (collection line &key &allow-other-keys)
+  (:documentation "Parses the raw object read from file to its object reprensentation."))
+
+(defmethod parse-item-to-file-rep ((collection item-collection) object  &key top-level-p &allow-other-keys)
+  (cond ((null object)
+	 nil)
+	 
+	(top-level-p
+	 (item-to-file-rep collection object))
+	
+	((and (item-p object) (not (item-collection object))) ;;item with no collection
+	 (child-item-to-file-rep collection object))
+	
+	((and (item-p object) (item-collection object)) ;;reference-object
+	 (item-to-file-rep-reference object))
+	;;blob
+	
+	((atom object)
+	 object)
+	
+        ((consp object)
+	 (mapcar (lambda (child)
+		   (parse-item-to-file-rep collection child))
+		 object))
+        (t object)))
+
+(defun item-to-file-rep-reference (item)
+  (list
+   :store (name (item-store item))
+   :collection (name (item-collection item))
+   :data-type (if (stringp (item-data-type item))
+		  (item-data-type item)
+		  (name (item-data-type item)))
+   :hash (item-hash item)
+   :values 
+   '(:reference% t)))
+
+
+(defun child-item-to-file-rep (collection item)
+  (list
+   :data-type (if (stringp (item-data-type item))
+		  (item-data-type item)
+		  (name (item-data-type item)))
+   :hash (item-hash item)
+   :values (parse-item-to-file-rep
+	    collection
+	    (or (item-changes item)
+		(item-values item)))))
+
+(defun item-to-file-rep (collection item)
+  (list
+   :store (name (item-store item))
+   :collection (name (item-collection item))
+   :data-type (if (stringp (item-data-type item))
+		  (item-data-type item)
+		  (name (item-data-type item)))
+   :hash (item-hash item)
+   :values (parse-item-to-file-rep
+	    collection
+	    (or (item-changes item)
+		(item-values item)))))
+
+|#

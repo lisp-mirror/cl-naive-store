@@ -1,25 +1,5 @@
 (in-package :cl-naive-store)
 
-(defgeneric persist-object (collection object &key &allow-other-keys)
-  (:documentation "The default behavior is two just write what ever is given to file.
-Collection is needed to write to the right file and directory.
-
-However this is where tasks checking for duplicates should be done. This is also where 
-reference objects should be converted to a reference% marker instead of writing out the actual object. 
-Use naive-items if the later behaviour is desired."))
- 
-(defmethod persist-object ((collection collection) object &key (handle-duplicates-p nil) delete-p &allow-other-keys)
-  "Writes an data object to file and adds it to the collection."
-  (write-to-file
-   (cl-fad:merge-pathnames-as-file
-	       (pathname (location collection))
-	       (make-pathname :name (name collection)
-			      :type "log"))
-   
-   (if (not delete-p)
-       (add-data-object collection object :handle-duplicates-p handle-duplicates-p)
-       object)))
-
 (defgeneric deleted-p (object)
   (:documentation "Indicates if a data object has been marked as deleted. 
 
@@ -80,3 +60,25 @@ collections and you need duplicate handling use naive-store-indexed."
       (push object
 	    (data-objects collection)))
   object)
+
+(defgeneric persist-object (collection object &key &allow-other-keys)
+  (:documentation "The default behavior is two just write what ever is given to file.
+Collection is needed to write to the right file and directory.
+
+However this is where tasks checking for duplicates should be done. This is also where 
+reference objects should be converted to a reference% marker instead of writing out the actual object. 
+Use naive-items if the later behaviour is desired."))
+ 
+(defmethod persist-object ((collection collection) object &key (handle-duplicates-p nil) delete-p &allow-other-keys)
+  "Writes an data object to file and adds it to the collection."
+  (write-to-file
+   (cl-fad:merge-pathnames-as-file
+	       (pathname (location collection))
+	       (make-pathname :name (name collection)
+			      :type "log"))
+   
+   (if (not delete-p)
+       (add-data-object collection object :handle-duplicates-p handle-duplicates-p)
+       object)))
+
+
