@@ -106,9 +106,11 @@ is set."))
     
     (if (empty-p (hash object))
 	
-      (let ((uuid (uuid:make-v4-uuid)))
+	(let ((uuid (uuid:make-v4-uuid)))
+
 	;;add the uuid to the object for persistance
 	(setf (hash object) uuid)))
+
 
     ;;Used to do object value comparisons to find index-object
     (setf (gethash  key-values (key-value-index collection))

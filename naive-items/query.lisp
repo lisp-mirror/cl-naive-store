@@ -14,8 +14,11 @@
       (setf (item-changes item) (copy-list (item-values item))))
     
     (setf (getf (item-changes item) field-name) value))
+  
   (unless change-control-p
-    (setf (getf (item-values item) field-name) value)))
+    (setf (getf (item-values item) field-name) value))
+ 
+  value)
 
 (defun naive-dig (place indicators)
   (let* ((indicator (pop indicators))
