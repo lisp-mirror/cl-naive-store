@@ -161,6 +161,9 @@
 (defmethod getsfx ((type (eql :css)) field object &key &allow-other-keys)
   (getsfx* field object))
 
+(defmethod getsfx ((type (eql :html)) field object &key &allow-other-keys)
+  (getsfx* field object))
+
 (defmethod getsfx ((type (eql :text-blob)) field object &key &allow-other-keys)
   (getsfx* field object))
 
@@ -321,6 +324,16 @@
 	(setf (blob-raw blob) value)
 	(setf blob (make-blob  :file-type :text
 			       :file-ext "css"
+			       :location ""
+			       :raw value)))
+    (set-getsfx* field object blob)))
+
+(defmethod (setf getsfx) (value (type (eql :html)) field object   &key &allow-other-keys)
+  (let ((blob (getx object (getf field :name))))
+    (if (blob-p blob)
+	(setf (blob-raw blob) value)
+	(setf blob (make-blob  :file-type :text
+			       :file-ext "html"
 			       :location ""
 			       :raw value)))
     (set-getsfx* field object blob)))
