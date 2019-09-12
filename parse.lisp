@@ -59,8 +59,12 @@ happen the collection containing the referenced objects need to be loaded first.
 	 (collection (get-collection* store (getx object-ref :collection))))
     
     ;;Incase the collection exists but has not been loaded try and load it.
-    (when (and collection (not (data-objects collection)))
-      (load-data collection))
+    (when collection
+      (if (hash-table-p (data-objects collection))
+	  (when (<= (hash-table-count (data-objects collection)) 0)
+	      (load-data collection))
+	  (when (not (data-objects collection))
+	    (load-data collection))))
     
     (unless collection
       (add-collection store collection)
@@ -72,6 +76,8 @@ happen the collection containing the referenced objects need to be loaded first.
 
 (defun find-object-by-hash (collection object)
   (dolist (objectx (data-objects collection))
+    (break "~S ~S"  (dig objectx :hash)
+	   (dig object :hash))
     (when (string-equal
 	   (dig objectx :hash)
 	   (dig object :hash))
@@ -85,9 +91,11 @@ happen the collection containing the referenced objects need to be loaded first.
 					collection
 					object))))           
       (unless ref-object
+	(break "fuck")
 	(write-to-file
 	 (cl-fad:merge-pathnames-as-file
 	  (pathname (location (universe (store collection))))
+	  
 	  (make-pathname :name "error"
 			 :type "err"))
 			(list "Could not resolve reference  ~S~%" object)))
