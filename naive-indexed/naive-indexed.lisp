@@ -84,10 +84,10 @@ is set."))
 	    (push pair compounded)
 	    (when (> compounded-count 1)
 	      (setf (gethash (reverse compounded) (key-value-index collection))
-		    (push object (gethash (reverse compounded) (key-value-index collection)))))
+		    (pushnew object (gethash (reverse compounded) (key-value-index collection)))))
 	    
 	    (setf (gethash pair (key-value-index collection))
-		  (push object (gethash pair (key-value-index collection))))
+		  (pushnew object (gethash pair (key-value-index collection))))
 	  
 	    (incf compounded-count))
 	  (return)))))

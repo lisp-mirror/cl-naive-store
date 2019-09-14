@@ -6,7 +6,7 @@
 ;;Create a universe
 (defparameter *universe* (make-instance 
 			  'universe
-			  :location "~/data-universe/"
+			  :location "~/data-universe/" ;Setting the location on disk.
 			  :store-class 'store))
 
 
@@ -25,8 +25,9 @@
   ;;Add some objects to the collection
   (persist-object collection (list :name "Piet" :surname "Gieter" :id 123))
   (persist-object collection (list :name "Sannie" :surname "Gieter" :id 321))
-
-  ;;Clear the collection
+  (persist-object collection (list :name "Koos" :surname "Van" :id 999))
+  
+  ;;Clear the collection, ie unload objects from memory so we can show that it has been persisted.
   (setf (data-objects collection) nil)
 
   ;;Query the collection, query-data will load the data from file if the collection is empty
