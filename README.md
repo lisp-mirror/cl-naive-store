@@ -30,7 +30,9 @@ this can be taken).
 In summary this db is relatively fast and small in memory (if used right) but 
 you have to apply your mind, so use it at your own peril!
 
-For **examples** have a look at the [test.lisp](https://gitlab.com/Harag/cl-naive-store/blob/master/tests/tests.lisp)
+**Documentation** can be found on the [wiki](https://gitlab.com/Harag/cl-naive-store/wikis/home)
+
+**Examples** are also on the [wiki](https://gitlab.com/Harag/cl-naive-store/wikis/examples) or have a look at the [test.lisp](https://gitlab.com/Harag/cl-naive-store/blob/master/tests/tests.lisp)
 it has a lot of comments.
 
 See https://gitlab.com/Harag/cl-wfx to see a very complicated use of 
