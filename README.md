@@ -1,9 +1,12 @@
 # cl-naive-store
 
 cl-naive-store is a simple lazy loading in memory, persistable data store. 
+
 I am hesitant to classify cl-naive-store because by just overriding a couple 
-of methods you could make it what ever you want it to be. That said the default
-implementation can loosely be classified as a nosql document database. 
+of methods you could make it what ever you want it to be. 
+
+That said the default implementation can loosely be classified as a nosql 
+document database. 
 
 **Documentation** can be found on the [wiki](https://gitlab.com/Harag/cl-naive-store/wikis/home)
 
