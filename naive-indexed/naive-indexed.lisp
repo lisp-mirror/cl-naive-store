@@ -92,6 +92,8 @@ is set."))
 	    (incf compounded-count))
 	  (return)))))
 
+;;TODO: key-values function her causes a majour speed reduction ...x10... some where along the line
+;;suspect its because key-values is a method now
 (defmethod add-index ((collection indexed-collection-mixin) object &key &allow-other-keys)
 
   (let* ((key-values (key-values collection object))

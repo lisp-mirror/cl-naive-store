@@ -20,15 +20,18 @@
    :getx
    :digx
    :exists-p
+   :handle-duplicates-p
 
    ;;####naive-core.lisp
    
    ;;##classes
+   :universe
    :collection
    :store
   :name
    :location
    :data-objects
+   :handle-duplicates
    :loaded-p
 
    ;;:store
@@ -46,13 +49,16 @@
    ;;##methods
    :key-values
    :add-data-object
+   :object-values
    :remove-data-object
+   :object-values
    :deleted-p
    :delete-data-object
    :get-store
    :get-data-type
    :get-collection
    :find-collection-definitions
+   :must-handle-duplicates
 
    ;;:persist
    :add-store
@@ -85,8 +91,6 @@
    :parse-child-data-object
    :parse-data-object
   
-   
-
    ;;####load.lisp
    :load-data
    :load-store

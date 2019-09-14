@@ -10,19 +10,6 @@
 		:allocation :class
 		:documentation "Then class that should be usedS to make collection objects.")))
 
-(defstruct item
-  "Data is loaded into these structures from files. Changes slot is used to store setf values
-when using getx the preffered accessor for values. This helps with comparing of values when persisting."
-  store
-  collection
-  data-type
-  hash
-  values
-  changes
-  versions
-  deleted-p
-  persisted-p)
-
 (defmethod hash ((item item))
   (frmt "~A" (item-hash item)))
 

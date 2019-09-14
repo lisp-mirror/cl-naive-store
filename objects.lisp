@@ -35,6 +35,11 @@ remove a data object from the underlying file it just marks it as deleted."))
  and data-objects slot of the collection can be used to customize the container (list,array,hash etc) 
 used for data objects. "))
 
+(defgeneric object-values (object))
+
+(defmethod object-values (object)
+  object)
+
 (defgeneric key-values (collection values &key &allow-other-keys)
   (:documentation "Returns a set of key values from the values of a data object.
 Looks for :key or uses all values"))
@@ -48,17 +53,35 @@ Looks for :key or uses all values"))
 		       (equalp a :deleted-p))
 	    :collect (list a b)))
 
-(defmethod add-data-object ((collection collection) object &key (handle-duplicates-p nil) &allow-other-keys)
-  "Handling duplicates makes adding objects exponentially slower!! If there are a lot of objects in your
-collections and you need duplicate handling use naive-store-indexed."
-  
-  (if handle-duplicates-p
-      (pushnew object
-		 (data-objects collection)
-		 :test (lambda (x y)
-			 (equalp (key-values collection x) (key-values collection y))))
+(defgeneric must-handle-duplicates (object)
+  (:documentation "Check if duplicates should be handled."))
+
+(defmethod must-handle-duplicates ((collection collection))
+  (if (not (handle-duplicates collection))
+      (and (store collection) (must-handle-duplicates (store collection)))
+      (handle-duplicates-p (handle-duplicates collection))))
+
+(defmethod must-handle-duplicates ((store store))
+  (if (not (handle-duplicates store))
+      (and (universe store) (must-handle-duplicates (universe store)))
+      (handle-duplicates-p (handle-duplicates store))))
+
+(defmethod must-handle-duplicates ((universe universe))
+  (handle-duplicates-p (handle-duplicates universe)))
+
+
+(defmethod add-data-object ((collection collection) object &key (handle-duplicates-p t) &allow-other-keys)
+  "To get a better performance for first time loading of data you can set handle-duplicates-p to nil to speed up things."
+  (if (not handle-duplicates-p)
       (push object
-	    (data-objects collection)))
+	    (data-objects collection))
+      (if (must-handle-duplicates collection)
+	  (pushnew object
+		   (data-objects collection)
+		   :test (lambda (x y)
+			   (equalp (key-values collection x) (key-values collection y))))
+	  (push object
+		(data-objects collection))))
   object)
 
 (defgeneric persist-object (collection object &key &allow-other-keys)
@@ -69,7 +92,7 @@ However this is where tasks checking for duplicates should be done. This is also
 reference objects should be converted to a reference% marker instead of writing out the actual object. 
 Use naive-items if the later behaviour is desired."))
  
-(defmethod persist-object ((collection collection) object &key (handle-duplicates-p nil) delete-p &allow-other-keys)
+(defmethod persist-object ((collection collection) object &key (handle-duplicates-p t) delete-p &allow-other-keys)
   "Writes an data object to file and adds it to the collection."
   (write-to-file
    (cl-fad:merge-pathnames-as-file
@@ -80,5 +103,4 @@ Use naive-items if the later behaviour is desired."))
    (if (not delete-p)
        (add-data-object collection object :handle-duplicates-p handle-duplicates-p)
        object)))
-
 

@@ -106,3 +106,5 @@ structure of the object without having to rewrite a lot of code."))
 (defmethod exists-p (object field-name)
   (get-properties object (list field-name)))
 
+(defun handle-duplicates-p (code)
+  (equalp code :yes))

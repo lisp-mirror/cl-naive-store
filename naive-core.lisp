@@ -21,7 +21,23 @@
 querying data (ie high touch) I only saw .7 seconds diff between an array of 10 mil (3.154) and a 
 list of ten mil (3.851) plist data objects. The bulk of time is used to access a field in a data 
 object and doing comparisons, so if you are desperate for speed look there. If you are using 
-naive-store for more than 10 mil objects in a collection please let me know! ")  
+naive-store for more than 10 mil objects in a collection please let me know! ")
+
+   (handle-duplicates :initarg :handle-duplicates
+	     :accessor handle-duplicates
+	     :initform :yes
+	     :documentation "Duplicates are not allowed by default but this can be swithed of by setting 
+hanlde-duplicates to :no. This can be set on universe, store or collection level.
+
+Handling duplicates makes adding objects exponentially slower!! If there are a lot of objects in your 
+collections and use naive-store-indexed it is mutch faster when handling duplicates.
+
+Note: Using :yes and :no instead of just nil and t so that a collection or store can differ from 
+its parent's setting.
+")
+   
+
+   
    (loaded-p :initarg :loaded-p
 	  :accessor loaded-p
 	  :initform nil
@@ -49,7 +65,19 @@ naive-store for more than 10 mil objects in a collection please let me know! ")
    (location :initarg :location
 	     :accessor location
 	     :initform nil
-	     :documentation "The directory path to the data-type files and collection files for this store."))
+	     :documentation "The directory path to the data-type files and collection files for this store.")
+   (handle-duplicates :initarg :handle-duplicates
+	     :accessor handle-duplicates
+	     :initform :yes
+	     :documentation "Duplicates are not allowed by default but this can be swithed of by setting 
+hanlde-duplicates to :no. This can be set on universe, store or collection level.
+
+Handling duplicates makes adding objects exponentially slower!! If there are a lot of objects in your 
+collections and use naive-store-indexed it is mutch faster when handling duplicates.
+
+Note: Using :yes and :no instead of just nil and t so that a collection or store can differ from 
+its parent's setting.
+"))
   (:documentation "Data types and their associated collections are organized into groups called stores. 
 
 Collection-class and data-type-class is delcaritively specied here because they are dynamicly created 
@@ -80,8 +108,19 @@ specific in other methods where it is actually needed. Alternatively meta classe
 	     :initform (cl-fad:merge-pathnames-as-directory
 			(user-homedir-pathname)
 			(make-pathname :directory (list :relative "data-universe")))
-	 
-	     :documentation "Directory path to stores."))
+	     :documentation "Directory path to stores.")
+   (handle-duplicates :initarg :handle-duplicates
+	     :accessor handle-duplicates
+	     :initform :yes
+	     :documentation "Duplicates are not allowed by default but this can be swithed of by setting 
+hanlde-duplicates to :no. This can be set on universe, store or collection level.
+
+Handling duplicates makes adding objects exponentially slower!! If there are a lot of objects in your 
+collections and use naive-store-indexed it is mutch faster when handling duplicates.
+
+Note: Using :yes and :no instead of just nil and t so that a collection or store can differ from 
+its parent's setting.
+"))
   (:documentation "Stores are held by a universe to make up a database." ))
 
 

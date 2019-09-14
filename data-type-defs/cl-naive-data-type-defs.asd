@@ -1,6 +1,6 @@
 (defsystem "cl-naive-data-type-defs"
   :description "Add on for cl-naive-store that supplies some predefined field data types and methods for getting, setting and validating them."
-  :version "2019.08.19"
+  :version "2019.9.14"
   :author "Phil Marneweck <phil@psychedelic.co.za>"
   :licence "MIT"
   :depends-on ("cl-naive-store")

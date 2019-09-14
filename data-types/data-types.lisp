@@ -258,3 +258,21 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
   (load-store-data-types store)
   (load-store-collections store with-data-p))
 
+(declaim (inline  values-from-key-fields%))
+(defun values-from-key-fields% (fields object)
+    (let ((keys)
+	(values (object-values object)))
+    (dolist (field fields)     
+      (when (key-p field)
+	(push (list (name field) nil (getx values (name field)))
+	      keys)))
+    (reverse keys)))
+
+
+(defmethod key-values ((collection data-type-collection-mixin) object &key &allow-other-keys)
+  (let ((data-type (data-type collection)))
+    (unless data-type
+    ;;Raising an error here because its problem with datatype specifications some where.
+      (error "index-keys called with data-type = nil. 
+cl-wfx tip: If this happened on a save look for a mismatch between a collection and its data-type's destinations"))
+    (values-from-key-fields% (fields data-type) object)))

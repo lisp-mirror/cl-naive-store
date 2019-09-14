@@ -17,6 +17,8 @@
 
 (defparameter *object-type* :plist)
 
+(defparameter *monster-size* 100000)
+
 (defclass collection-indexed (indexed-collection-mixin collection)
   ())
 
@@ -321,15 +323,14 @@ Only peristed if persist-p is t."
 							(item-data-type (data-type collection))
 							(name (data-type collection)))		
 					 :values (item-values object))
-			    :handle-duplicates-p t)
+			    )
 	    (persist-object collection 
 			     (list 
 			      :race (getf object :race)
 			      :gender (getf object :gender)
 			      :surname (getf object :surname)
 			      :name (getf object :name)			   
-			      :emp-no (getf object :emp-no))
-			     :handle-duplicates-p t)))
+			      :emp-no (getf object :emp-no)))))
       
       ;;Unload the collection (contains the data) if it is already loaded.
       (when (loaded-p collection)
@@ -366,11 +367,11 @@ Only peristed if persist-p is t."
 					 (>= (getx data-object :emp-no) 50)
 					 (<= (getx data-object :emp-no) 100))
 					(and
-					 (>= (getx data-object :emp-no) 500000)
-					 (<= (getx data-object :emp-no) 500100))
+					 (>= (getx data-object :emp-no) (/ *monster-size* 2))
+					 (<= (getx data-object :emp-no) (+ (/ *monster-size* 2) 100)))
 					(and
-					 (>= (getx data-object :emp-no) 999950)
-					 (<= (getx data-object :emp-no) 1000000)))))))
+					 (>= (getx data-object :emp-no) (- *monster-size* 50))
+					 (<= (getx data-object :emp-no) *monster-size*)))))))
 
 (defun populate-monster-data (persist-p &key (size 100))
   (let ((collection (get-collection (get-store *universe* "simple-store")
@@ -410,7 +411,9 @@ Only peristed if persist-p is t."
 							   (item-data-type (data-type collection))
 							   (name (data-type collection)))		
 					    :values object))
-	       (add-data-object collection object))))))
+	       ;;To speed up loading of objects I am switching of duplicate handling.
+	       (add-data-object collection object
+				:handle-duplicates-p nil))))))
 
     (format t "Persist collection")
     (time
@@ -427,7 +430,7 @@ Only peristed if persist-p is t."
   ;;Setup the data universe aka the objects that will contain the data
   (setup-universe)
   ;;Generate some data and put it in the universe objects
-  (populate-monster-data persist-p :size 1000000)
+  (populate-monster-data persist-p :size *monster-size*)
 
   (format t "Query moster collection")
   ;;Query the data in the universe
@@ -458,11 +461,11 @@ Only peristed if persist-p is t."
     (let ((objects (data-objects
 			    (get-collection (get-store *universe* "simple-store")
 					    "simple-collection"))))
-       (push (list :data-objects-count-1000000
+       (push (list :data-objects-count-monster
 		  (= (if (hash-table-p objects)
 			 (hash-table-count objects)
 			 (length objects))
-		     1000000))
+		     *monster-size*))
 	    test-results))
 
     (push (list :query-result-count-202 (= query-length 202))
@@ -480,7 +483,7 @@ Only peristed if persist-p is t."
   ;;Setup the data universe aka the objects that will contain the data
   (setup-universe)
   ;;Generate some data and put it in the universe objects
-  (populate-monster-data t :size 1000000)
+  (populate-monster-data t :size *monster-size*)
   
   (when *universe*
     ;;Unload the collection (contains the data) if it is already loaded.
@@ -714,11 +717,12 @@ Only peristed if persist-p is t."
 (cl-naive-store-tests::test-simple))
 
 (let ((cl-naive-store-tests::*collection-class* 'cl-naive-store-tests::collection-indexed))
-(cl-naive-store-tests::simple-example))
+(cl-naive-store-tests::monster-size-example t))
 
 (cl-naive-store-tests::key-values-lookup  (list :surname "Davis"))
 
 (cl-naive-store-tests::key-values-lookup  (list :race "African" :gender "Male" :surname "Davis" :name "Slave No 3" ))
 
 |#
+
 

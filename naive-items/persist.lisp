@@ -15,6 +15,10 @@
     :values (item-values object))
    stream))
 
+(defmethod object-values ((object item))
+  (item-values object))
+
+(declaim (inline  values-from-key-fields%))
 (defun key-values% (fields values)
   (let ((keys))
     (dolist (field fields)     
@@ -29,13 +33,13 @@
        when (find a (indexes collection) :test 'equalp)
      :collect (list a b)))
 
-(defmethod key-values ((collection item-collection) values &key &allow-other-keys)
+(defmethod key-values ((collection item-collection) object &key &allow-other-keys)
   (let ((data-type (data-type collection)))
     (unless data-type
     ;;Raising an error here because its problem with datatype specifications some where.
       (error "index-keys called with data-type = nil. 
 cl-wfx tip: If this happened on a save look for a mismatch between a collection and its data-type's destinations"))
-    (key-values% (fields data-type) (item-values% values))))
+    (key-values% (fields data-type) (object-values object))))
 
 (defun check-location (item &key collection)
   (let ((col (or collection (item-collection item))))    
@@ -51,7 +55,7 @@ cl-wfx tip: If this happened on a save look for a mismatch between a collection 
   item)
 
 (defun parse-item (item)
-  (plist-to-value-pairs (item-values% item)))
+  (plist-to-value-pairs (object-values item)))
 
 (defun set-hash (item)
   (unless (item-hash item)
