@@ -90,11 +90,7 @@ those objects returning the result."))
   (:documentation "Returns the data that satisfies the query"))
 
 (defmethod query-data ((collection collection) &key query &allow-other-keys)
-  (when (or
-	 (not (data-objects collection))
-	 (not (loaded-p collection)))
-
-    (load-data collection))
+  (load-data% collection)
 
   (query-data (data-objects collection)
 		  :query query))

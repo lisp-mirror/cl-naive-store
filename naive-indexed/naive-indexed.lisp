@@ -49,7 +49,8 @@ If you are not using data-types then the order of values matter."))
 (defmethod index-lookup-values ((collection collection) values &key &allow-other-keys) 
  )
 
-(defmethod index-lookup-values ((collection indexed-collection-mixin) values &key &allow-other-keys)  
+(defmethod index-lookup-values ((collection indexed-collection-mixin) values &key &allow-other-keys)
+
   (gethash values
 	   (key-value-index collection)))
 
@@ -207,9 +208,6 @@ is set."))
 
 (defun indexed-values (collection index-values)
   (let ((data))
-
-    
-    
     (dolist (index index-values)
       (let ((objects (index-lookup-values collection index)))
 	(when objects
@@ -221,11 +219,7 @@ is set."))
 The query and funcion is applied to the preselected objects or full collection returning the results."
   
   ;;Load if not loaded
-  (when (or
-	 (not (data-objects collection))
-	 (not (loaded-p collection)))
-
-    (load-data collection))
+  (cl-naive-store::load-data% collection)
     
   (naive-reduce (or (indexed-values collection index-values)
 		    (data-objects collection))
@@ -234,11 +228,7 @@ The query and funcion is applied to the preselected objects or full collection r
 		:initial-value initial-value))
 
 (defmethod query-data ((collection indexed-collection-mixin) &key index-values query &allow-other-keys)
-  (when (or
-	   (not (data-objects collection))
-	   (not (loaded-p collection)))
-
-      (load-data collection))
+  (cl-naive-store::load-data% collection)
 
   (query-data (or (indexed-values collection index-values)
 		  (data-objects collection))

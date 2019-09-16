@@ -435,7 +435,7 @@ cl-wfx tip: If this happened on a save look for a mismatch between a collection 
       ;;Need to make sure there is really no data in the collection
       ;;else we end up with duplicates
       (unless (loaded-p (item-collection item))
-	(load-data (item-collection item)))
+	(cl-naive-store::load-data% (item-collection item)))
       
       (setf derived-file (cl-fad:merge-pathnames-as-file
 			  (pathname (location (item-collection item)))

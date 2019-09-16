@@ -49,6 +49,12 @@ collection."))
     
     final-object))
 
+(defun load-data% (collection)
+  (if (hash-table-p (data-objects collection))
+	  (when (<= (hash-table-count (data-objects collection)) 0)
+	      (load-data collection))
+	  (when (not (data-objects collection))
+	    (load-data collection))))
 
 (defun load-object-reference-collection (universe object-ref)
   "When objects are persisted to file any object values that are referencing an object in a different
@@ -60,11 +66,7 @@ happen the collection containing the referenced objects need to be loaded first.
     
     ;;Incase the collection exists but has not been loaded try and load it.
     (when collection
-      (if (hash-table-p (data-objects collection))
-	  (when (<= (hash-table-count (data-objects collection)) 0)
-	      (load-data collection))
-	  (when (not (data-objects collection))
-	    (load-data collection))))
+      (load-data% collection))
     
     (unless collection
       (add-collection store collection)
