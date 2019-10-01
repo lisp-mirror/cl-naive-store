@@ -43,6 +43,7 @@
       (make-instance (collection-class store)
 			 :store store
 			 :name (getx collection-def :name)
+			 :data-type (getx collection-def :data-type)
 			 :location (getx collection-def :location)))))
 
 (defgeneric naive-reduce (collection &key query function initial-value &allow-other-keys)

@@ -24,6 +24,6 @@
    :data-type-class
    :data-types
 
-   
+   :get-data-type-from-def
    :get-data-type
    :add-data-type))

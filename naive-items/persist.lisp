@@ -34,11 +34,20 @@
      :collect (list a b)))
 
 (defmethod key-values ((collection item-collection) object &key &allow-other-keys)
-  (let ((data-type (data-type collection)))
+  (let ((data-type (or (data-type collection) (if (item-p object) (item-data-type object)))))
+
+    (when (stringp data-type)
+      ;;If types have not been loaded yet load type.
+      (unless (data-types (store collection))
+	(get-data-type-from-def (store collection) data-type))
+      
+      (setf data-type (get-data-type (store collection) data-type)))
+    
     (unless data-type
     ;;Raising an error here because its problem with datatype specifications some where.
       (error "index-keys called with data-type = nil. 
 cl-wfx tip: If this happened on a save look for a mismatch between a collection and its data-type's destinations"))
+    
     (key-values% (fields data-type) (object-values object))))
 
 (defun check-location (item &key collection)
@@ -115,14 +124,14 @@ cl-wfx tip: If this happened on a save look for a mismatch between a collection 
 			(setf children (append children (list it)))))
 		  (setf final (append final (list key children))))
 		(cond ((blob-p val)
-		      
+		  
 		       (let ((file (or (and (not (empty-p (blob-location val)))
 					    (blob-location val))
 
 				       (cl-fad:merge-pathnames-as-file
 						    (pathname location)
 						    (make-pathname :directory (list :relative  (frmt "~A" key))
-								   :name (item-hash item)
+								   :name (frmt "~A" (item-hash item))
 								   :type (blob-file-ext val))))))
 		
 			 ;;string-blob was converted to stream for persistence

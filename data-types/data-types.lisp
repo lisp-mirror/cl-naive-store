@@ -108,7 +108,6 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
   
   (:documentation "Collection extention to make collection of a specific data-type."))
 
-
 (defmethod persist-collection-def ((collection data-type-collection-mixin))
   (write-to-file
    (cl-fad:merge-pathnames-as-file
@@ -162,6 +161,46 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
 			 :name (getx collection-def :name)
 			 :location (getx collection-def :location)
 			 :data-type data-type))))))
+
+(defgeneric get-data-type-from-def (store data-type-name))
+
+(defmethod get-data-type-from-def ((store store) data-type-name)
+  (let ((filename (cl-fad:merge-pathnames-as-file
+		   (pathname (location store))
+		   (make-pathname :name data-type-name
+				  :type "type")))
+	(data-type-def))
+
+    (with-open-file (in filename :if-does-not-exist :create)
+      (with-standard-io-syntax
+	(when in
+	  (setf data-type-def (read in nil))
+	  (close in))))
+
+    (when data-type-def
+      (let ((fields)
+	    (data-type (add-data-type 
+			store 
+			(make-instance (data-type-class store)
+				       :name (getx data-type-def :name)
+				       :label (getx data-type-def :label)
+				       :top-level-p (getx data-type-def :top-level-p)
+				       :fields nil))))
+	
+	(dolist (field (getx data-type-def :fields))
+	 (setf fields 
+		(append fields 
+			(list (make-instance
+			       (field-class data-type)
+			       :name (getx field :name)
+			       :key-p (getx field :key-p)
+			       :type-def (getx field :type-def)
+			       :attributes (getx field :attributes)))))
+	  
+	  setf fields )
+	(setf (fields data-type) fields)
+	
+	data-type))))
 
 (defgeneric get-data-type (store type-name)
   (:documentation "Returns a data-type object if found in the store."))
@@ -271,8 +310,17 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
 
 (defmethod key-values ((collection data-type-collection-mixin) object &key &allow-other-keys)
   (let ((data-type (data-type collection)))
+
+    (when (stringp data-type)
+      ;;If types have not been loaded yet load type.
+      (unless (data-types (store collection))
+	(get-data-type-from-def (store collection) data-type))
+      
+      (setf data-type (get-data-type (store collection) data-type)))
+    
     (unless data-type
     ;;Raising an error here because its problem with datatype specifications some where.
       (error "index-keys called with data-type = nil. 
 cl-wfx tip: If this happened on a save look for a mismatch between a collection and its data-type's destinations"))
+    
     (values-from-key-fields% (fields data-type) object)))
