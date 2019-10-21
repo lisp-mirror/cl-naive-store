@@ -51,10 +51,10 @@ collection."))
 
 (defun load-data% (collection)
   (if (hash-table-p (data-objects collection))
-	  (when (<= (hash-table-count (data-objects collection)) 0)
-	      (load-data collection))
-	  (when (not (data-objects collection))
-	    (load-data collection))))
+      (when (<= (hash-table-count (data-objects collection)) 0)
+	(load-data collection))
+      (when (not (data-objects collection))
+	(load-data collection))))
 
 (defun load-object-reference-collection (universe object-ref)
   "When objects are persisted to file any object values that are referencing an object in a different

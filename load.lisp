@@ -6,6 +6,7 @@
 		   (make-pathname :name (name collection)
 				  :type "log"))))
 
+    
     (with-open-file (in filename :if-does-not-exist :create)
       (with-standard-io-syntax      
 	(when in

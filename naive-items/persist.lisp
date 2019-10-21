@@ -230,7 +230,9 @@ cl-wfx tip: If this happened on a save look for a mismatch between a collection 
 	    (setf final (append final
 				(list key
 				      (if (item-collection val)
-					  (persist val :allow-key-change-p allow-key-change-p)
+					  (if (item-changes val)
+					      (persist val :allow-key-change-p allow-key-change-p)
+					      val)
 					  (check-no-collection-val collection val allow-key-change-p)))))
 	    (if (or (and val (listp val) (listp (first val)))
 		    (and val (listp val) (item-p (first val))))
@@ -243,7 +245,9 @@ cl-wfx tip: If this happened on a save look for a mismatch between a collection 
 			      (append children 
 				      (list
 				       (if (item-collection it)
-					   (persist it :allow-key-change-p allow-key-change-p)
+					   (if (item-changes it)				       
+					       (persist it :allow-key-change-p allow-key-change-p)
+					       it)
 					   (check-no-collection-val collection it allow-key-change-p)))))
 			
 			(setf children (append children (list it)))))
@@ -435,8 +439,6 @@ cl-wfx tip: If this happened on a save look for a mismatch between a collection 
   (let ((*persist-p* nil)
 	(derived-file))
 
- 
-    
     (unless file
       ;;Resolve the location of the item
       (setf item (check-location item :collection collection))
@@ -445,25 +447,25 @@ cl-wfx tip: If this happened on a save look for a mismatch between a collection 
       ;;else we end up with duplicates
       (unless (loaded-p (item-collection item))
 	(cl-naive-store::load-data% (item-collection item)))
-      
+
       (setf derived-file (cl-fad:merge-pathnames-as-file
 			  (pathname (location (item-collection item)))
 			  (make-pathname :name (name (item-collection item))
 					 :type "log"))))
-  
+
     (let ((changed-item (if new-file-p
 			    item
 			    (check-item-values item allow-key-change-p))))
 
-      
       (cond ((item-deleted-p item)
 	     ;;The remove must be done much earlier in the process, take care of it in item persist
 	     ;;rewrite.
 	     (remove-data-object (item-collection item) item)
 	     (parse-persist-object (or file derived-file)
 				   item))
+	    
 	    (changed-item
-
+             
 	     (setf item changed-item)
 	     (setf item (add-data-object (item-collection item) item))
 	     (parse-persist-object (or file derived-file)

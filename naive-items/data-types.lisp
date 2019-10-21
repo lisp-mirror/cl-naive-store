@@ -7,7 +7,8 @@
 
 (defmethod (setf getfx) (value (item item) field
 			 &key &allow-other-keys)
-   (let ((db-type (db-type-get-set field)))
+  
+  (let ((db-type (db-type-get-set field)))
      (setf (getsfx db-type field item) value)))
 
 (defmethod (setf getsfx) (value (type (eql :item)) field item
@@ -29,9 +30,11 @@
 	(final-val))
     
     (if (item-p value)
-		(setf final-val value)
-		(error (frmt "~S is not of type ~A!" value
-			   (dig field :db-type :data-spec))))
+	(setf final-val value)
+	(if (not (empty-p value))
+	    (error (frmt "~S is not of type ~A!" value
+			   (dig field :db-type :data-spec)))
+	  (setf final-val nil)))
     (setf (getx item name) final-val)))
 
 (defmethod (setf getsfx) (value (type (eql :collection-contained-item))
@@ -40,9 +43,11 @@
 	(final-val))
     
     (if (item-p value)
-		(setf final-val value)
-		(error (frmt "~S is not of type ~A!" value
-			   (dig field :db-type :data-spec))))
+	(setf final-val value)
+	(if (not (empty-p value))
+	    (error (frmt "~S is not of type ~A!" value
+			   (dig field :db-type :data-spec)))
+	  (setf final-val nil)))
     (setf (getx item name) final-val)))
 
 

@@ -18,8 +18,8 @@
    (equal value "")
    (if (stringp value)
        (or (string-equal value "NIL")
-	   (string-equal value "NULL")))
-   (equal (trim-whitespace (princ-to-string value)) "")))
+	   (string-equal value "NULL")
+	   (equal (trim-whitespace value) "")))))
 
 ;;TODO: There must be a lisp function that already does this
 (defun plist-to-values (values)

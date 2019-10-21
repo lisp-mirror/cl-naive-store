@@ -65,27 +65,27 @@ those objects returning the result."))
 (defmethod naive-reduce ((hash-table hash-table) &key query function initial-value  &allow-other-keys)
   (let ((result initial-value))
     (maphash
-	      (lambda (key object)
-		(declare (ignore key))
-		(if query
-		    (when (funcall query object)
-		      (if function		       
-			  (setf result (funcall function result object))
-			  (push object result)))
-		    (if function
-			(setf result (funcall function result object))
-			(push object result))))
-	      hash-table)))
+     (lambda (key object)
+       (declare (ignore key))
+       (if query
+	   (when (funcall query object)
+	     (if function		       
+		 (setf result (funcall function result object))
+		 (push object result)))
+	   (if function
+	       (setf result (funcall function result object))
+	       (push object result))))
+     hash-table)))
 
 (defmethod naive-reduce ((list list) &key query function initial-value  &allow-other-keys)
   (reduce #'(lambda (result object)
-		       (if (apply query (list object))
-			   (if function		       
-			       (funcall function result object)
-			       (push object result))
-			   result))
-		   list
-		   :initial-value initial-value))
+	      (if (apply query (list object))
+		  (if function		       
+		      (funcall function result object)
+		      (push object result))
+		  result))
+	  list
+	  :initial-value initial-value))
 
 (defgeneric query-data (collection &key query &allow-other-keys)
   (:documentation "Returns the data that satisfies the query"))
@@ -126,9 +126,7 @@ those objects returning the result."))
     (values (first objects) (rest objects))))
 
 (defmethod query-data ((list list) &key query &allow-other-keys)
-
   (let ((results))
-    
     (if query
 	(setf results (reduce #'(lambda (result object)		 
 				  (if (apply query (list object))
