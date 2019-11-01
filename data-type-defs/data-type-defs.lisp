@@ -140,6 +140,9 @@
 (defmethod getsfx ((type (eql :integer)) field object &key &allow-other-keys)
    (getsfx* field object))
 
+(defmethod getsfx ((type (eql :date-time)) field object &key &allow-other-keys)
+  (getsfx* field object))
+
 (defmethod getsfx ((type (eql :date)) field object &key &allow-other-keys)
   (getsfx* field object))
 
@@ -286,6 +289,21 @@
 (defmethod (setf getsfx) (value (type (eql :integer)) field object
 			 &key &allow-other-keys)
   (setsfx-read* field object value #'numberp "~R is not an integer!"))
+
+(defmethod (setf getsfx) (value (type (eql :date-time)) field object
+			  &key &allow-other-keys)
+  (let* ((name (getx field :name)))
+    (if (stringp value)
+	(if (> (length value) 18)
+	    (setf (getx object name) (local-time:parse-timestring value))
+	    (if (= (length value) 16)
+		  (setf (getx object name)
+			  (local-time:parse-timestring
+			   (format nil "~A~A" value
+				   (subseq (format nil "~A" (local-time:now) ) 16))))
+		  (setf (getx object name) value)))
+	(setf (getx object name) value)
+	)))
 
 (defmethod (setf getsfx) (value (type (eql :date)) field object
 			 &key &allow-other-keys)

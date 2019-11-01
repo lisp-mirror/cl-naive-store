@@ -1,5 +1,7 @@
 (in-package :cl-naive-store)
 
+(local-time:enable-read-macros)
+
 (declaim (inline frmt))
 (defun frmt (control-string &rest args)
   "Short hand for (format nil ..)."
@@ -108,3 +110,32 @@ structure of the object without having to rewrite a lot of code."))
 
 (defun handle-duplicates-p (code)
   (equalp code :yes))
+
+(defun push-relpace (new list &key key test keep-order-p)
+  (let ((new-list)
+	(match-pp))
+    (dolist (object list)
+
+      (let ((match (if key
+		       (if test
+			   (funcall test
+				    (funcall key object)
+				    (funcall key new))
+			   (equalp (funcall key object)
+				   (funcall key new)))
+		       (if test
+			   (funcall test object new)))))
+	(when match
+	  (setf match-pp t)
+	  (push new new-list))
+	
+	(unless match
+	  (push object new-list))))
+
+  (unless match-pp
+    (push new new-list))
+
+  (if keep-order-p
+      (reverse new-list)
+      new-list)
+  ))

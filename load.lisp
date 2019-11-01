@@ -7,14 +7,14 @@
 				  :type "log"))))
 
     
+    
     (with-open-file (in filename :if-does-not-exist :create)
-      (with-standard-io-syntax      
-	(when in
+      (when in
 	  (loop for line = (read in nil)
 	     while line
 	     do (parse-data-object
 		 collection line :top-level-p t))
-	  (close in))))
+	  (close in)))
     
     (setf (loaded-p collection) t)))
 
@@ -42,10 +42,9 @@
     (dolist (file files)
       (let ((file-contents))
 	(with-open-file (in file :if-does-not-exist :create)
-	  (with-standard-io-syntax              
-	    (when in
+	  (when in
 	      (setf file-contents (read in nil))
-	      (close in))))
+	      (close in)))
 	
 	(when file-contents
 	  (let ((collection
@@ -67,10 +66,9 @@
     (dolist (file files)
       (let ((file-contents))
 	(with-open-file (in file :if-does-not-exist :create)
-	  (with-standard-io-syntax              
-	    (when in
+	  (when in
 	      (setf file-contents (read in nil))
-	      (close in))))
+	      (close in)))
 	(when file-contents
 	  (let ((store (add-store 
 			universe

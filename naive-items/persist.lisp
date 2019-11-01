@@ -206,7 +206,6 @@ cl-wfx tip: If this happened on a save look for a mismatch between a collection 
 	      (setf matching-hashes (push key-values matching-hashes)))
 	  (setf (gethash key-values keyhash) (push item (gethash key-values keyhash))))))
 
-    ;;(setf matching-hashes nil)
     (dolist (match matching-hashes)
       (let* ((items (gethash match keyhash))
 	     (new-duplicate-item (new-duplicate-item items)))

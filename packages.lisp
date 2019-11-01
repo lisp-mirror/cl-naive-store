@@ -21,7 +21,8 @@
    :digx
    :exists-p
    :handle-duplicates-p
-
+   :push-replace
+   
    ;;####naive-core.lisp
    
    ;;##classes

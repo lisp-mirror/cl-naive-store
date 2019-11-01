@@ -3,7 +3,7 @@
   :version "2019.9.14"
   :author "Phil Marneweck <phil@psychedelic.co.za>"
   :licence "MIT"
-  :depends-on ("cl-fad" "split-sequence" "uuid")
+  :depends-on ("cl-fad" "split-sequence" "uuid" "local-time")
   :components ((:file "packages")
 	       (:file "common" :depends-on ("packages"))
 	       (:file "persist" :depends-on ("common"))
