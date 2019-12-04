@@ -114,6 +114,7 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
 	       (pathname (location (store collection)))
 	       (make-pathname :name (name collection)
 			      :type "col"))
+   
     (list 
     :name (name collection)
     :location (location collection)
@@ -131,6 +132,7 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
 	       :accessor data-types
 	       :initform nil
 	       :documentation "List of data-types represented by this store's collections.")))
+
 
 (defmethod get-collection-from-def ((store data-type-store-mixin) collection-name)
   (let ((filename (cl-fad:merge-pathnames-as-file

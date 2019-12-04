@@ -65,7 +65,8 @@
    :add-store
    :add-collection
    :add-data-type
-   
+   :persist-collection-def
+   :persist-collection
    
    ;;####blob.lisp
    :blob
@@ -103,6 +104,8 @@
    :naive-reduce
    :query-data
    :query-data-object
+   :get-store-from-def
+   :get-collection-from-def
    
   
    ))
