@@ -1,19 +1,27 @@
 (in-package :cl-naive-indexed)
 
+(defparameter *average-collection-size* 1000)
+(defparameter *average-value-index-size* 6000)
+(defparameter *do-partial-indexing* t)
+
+;;NOTE: if there are many similar values for value based indexes the list of objects for each list becomes slow to add to because of pushnew that is why hashtables is the default.
+(defparameter *use-hashtable-for-value-indexing* t)
+
 (defclass indexed-collection-mixin ()
   ((data-objects :initarg :data-objects
 	  :accessor data-objects
-	  :initform (make-hash-table :test 'equalp)
+	  :initform (make-hash-table :test 'equalp :size *average-collection-size*)
 	  :documentation "Hash table keyed on object hash codes for quick retrieval of an object.")
    (key-value-index :initarg :key-value-index
 	  :accessor key-value-index
-	  :initform (make-hash-table :test 'equalp)
-	  :documentation "Hash table keyed on object key values for quick retrieval of an object. Used 
-when doing key value equality comparisons.")
+	  :initform (make-hash-table :test 'equalp :size *average-value-index-size*)
+	  :documentation "Hash table keyed on object key values for quick retrieval of an object.
+ Used when doing key value equality comparisons.")
    (indexes :initarg :indexes
 	    :accessor indexes
 	    :initform nil
-	    :documentation "List of index combinations."))
+	    :documentation "List of index combinations. Also indexes members partially 
+if *partial-indexing* is t, for example '((:emp-no :surname gender)) is indexed as (:emp-no :surname :gender), (:emp-no :surname), :emp-no, :surname and :gender"))
   
   (:documentation "Collection extention to add very basic indexes."))
 
@@ -31,28 +39,43 @@ objects to a collection. naive-store-indexed uses a UUID in its default implemen
   (setf (getx object :hash) (frmt "~A" value)))
 
 
-
 (defgeneric index-values (collection values &key &allow-other-keys)
   (:documentation "Returns a set of index values from the values of a data object."))
 
 ;;NOTE: doing the default without indexed-collection-mixin to give other classes
-;;higher up to handle this.
+;;higher up an opportunity to handle this.
 (defmethod index-values (collection values &key &allow-other-keys)
-  (loop for (a b) on values by #'cddr
-     when (find a (indexes collection) :test 'equalp)
-     :collect (list a b)))
+  (let ((index-values))
+    (dolist (index (indexes collection))
+      (push
+       (loop for (a b) on values by #'cddr
+	  when (find a index :test 'equalp)
+	  :collect (list a b))
+       index-values))))
 
 (defgeneric index-lookup-values (collection values &key &allow-other-keys)
   (:documentation "Looks up object in key value hash index.
 If you are not using data-types then the order of values matter."))
 
 (defmethod index-lookup-values ((collection collection) values &key &allow-other-keys) 
- )
+  ;;TODO: Raise error ???
+  )
+
+
+(defun hash-values (hash-table)
+  (when hash-table
+    (loop for value being the hash-values of hash-table collect value)))
 
 (defmethod index-lookup-values ((collection indexed-collection-mixin) values &key &allow-other-keys)
-
-  (gethash values
-	   (key-value-index collection)))
+  (let ((objects (if (hash-table-p (key-value-index collection))
+		     (gethash (cl-murmurhash:murmurhash values);;(frmt "~S" values)
+			      (key-value-index collection))
+		     (tree-lookup values (key-value-index collection)))))
+    (cond ((hash-table-p objects)
+	   (hash-values objects))
+          
+	  (t
+	   objects))))
 
 (defgeneric index-lookup-uuid (collection hash)
   (:documentation "Looks up object in UUID hash index."))
@@ -63,44 +86,84 @@ If you are not using data-types then the order of values matter."))
 
 
 (defgeneric add-index (collection object &key &allow-other-keys)
-  (:documentation "Adds an object to two indexes. The first uses a UUID that will stay with the object for
- its life time. The UUID is used when persisting the object and is never changed once created. This allows us to 
-change key values without loosing the identify of the original object. 
+  (:documentation "Adds an object to two indexes. The first uses a UUID that will stay with the 
+object for its life time. The UUID is used when persisting the object and is never changed once 
+created. This allows us to change key values without loosing the identify of the original object. 
 
-The second is a key value hash index to be used when looking for duplicate objects during persist. If you
-are not using data-types the order of the keys in the plist matter. To make sure that you dont muck with the
-order of values/keys in your plists initialize all the possible value pairs with nil so that way the order 
-is set."))
+The second is a key value hash index to be used when looking for duplicate objects during persist.
+If you are not using data-types the order of the keys in the plist matter. To make sure that you 
+dont muck with the order of values/keys in your plists initialize all the possible value pairs 
+with nil so that way the order is set."))
 
 
-(defun populate-value-index (collection index-values object)
+(defun insert-value-index (index index-values object)
+  (insert (cl-murmurhash:murmurhash index-values)
+	  (list object)
+	  index))
+
+(defun tree-lookup (index-values tree)
+  (lookup (cl-murmurhash:murmurhash index-values)
+	  tree))
+
+
+;;NOTE: Using list as keys slows down hastables by magnitudes so using frmt to make strings of lists
+;;TODO: There might be a better way or maybe it is because of equalp test???
+(defun push-value-index (collection index-values object)
+  
+  (if *use-hashtable-for-value-indexing*
+      (let ((internal-hash (gethash (cl-murmurhash:murmurhash index-values);;(frmt "~S" index-values)
+				    (key-value-index collection))))
+        
+	(unless internal-hash
+	  (setf internal-hash (make-hash-table :test 'equalp))
+	  (setf (gethash (cl-murmurhash:murmurhash index-values) ;;(frmt "~S" index-values)
+			 (key-value-index collection))
+		internal-hash))
+
+	(setf (gethash (hash object) internal-hash) object))
+      
+      (progn
+       
+	(setf (gethash (cl-murmurhash:murmurhash index-values) ;;(frmt "~S" index-values)
+		       (key-value-index collection))
+	      (push object (gethash (cl-murmurhash:murmurhash index-values);;(frmt "~S" index-values) 
+				    (key-value-index collection))))
+	#|
+
+	(let ((internal (tree-lookup index-values (key-value-index collection))))
+	  (if internal
+	      (push object (node-value internal))
+	    (insert-value-index (key-value-index collection) index-values object )))
+	|#
+	
+	)))
+
+(defun populate-partial-value-index (collection index-values object)
   (let ((compounded)
-	(compounded-count 1))
+	  (compounded-count 1))
     (dolist (pair index-values)
-      ;;Sanity needs to be maintained
-      ;;TODO: Need to make this number configurable, can see some one wanting to index
-      ;;every value for some obscure reason.
-      (if (< compounded-count 4)
-	  (progn
-	    (push pair compounded)
-	    (when (> compounded-count 1)
-	      (setf (gethash (reverse compounded) (key-value-index collection))
-		    (pushnew object (gethash (reverse compounded) (key-value-index collection)))))
-	    
-	    (setf (gethash pair (key-value-index collection))
-		  (pushnew object (gethash pair (key-value-index collection))))
-	  
-	    (incf compounded-count))
-	  (return)))))
+      
+      (push pair compounded)
+      (when (> compounded-count 1)
+	(push-value-index collection (reverse compounded) object))
 
-;;TODO: key-values function her causes a majour speed reduction ...x10... some where along the line
-;;suspect its because key-values is a method now
+      (push-value-index collection pair object)
+      
+      (incf compounded-count))))
+
+(defun populate-value-index (collection indexes-values object)
+  (dolist (index-values indexes-values)
+    (if *do-partial-indexing*
+	(populate-partial-value-index collection index-values object)
+	(push-value-index collection index-values object))))
+
 (defmethod add-index ((collection indexed-collection-mixin) object &key &allow-other-keys)
 
   (let* ((key-values (key-values collection object))
 	 (indexed-object (or
 			  (index-lookup-uuid collection (hash object))
-			  (first (index-lookup-values collection key-values))))
+			  (first (index-lookup-values collection key-values))
+			  ))
 	 (index-values (index-values collection object)))
 
     
@@ -116,10 +179,9 @@ is set."))
 
 
     ;;Used to do object value comparisons to find index-object
-    (setf (gethash  key-values (key-value-index collection))
-	  (list object))
-    
-    (populate-value-index collection key-values object)
+   ;; (setf (gethash (frmt "~S" key-values) (key-value-index collection)) (list object))
+    (push-value-index collection key-values object)
+    (populate-value-index collection (list key-values) object)
     (populate-value-index collection index-values object)
     
     
@@ -141,10 +203,17 @@ is set."))
 	  (progn
 	    (push pair compounded)
 	    (when (> compounded-count 1)
-	      (setf (gethash compounded (key-value-index collection))
-		    (remove object (gethash compounded (key-value-index collection)))))
-	    (setf (gethash pair (key-value-index collection))
-		  (remove object (gethash pair (key-value-index collection))))
+	      (if *use-hashtable-for-value-indexing*
+		  nil ;;TODO: remove hash key
+		  (setf (gethash (frmt "~S" compounded) (key-value-index collection))
+			(remove object (gethash (cl-murmurhash:murmurhash compounded) ;;(frmt "~S" compounded)
+						(key-value-index collection))))))
+	    (if *use-hashtable-for-value-indexing*
+		nil ;;TODO: remove hash key
+		(setf (gethash (frmt "~S" pair) (key-value-index collection))
+		      (remove object (gethash (cl-murmurhash:murmurhash pair);;(frmt "~S" pair)
+					      (key-value-index collection)))))
+	    
 	    (incf compounded-count))
 	  (return)))))
 
@@ -191,8 +260,10 @@ is set."))
 	(final-object))
 
     (dolist (pair (plist-to-value-pairs object))
-      (setf resolved-values (append resolved-values (list (first pair)
-							  (parse-data-object collection (second pair))))))
+      (setf resolved-values
+	    (append resolved-values
+		    (list (first pair)
+			  (parse-data-object collection (second pair))))))
 
     (setf final-object resolved-values)
     

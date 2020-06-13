@@ -116,11 +116,11 @@ which contain the actual data. Each collection will have its own directory and f
 			(make-instance 'item-collection
 				       :name "simple-collection"
 				       :data-type data-type
-				       :indexes '(:gender :race :surname))
+				       :indexes '((:gender :race :surname)))
 			(if (equalp *collection-class* 'collection-indexed)
 			 (make-instance *collection-class*
 					:name "simple-collection"
-					:indexes '(:gender :race :surname))
+					:indexes '((:gender :race :surname)))
 			 (make-instance *collection-class*
 					:name "simple-collection"))
 			))

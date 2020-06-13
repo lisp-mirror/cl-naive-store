@@ -4,6 +4,10 @@
   (:use :cl :cl-naive-store)
   (:export
 
+   :*average-collection-size*
+   :*average-value-index-size*
+   :*do-partial-indexing*
+   :*use-hashtable-for-value-indexing*
    :indexed-collection-mixin   
    :uuid-index
    :key-value-index
