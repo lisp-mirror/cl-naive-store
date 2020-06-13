@@ -29,9 +29,14 @@
     (reverse keys)))
 
 (defmethod index-values ((collection item-collection) (values item) &key &allow-other-keys)
-  (loop for (a b) on (item-values values) by #'cddr
-       when (find a (indexes collection) :test 'equalp)
-     :collect (list a b)))
+  (let ((index-values))
+    (dolist (index (indexes collection))
+      (push
+       (loop for (a b) on (item-values values) by #'cddr
+	  when (find a index :test 'equalp)
+	  :collect (list a b))
+       index-values))
+    index-values))
 
 (defmethod key-values ((collection item-collection) object &key &allow-other-keys)
   (let ((data-type (or (data-type collection) (if (item-p object) (item-data-type object)))))

@@ -3,11 +3,10 @@
 (defpackage :cl-naive-indexed
   (:use :cl :cl-naive-store)
   (:export
-
-   :*average-collection-size*
-   :*average-value-index-size*
    :*do-partial-indexing*
-   :*use-hashtable-for-value-indexing*
+   :indexed-values-hashtables-mixin
+   :indexed-values-avl-tree-mixin
+   
    :indexed-collection-mixin   
    :uuid-index
    :key-value-index
@@ -19,5 +18,6 @@
    :index-values
    :index-lookup-values
    :index-lookup-uuid
+   :push-value-index
    :add-index
    :remove-index))

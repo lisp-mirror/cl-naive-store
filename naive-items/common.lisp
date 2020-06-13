@@ -16,3 +16,6 @@ when using getx the preffered accessor for values. This helps with comparing of 
 (defmethod object-values ((object item))
   (item-values object))
 
+(defmethod murmurhash:murmurhash ((object item) &key )
+  (murmurhash:murmurhash (hash object))
+  )

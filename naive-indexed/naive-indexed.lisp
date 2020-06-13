@@ -1,20 +1,17 @@
 (in-package :cl-naive-indexed)
 
-(defparameter *average-collection-size* 1000)
-(defparameter *average-value-index-size* 6000)
+;;TODO: Doing partial-indexing doubles the time it takes to load a database
+;;Try to delay or spool of partial indexing on different thread.
 (defparameter *do-partial-indexing* t)
-
-;;NOTE: if there are many similar values for value based indexes the list of objects for each list becomes slow to add to because of pushnew that is why hashtables is the default.
-(defparameter *use-hashtable-for-value-indexing* t)
 
 (defclass indexed-collection-mixin ()
   ((data-objects :initarg :data-objects
 	  :accessor data-objects
-	  :initform (make-hash-table :test 'equalp :size *average-collection-size*)
+	  :initform (make-hash-table :test 'equalp)
 	  :documentation "Hash table keyed on object hash codes for quick retrieval of an object.")
    (key-value-index :initarg :key-value-index
 	  :accessor key-value-index
-	  :initform (make-hash-table :test 'equalp :size *average-value-index-size*)
+	  :initform nil
 	  :documentation "Hash table keyed on object key values for quick retrieval of an object.
  Used when doing key value equality comparisons.")
    (indexes :initarg :indexes
@@ -25,10 +22,29 @@ if *partial-indexing* is t, for example '((:emp-no :surname gender)) is indexed 
   
   (:documentation "Collection extention to add very basic indexes."))
 
+(defclass indexed-values-hashtables-mixin ()
+  ()
+ (:documentation "Collection extention to use hash tables within the key-value-index hashtable 
+to store/group objects that match a key value combination. DONT use this with big databases with many collections and many objects per collection in SBCL, see NOTE.
+
+NOTE: Hash tablescrashes sbcl 2.0.5 with a million or so objects, basically it's caused by 
+memory fragmentation between boxed and unboxed arrays, which are used by hash-tables
+Can be fixed by the following https://docs.actian.com/vector/5.0/index.html#page/User/Increase_max_map_count_Kernel_Parameter_(Linux).htm
+setting vm.vm.max_map_count in  /etc/sysctl.conf to (/ (* ram-size-of machine 1024 1024 1024) (* 128 1024))") )
+
+(defclass indexed-values-avl-tree-mixin ()
+  ()
+ (:documentation "Collection extention to use lists within the key-value-index avl-tree 
+to store/group objects that match a key value combination.(IE uses no hash tables). 
+Dont use this when there is going to be many objects in the collection, this implementation of avl used is very slow. Due to object updates could end up with duplicate objects that will returned by the index-lookup-values.
+
+TODO: Implement index-lookup-value specialized on this that strips out duplicates
+TODO: Look for faster implementation of avl tree one day.") )
+
 (defgeneric hash (object)
   (:documentation "Returns the hash identifier for a data object. Data objects need a hash identifier
-to work with naive-store-indexed. naive-store-indexed will edit the object to add a hash identifier when adding 
-objects to a collection. naive-store-indexed uses a UUID in its default implementation."))
+to work with naive-store-indexed. naive-store-indexed will edit the object to add a hash identifier 
+when adding objects to a collection. naive-store-indexed uses a UUID in its default implementation."))
 
 (defmethod hash (object)
   (frmt "~A" (getx object :hash)))
@@ -53,6 +69,8 @@ objects to a collection. naive-store-indexed uses a UUID in its default implemen
 	  :collect (list a b))
        index-values))))
 
+
+
 (defgeneric index-lookup-values (collection values &key &allow-other-keys)
   (:documentation "Looks up object in key value hash index.
 If you are not using data-types then the order of values matter."))
@@ -66,16 +84,29 @@ If you are not using data-types then the order of values matter."))
   (when hash-table
     (loop for value being the hash-values of hash-table collect value)))
 
-(defmethod index-lookup-values ((collection indexed-collection-mixin) values &key &allow-other-keys)
-  (let ((objects (if (hash-table-p (key-value-index collection))
-		     (gethash (cl-murmurhash:murmurhash values);;(frmt "~S" values)
-			      (key-value-index collection))
-		     (tree-lookup values (key-value-index collection)))))
-    (cond ((hash-table-p objects)
-	   (hash-values objects))
-          
-	  (t
-	   objects))))
+(defmethod index-lookup-values ((collection indexed-collection-mixin)
+				values &key &allow-other-keys)
+  (when (key-value-index collection)
+    (remove-duplicates
+     (gethash (cl-murmurhash:murmurhash values)
+	      (key-value-index collection)))))
+
+(defmethod index-lookup-values ((collection indexed-values-hashtables-mixin)
+				values &key &allow-other-keys)
+  (when (key-value-index collection)
+    (hash-values (gethash (cl-murmurhash:murmurhash values)
+			  (key-value-index collection)))))
+
+(defun tree-lookup (index-values tree)
+  (lookup (cl-murmurhash:murmurhash index-values)
+	  tree))
+
+(defmethod index-lookup-values ((collection indexed-values-avl-tree-mixin)
+				values &key &allow-other-keys)
+  (when (key-value-index collection)
+    (let ((node (tree-lookup values (key-value-index collection))))
+      (when node
+	(remove-duplicates (node-value node))))))
 
 (defgeneric index-lookup-uuid (collection hash)
   (:documentation "Looks up object in UUID hash index."))
@@ -95,54 +126,54 @@ If you are not using data-types the order of the keys in the plist matter. To ma
 dont muck with the order of values/keys in your plists initialize all the possible value pairs 
 with nil so that way the order is set."))
 
+(defgeneric push-value-index (collection index-values object &key &allow-other-keys)
+  (:documentation "Uses lists within the key-value-index hash-table
+to store/group objects that match a key value combination. Use indexed-values-hashtables-mixin
+or indexed-values-avl-tree-mixin to get different value index implementations. The default 
+implementation is faster but on updates of objects could end up with duplicate objects 
+returned by the index lookup. The speed more than makes up for the occactional duplicate for now!
 
-(defun insert-value-index (index index-values object)
+TODO: Implement index-lookup-value specialized on this that strips out duplicates"))
+
+(defmethod push-value-index (collection index-values object &key &allow-other-keys)
+  (unless (key-value-index collection)
+    (setf (key-value-index collection) (make-hash-table :test 'equalp)))
+
+  (push object (gethash (cl-murmurhash:murmurhash index-values)
+			      (key-value-index collection))))
+
+(defmethod push-value-index ((collection indexed-values-hashtables-mixin)
+			     index-values object &key &allow-other-keys)
+  
+  (unless (key-value-index collection)
+    (setf (key-value-index collection) (make-hash-table :test 'equalp)))
+  
+  (let ((internal-hash (gethash (cl-murmurhash:murmurhash index-values)
+				(key-value-index collection))))       
+    (unless internal-hash
+      (setf internal-hash (make-hash-table :test 'equalp))
+      (setf (gethash (cl-murmurhash:murmurhash index-values) 
+		     (key-value-index collection))
+	    internal-hash))
+
+    (setf (gethash (hash object) internal-hash) object)))
+
+(defun insert-avl-value-index (index index-values object)
   (insert (cl-murmurhash:murmurhash index-values)
 	  (list object)
 	  index))
 
-(defun tree-lookup (index-values tree)
-  (lookup (cl-murmurhash:murmurhash index-values)
-	  tree))
-
-
-;;NOTE: Using list as keys slows down hastables by magnitudes so using frmt to make strings of lists
-;;TODO: There might be a better way or maybe it is because of equalp test???
-(defun push-value-index (collection index-values object)
-  
-  (if *use-hashtable-for-value-indexing*
-      (let ((internal-hash (gethash (cl-murmurhash:murmurhash index-values);;(frmt "~S" index-values)
-				    (key-value-index collection))))
-        
-	(unless internal-hash
-	  (setf internal-hash (make-hash-table :test 'equalp))
-	  (setf (gethash (cl-murmurhash:murmurhash index-values) ;;(frmt "~S" index-values)
-			 (key-value-index collection))
-		internal-hash))
-
-	(setf (gethash (hash object) internal-hash) object))
-      
-      (progn
-       
-	(setf (gethash (cl-murmurhash:murmurhash index-values) ;;(frmt "~S" index-values)
-		       (key-value-index collection))
-	      (push object (gethash (cl-murmurhash:murmurhash index-values);;(frmt "~S" index-values) 
-				    (key-value-index collection))))
-	#|
-
-	(let ((internal (tree-lookup index-values (key-value-index collection))))
+(defmethod push-value-index ((collection indexed-values-avl-tree-mixin)
+			     index-values object &key &allow-other-keys)
+  (let ((internal (tree-lookup index-values (key-value-index collection))))
 	  (if internal
 	      (push object (node-value internal))
-	    (insert-value-index (key-value-index collection) index-values object )))
-	|#
-	
-	)))
+	    (insert-avl-value-index (key-value-index collection) index-values object))))
 
 (defun populate-partial-value-index (collection index-values object)
   (let ((compounded)
 	  (compounded-count 1))
-    (dolist (pair index-values)
-      
+    (dolist (pair index-values)      
       (push pair compounded)
       (when (> compounded-count 1)
 	(push-value-index collection (reverse compounded) object))
@@ -157,12 +188,20 @@ with nil so that way the order is set."))
 	(populate-partial-value-index collection index-values object)
 	(push-value-index collection index-values object))))
 
-(defmethod add-index ((collection indexed-collection-mixin) object &key &allow-other-keys)
+;;NOTE:Doing this because murmurhash is creating duplicates
+(defun try-better-value-match (collection list key-values)
+  (dolist (object list)
+    (when (equalp key-values (key-values collection object))      
+      (return object))))
 
+(defmethod add-index ((collection indexed-collection-mixin) object &key &allow-other-keys)
   (let* ((key-values (key-values collection object))
 	 (indexed-object (or
 			  (index-lookup-uuid collection (hash object))
-			  (first (index-lookup-values collection key-values))
+			  (try-better-value-match
+			   collection
+			   (index-lookup-values collection key-values)
+			   key-values)
 			  ))
 	 (index-values (index-values collection object)))
 
@@ -191,38 +230,59 @@ with nil so that way the order is set."))
 (defgeneric remove-index (collection object &key &allow-other-keys)
   (:documentation "Removes a data object from the UUID and key value indexes."))
 
-(defun remove-index-values (collection index-values object)
-  (let ((compounded)
-	(compounded-count 1))
+
+(defgeneric remove-value-index (collection index-values object &key &allow-other-keys)
+  (:documentation ""))
+
+(defmethod remove-value-index (collection index-values object &key &allow-other-keys)
+  (when (key-value-index collection)
+    (remove object (gethash (cl-murmurhash:murmurhash index-values)
+			  (key-value-index collection)))))
+
+(defmethod remove-value-index ((collection indexed-values-hashtables-mixin)
+			     index-values object &key &allow-other-keys)
+  
+  (let ((internal-hash (gethash (cl-murmurhash:murmurhash index-values)
+				(key-value-index collection))))       
     
-    (dolist (pair index-values)
-      ;;Sanity needs to be maintained
-      ;;TODO: Need to make this number configurable, can see some one wanting to index
-      ;;every value for some obscure reason.
-      (if (< compounded-count 4)
-	  (progn
-	    (push pair compounded)
-	    (when (> compounded-count 1)
-	      (if *use-hashtable-for-value-indexing*
-		  nil ;;TODO: remove hash key
-		  (setf (gethash (frmt "~S" compounded) (key-value-index collection))
-			(remove object (gethash (cl-murmurhash:murmurhash compounded) ;;(frmt "~S" compounded)
-						(key-value-index collection))))))
-	    (if *use-hashtable-for-value-indexing*
-		nil ;;TODO: remove hash key
-		(setf (gethash (frmt "~S" pair) (key-value-index collection))
-		      (remove object (gethash (cl-murmurhash:murmurhash pair);;(frmt "~S" pair)
-					      (key-value-index collection)))))
-	    
-	    (incf compounded-count))
-	  (return)))))
+    (when internal-hash
+      (remhash (hash object) internal-hash))))
+
+(defun delete-avl-value-index (index index-values object)
+  (declare (ignore index) (ignore index-values) (ignore object))
+  (error "To be implemented."))
+
+(defmethod remove-value-index ((collection indexed-values-avl-tree-mixin)
+			       index-values object &key &allow-other-keys)
+  (let ((internal (tree-lookup index-values (key-value-index collection))))
+    (when internal
+      (remove object (node-value internal)))))
+
+(defun remove-partial-value-index (collection index-values object)
+  (let ((compounded)
+	  (compounded-count 1))
+    (dolist (pair index-values)      
+      (push pair compounded)
+      (when (> compounded-count 1)
+	(remove-value-index collection (reverse compounded) object))
+
+      (remove-value-index collection pair object)
+      
+      (incf compounded-count))))
+
+(defun remove-index-values (collection indexes-values object)
+  (dolist (index-values indexes-values)
+    (if *do-partial-indexing*
+	(remove-partial-value-index collection index-values object)
+	(remove-value-index collection index-values object))))
 
 (defmethod remove-index ((collection indexed-collection-mixin) object &key &allow-other-keys)
   (let ((key-values (key-values collection object))
-	(index-values (index-values collection object)))
+	(indexes-values (index-values collection object)))
 
-    (remove-index-values collection key-values object)
-    (remove-index-values collection index-values object)
+    (remove-value-index collection key-values object)
+    (remove-index-values collection (list key-values) object)
+    (remove-index-values collection indexes-values object)
 
     (remhash (hash object) (data-objects collection))))
 

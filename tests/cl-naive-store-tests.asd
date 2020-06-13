@@ -1,6 +1,6 @@
 (defsystem "cl-naive-store-tests"
   :description "Simple tests for cl-naive-store"
-  :version "2019.08.19"
+  :version "2020.06.13"
   :author "Phil Marneweck <phil@psychedelic.co.za>"
   :licence "MIT"
   :depends-on ("cl-fad" "cl-naive-store"

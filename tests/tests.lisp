@@ -460,7 +460,7 @@ Only peristed if persist-p is t."
 	  test-results)
     (let ((objects (data-objects
 			    (get-collection (get-store *universe* "simple-store")
-					    "simple-collection"))))
+					    "simple-collection"))))       
        (push (list :data-objects-count-monster
 		  (= (if (hash-table-p objects)
 			 (hash-table-count objects)
