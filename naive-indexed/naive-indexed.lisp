@@ -115,6 +115,27 @@ If you are not using data-types then the order of values matter."))
   (gethash (frmt "~A" hash)
 	   (data-objects collection)))
 
+(defgeneric index-lookup (collection object)
+  (:documentation "Looks up object in UUID hash index and if not found or object does
+not have a UUID yet it looks in then value index."))
+
+;;NOTE:Doing this because murmurhash is creating duplicates
+(defun try-better-value-match (collection list key-values)
+  (dolist (object list)
+    (when (equalp key-values (key-values collection object))      
+      (return object))))
+
+(defun object-exists (collection object &key key-values)
+  (or
+   (and (hash object) (index-lookup-uuid collection (hash object)))
+   (let ((key-values (or key-values (key-values collection object))))
+       (try-better-value-match
+	 collection
+	 (index-lookup-values collection key-values)
+	 key-values))))
+
+(defmethod index-lookup ((collection indexed-collection-mixin) object)
+  (object-exists collection object))
 
 (defgeneric add-index (collection object &key &allow-other-keys)
   (:documentation "Adds an object to two indexes. The first uses a UUID that will stay with the 
@@ -188,43 +209,20 @@ TODO: Implement index-lookup-value specialized on this that strips out duplicate
 	(populate-partial-value-index collection index-values object)
 	(push-value-index collection index-values object))))
 
-;;NOTE:Doing this because murmurhash is creating duplicates
-(defun try-better-value-match (collection list key-values)
-  (dolist (object list)
-    (when (equalp key-values (key-values collection object))      
-      (return object))))
 
-(defmethod add-index ((collection indexed-collection-mixin) object &key &allow-other-keys)
-  (let* ((key-values (key-values collection object))
-	 (indexed-object (or
-			  (index-lookup-uuid collection (hash object))
-			  (try-better-value-match
-			   collection
-			   (index-lookup-values collection key-values)
-			   key-values)
-			  ))
-	 (index-values (index-values collection object)))
-
+(defmethod add-index ((collection indexed-collection-mixin) object &key key-values &allow-other-keys)
+  (let* ((index-values (index-values collection object))
+	 (key-values (or key-values (key-values collection object))))
     
-    (when indexed-object
-	(setf (hash object) (hash indexed-object)))
-    
-    (if (empty-p (hash object))
-	
-	(let ((uuid (uuid:make-v4-uuid)))
-
-	;;add the uuid to the object for persistance
-	(setf (hash object) uuid)))
-
-
     ;;Used to do object value comparisons to find index-object
-   ;; (setf (gethash (frmt "~S" key-values) (key-value-index collection)) (list object))
+    ;; (setf (gethash (frmt "~S" key-values) (key-value-index collection)) (list object))
     (push-value-index collection key-values object)
+
+    ;;key-values are in effect their own value index and because it could be completely
+    ;;different from index-values it is added to valuen indexes as well.
     (populate-value-index collection (list key-values) object)
     (populate-value-index collection index-values object)
-    
-    
-    (setf (gethash (hash object) (data-objects collection)) object)))
+    ))
 
 
 (defgeneric remove-index (collection object &key &allow-other-keys)
@@ -290,10 +288,30 @@ TODO: Implement index-lookup-value specialized on this that strips out duplicate
 (defmethod remove-data-object ((collection indexed-collection-mixin) object &key &allow-other-keys)
   (remove-index collection object))
 
-(defmethod add-data-object ((collection indexed-collection-mixin) object &key &allow-other-keys)
-  "If the an object with the same keys exists the collection it will be overridden."
-  (add-index collection object))
+(defmethod add-data-object ((collection indexed-collection-mixin) object
+			    &key update-index-p &allow-other-keys)
+  "If the an object has no hash and an object with the same keys exists in the collection 
+the existing object will be replaced with the new one just as it would have been if a 
+matching UUID wasas found in then collection.
 
+When update-index-p is set to t the indexes will be updated. Just remember that if the object
+is really new to the collection the indexes will be updated in any case."
+  
+  (let* ((key-values (if (not (empty-p (hash object)))
+			(key-values collection object)))
+	(existing-object (object-exists collection object :key-values key-values)))
+
+    (when (empty-p (hash object))
+      (cond (existing-object
+	     (setf (hash object) (hash existing-object))
+	     (when update-index-p
+	       (add-index collection object) :key-values key-values))
+	    ((not existing-object)
+	     (setf (hash object) (uuid:make-v4-uuid))
+	     (add-index collection object :key-values key-values))))
+
+    ;;Add object to the collection
+    (setf (gethash (hash object) (data-objects collection)) object)))
 
 (defmethod parse-reference-data-object ((parent-collection indexed-collection-mixin) object &key &allow-other-keys)
   (let ((universe (universe (store parent-collection))))
