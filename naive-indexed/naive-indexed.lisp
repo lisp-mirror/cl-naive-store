@@ -84,6 +84,11 @@ If you are not using data-types then the order of values matter."))
   (when hash-table
     (loop for value being the hash-values of hash-table collect value)))
 
+
+(defmethod cl-murmurhash:murmurhash ((s uuid:uuid) &key (seed cl-murmurhash:*default-seed*) mix-only)
+  (cl-murmurhash::hash-string (frmt "~A" s) seed mix-only))
+
+
 (defmethod index-lookup-values ((collection indexed-collection-mixin)
 				values &key &allow-other-keys)
   (when (key-value-index collection)
@@ -213,7 +218,7 @@ TODO: Implement index-lookup-value specialized on this that strips out duplicate
 (defmethod add-index ((collection indexed-collection-mixin) object &key key-values &allow-other-keys)
   (let* ((index-values (index-values collection object))
 	 (key-values (or key-values (key-values collection object))))
-    
+
     ;;Used to do object value comparisons to find index-object
     ;; (setf (gethash (frmt "~S" key-values) (key-value-index collection)) (list object))
     (push-value-index collection key-values object)
@@ -300,16 +305,16 @@ is really new to the collection the indexes will be updated in any case."
   (let* ((key-values (if (not (empty-p (hash object)))
 			(key-values collection object)))
 	(existing-object (object-exists collection object :key-values key-values)))
-
-    (when (empty-p (hash object))
-      (cond (existing-object
+    
+    (cond (existing-object
 	     (setf (hash object) (hash existing-object))
 	     (when update-index-p
 	       (add-index collection object) :key-values key-values))
 	    ((not existing-object)
-	     (setf (hash object) (uuid:make-v4-uuid))
-	     (add-index collection object :key-values key-values))))
-
+	     (when (empty-p (hash object))
+	       (setf (hash object) (uuid:make-v4-uuid)))
+	     (add-index collection object :key-values key-values)))
+    
     ;;Add object to the collection
     (setf (gethash (hash object) (data-objects collection)) object)))
 
