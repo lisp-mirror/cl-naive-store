@@ -5,18 +5,13 @@
 		   (pathname (location collection))
 		   (make-pathname :name (name collection)
 				  :type "log"))))
-
-    
-    
     (with-open-file (in filename :if-does-not-exist :create)
       (when in
 	  (loop for line = (read in nil)
 	     while line
 	     do (parse-data-object
 		 collection line :top-level-p t))
-	  (close in)))
-    
-    (setf (loaded-p collection) t)))
+	  (close in)))))
 
 (defun find-collection-definitions (store)
   (directory
@@ -32,11 +27,10 @@
 						  :name :wild
 						  :type "store"))))
 
-(defgeneric load-store-collections (store  &key with-data-p &allow-other-keys)
+(defgeneric load-collections (store  &key with-data-p &allow-other-keys)
   (:documentation "Finds and loads collections a store, with or without data objects."))
 
-
-(defmethod load-store-collections ((store store) &key with-data-p &allow-other-keys)
+(defmethod load-collections ((store store) &key with-data-p &allow-other-keys)
   "Finds and loads collection for a store, with or without data objects."
   (let ((files (find-collection-definitions store)))
     (dolist (file files)
@@ -78,13 +72,13 @@
 			 :location (getx file-contents :location)))))
 	    
 	    (when (or with-collections-p with-data-p)
-	      (load-store-collections store with-data-p))))))))
+	      (load-collections store with-data-p))))))))
 
 
 (defgeneric load-store (store &key &allow-other-keys)
   (:documentation "Loads the data-types and collections, with or without the actual data objects."))
 
 (defmethod load-store ((store store) &key with-data-p &allow-other-keys)
-  (load-store-collections store with-data-p))
+  (load-collections store with-data-p))
 
 

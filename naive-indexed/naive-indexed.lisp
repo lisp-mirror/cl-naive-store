@@ -17,29 +17,15 @@
    (indexes :initarg :indexes
 	    :accessor indexes
 	    :initform nil
-	    :documentation "List of index combinations. Also indexes members partially 
-if *partial-indexing* is t, for example '((:emp-no :surname gender)) is indexed as (:emp-no :surname :gender), (:emp-no :surname), :emp-no, :surname and :gender"))
+	    :documentation "List of index combinations. Also indexes members partially if *partial-indexing* is t, for example '((:emp-no :surname gender)) is indexed as (:emp-no :surname :gender), (:emp-no :surname), :emp-no, :surname and :gender"))
   
   (:documentation "Collection extention to add very basic indexes."))
 
 (defclass indexed-values-hashtables-mixin ()
   ()
- (:documentation "Collection extention to use hash tables within the key-value-index hashtable 
-to store/group objects that match a key value combination. DONT use this with big databases with many collections and many objects per collection in SBCL, see NOTE.
+ (:documentation "Collection extention to use hash tables within the key-value-index hashtable to store/group objects that match a key value combination. DONT use this with big databases with many collections and many objects per collection in SBCL, see NOTE.
+") )
 
-NOTE: Hash tablescrashes sbcl 2.0.5 with a million or so objects, basically it's caused by 
-memory fragmentation between boxed and unboxed arrays, which are used by hash-tables
-Can be fixed by the following https://docs.actian.com/vector/5.0/index.html#page/User/Increase_max_map_count_Kernel_Parameter_(Linux).htm
-setting vm.vm.max_map_count in  /etc/sysctl.conf to (/ (* ram-size-of machine 1024 1024 1024) (* 128 1024))") )
-
-(defclass indexed-values-avl-tree-mixin ()
-  ()
- (:documentation "Collection extention to use lists within the key-value-index avl-tree 
-to store/group objects that match a key value combination.(IE uses no hash tables). 
-Dont use this when there is going to be many objects in the collection, this implementation of avl used is very slow. Due to object updates could end up with duplicate objects that will returned by the index-lookup-values.
-
-TODO: Implement index-lookup-value specialized on this that strips out duplicates
-TODO: Look for faster implementation of avl tree one day.") )
 
 (defgeneric hash (object)
   (:documentation "Returns the hash identifier for a data object. Data objects need a hash identifier
@@ -70,14 +56,12 @@ when adding objects to a collection. naive-store-indexed uses a UUID in its defa
        index-values))))
 
 
-
 (defgeneric index-lookup-values (collection values &key &allow-other-keys)
   (:documentation "Looks up object in key value hash index.
 If you are not using data-types then the order of values matter."))
 
-(defmethod index-lookup-values ((collection collection) values &key &allow-other-keys) 
-  ;;TODO: Raise error ???
-  )
+(defmethod index-lookup-values ((collection collection) values &key &allow-other-keys)   
+  (warn "Not implemented!"))
 
 
 (defun hash-values (hash-table)
@@ -106,12 +90,7 @@ If you are not using data-types then the order of values matter."))
   (lookup (cl-murmurhash:murmurhash index-values)
 	  tree))
 
-(defmethod index-lookup-values ((collection indexed-values-avl-tree-mixin)
-				values &key &allow-other-keys)
-  (when (key-value-index collection)
-    (let ((node (tree-lookup values (key-value-index collection))))
-      (when node
-	(remove-duplicates (node-value node))))))
+
 
 (defgeneric index-lookup-uuid (collection hash)
   (:documentation "Looks up object in UUID hash index."))
@@ -124,7 +103,7 @@ If you are not using data-types then the order of values matter."))
   (:documentation "Looks up object in UUID hash index and if not found or object does
 not have a UUID yet it looks in then value index."))
 
-;;NOTE:Doing this because murmurhash is creating duplicates
+;;NOTE:Doing this because murmurhash is creating duplicates when you go beyond 10 million index values
 (defun try-better-value-match (collection list key-values)
   (dolist (object list)
     (when (equalp key-values (key-values collection object))      
@@ -153,13 +132,11 @@ dont muck with the order of values/keys in your plists initialize all the possib
 with nil so that way the order is set."))
 
 (defgeneric push-value-index (collection index-values object &key &allow-other-keys)
-  (:documentation "Uses lists within the key-value-index hash-table
-to store/group objects that match a key value combination. Use indexed-values-hashtables-mixin
-or indexed-values-avl-tree-mixin to get different value index implementations. The default 
-implementation is faster but on updates of objects could end up with duplicate objects 
-returned by the index lookup. The speed more than makes up for the occactional duplicate for now!
+  (:documentation "Uses lists within the key-value-index hash-table to store/group objects that match a key value combination. 
 
-TODO: Implement index-lookup-value specialized on this that strips out duplicates"))
+On updates of objects could end up with duplicate objects returned by the index lookup. The speed more than makes up for the occactional duplicate for now!
+
+TODO: Implement index-lookup-value that strips out duplicates??"))
 
 (defmethod push-value-index (collection index-values object &key &allow-other-keys)
   (unless (key-value-index collection)
@@ -184,17 +161,7 @@ TODO: Implement index-lookup-value specialized on this that strips out duplicate
 
     (setf (gethash (hash object) internal-hash) object)))
 
-(defun insert-avl-value-index (index index-values object)
-  (insert (cl-murmurhash:murmurhash index-values)
-	  (list object)
-	  index))
 
-(defmethod push-value-index ((collection indexed-values-avl-tree-mixin)
-			     index-values object &key &allow-other-keys)
-  (let ((internal (tree-lookup index-values (key-value-index collection))))
-	  (if internal
-	      (push object (node-value internal))
-	    (insert-avl-value-index (key-value-index collection) index-values object))))
 
 (defun populate-partial-value-index (collection index-values object)
   (let ((compounded)
@@ -226,8 +193,7 @@ TODO: Implement index-lookup-value specialized on this that strips out duplicate
     ;;key-values are in effect their own value index and because it could be completely
     ;;different from index-values it is added to valuen indexes as well.
     (populate-value-index collection (list key-values) object)
-    (populate-value-index collection index-values object)
-    ))
+    (populate-value-index collection index-values object)))
 
 
 (defgeneric remove-index (collection object &key &allow-other-keys)
@@ -251,15 +217,6 @@ TODO: Implement index-lookup-value specialized on this that strips out duplicate
     (when internal-hash
       (remhash (hash object) internal-hash))))
 
-(defun delete-avl-value-index (index index-values object)
-  (declare (ignore index) (ignore index-values) (ignore object))
-  (error "To be implemented."))
-
-(defmethod remove-value-index ((collection indexed-values-avl-tree-mixin)
-			       index-values object &key &allow-other-keys)
-  (let ((internal (tree-lookup index-values (key-value-index collection))))
-    (when internal
-      (remove object (node-value internal)))))
 
 (defun remove-partial-value-index (collection index-values object)
   (let ((compounded)
@@ -297,7 +254,7 @@ TODO: Implement index-lookup-value specialized on this that strips out duplicate
 			    &key update-index-p &allow-other-keys)
   "If the an object has no hash and an object with the same keys exists in the collection 
 the existing object will be replaced with the new one just as it would have been if a 
-matching UUID wasas found in then collection.
+matching UUID was found in then collection.
 
 When update-index-p is set to t the indexes will be updated. Just remember that if the object
 is really new to the collection the indexes will be updated in any case."
@@ -318,13 +275,19 @@ is really new to the collection the indexes will be updated in any case."
     ;;Add object to the collection
     (setf (gethash (hash object) (data-objects collection)) object)))
 
+
+(defmethod find-object-by-hash (collection hash)
+ (index-lookup-uuid 
+  collection
+  hash))
+
 (defmethod parse-reference-data-object ((parent-collection indexed-collection-mixin) object &key &allow-other-keys)
   (let ((universe (universe (store parent-collection))))
     
     (let* ((collection (load-object-reference-collection universe object))
-	   (ref-object (and collection (index-lookup-uuid 
+	   (ref-object (and collection (find-object-by-hash 
 					collection
-					(dig object :hash)))))           
+					(digx object :hash)))))           
       (unless ref-object
 	(write-to-file
 	 (cl-fad:merge-pathnames-as-file
@@ -372,9 +335,6 @@ is really new to the collection the indexes will be updated in any case."
   "Uses a list of index values (selects all the listed values), if supplied to preselect data-objects.
 The query and funcion is applied to the preselected objects or full collection returning the results."
   
-  ;;Load if not loaded
-  (cl-naive-store::load-data% collection)
-    
   (naive-reduce (or (indexed-values collection index-values)
 		    (data-objects collection))
 		:query query
@@ -382,8 +342,6 @@ The query and funcion is applied to the preselected objects or full collection r
 		:initial-value initial-value))
 
 (defmethod query-data ((collection indexed-collection-mixin) &key index-values query &allow-other-keys)
-  (cl-naive-store::load-data% collection)
-
   (query-data (or (indexed-values collection index-values)
 		  (data-objects collection))
 	      :query query))

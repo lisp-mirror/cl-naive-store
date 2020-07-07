@@ -21,7 +21,12 @@
    :digx
    :exists-p
    :handle-duplicates-p
-   :push-replace
+
+   ;;####persist.lisp
+   :set-print-reabability
+   :print-readability-p
+   :write-object
+   :persist
    
    ;;####naive-core.lisp
    
@@ -29,12 +34,11 @@
    :universe
    :collection
    :store
-  :name
+   :name
    :location
    :data-objects
-   :handle-duplicates
-   :loaded-p
-
+   
+   
    ;;:store
    :universe
    ;;:name
@@ -59,14 +63,22 @@
    :get-data-type
    :get-collection
    :find-collection-definitions
-   :must-handle-duplicates
+   :get-store-from-def
+   :get-collection-from-def
 
-   ;;:persist
+   ;;adding
    :add-store
    :add-collection
    :add-data-type
+   
+   ;;:persist
    :persist-collection-def
    :persist-collection
+
+   ;;;loading
+   :collection-container-loaded-p
+   :load-data   
+   :data-loaded-p
    
    ;;####blob.lisp
    :blob
@@ -87,6 +99,7 @@
    :load-object-reference-collection
    :parse-object-deleted-p
    :parse-object-p
+   :find-object-by-hash
    :parse-reference-object-p
    :parse-top-level-data-object
    :parse-reference-data-object
@@ -94,18 +107,15 @@
    :parse-data-object
   
    ;;####load.lisp
-   :load-data
    :load-store
    :load-stores
    :sanitize-data-file
-
 
    ;;####query.lisp
    :naive-reduce
    :query-data
    :query-data-object
-   :get-store-from-def
-   :get-collection-from-def
+
    
   
    ))

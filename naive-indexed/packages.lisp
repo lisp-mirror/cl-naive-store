@@ -5,8 +5,7 @@
   (:export
    :*do-partial-indexing*
    :indexed-values-hashtables-mixin
-   :indexed-values-avl-tree-mixin
-   
+    
    :indexed-collection-mixin   
    :uuid-index
    :key-value-index

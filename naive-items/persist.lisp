@@ -431,9 +431,6 @@ cl-wfx tip: If this happened on a save look for a mismatch between a collection 
     item))
 
 
-
-
-
 (defmethod persist ((item item) &key
 				  collection
 				  file
@@ -447,10 +444,8 @@ cl-wfx tip: If this happened on a save look for a mismatch between a collection 
       ;;Resolve the location of the item
       (setf item (check-location item :collection collection))
 
-      ;;Need to make sure there is really no data in the collection
-      ;;else we end up with duplicates
-      (unless (loaded-p (item-collection item))
-	(cl-naive-store::load-data% (item-collection item)))
+      ;;Loads collection if not loaded yet.
+      (load-data (item-collection item))
 
       (setf derived-file (cl-fad:merge-pathnames-as-file
 			  (pathname (location (item-collection item)))

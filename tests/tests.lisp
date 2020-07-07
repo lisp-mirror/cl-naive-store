@@ -120,18 +120,23 @@ which contain the actual data. Each collection will have its own directory and f
 			(if (equalp *collection-class* 'collection-indexed)
 			 (make-instance *collection-class*
 					:name "simple-collection"
+					
 					:indexes '((:gender :race :surname)))
 			 (make-instance *collection-class*
-					:name "simple-collection"))
-			))
+					:name "simple-collection"
+					:keys '(:emp-no)))))
     
     ))
 
 (defun tare-down-universe ()
   "Deletes any peristed data from exmaples."
+  (unless *universe*
+    (cl-fad:delete-directory-and-files *location* :if-does-not-exist :ignore))
   (when *universe*
     (cl-fad:delete-directory-and-files (location *universe*) :if-does-not-exist :ignore)
-    (setf *universe* nil)))
+    (setf *universe* nil))
+  
+  )
 
 (defun random-from-list (list)
   (nth (random (length list)) list))
@@ -150,7 +155,7 @@ which contain the actual data. Each collection will have its own directory and f
 			"Miller")))
 
     ;;Make sure that any previously persisted objects are already loaded from disk.
-    (unless (loaded-p collection)
+    (unless (data-loaded-p collection)
       (load-data collection))
     
     ;;Add data objects in the form of plists to the collection. naive-store expects plists
@@ -183,7 +188,7 @@ which contain the actual data. Each collection will have its own directory and f
 (defun query-simple-data ()
   (let ((collection (get-collection (get-store *universe* "simple-store")
 				    "simple-collection")))
-    
+
     (query-data collection :query (lambda (data-object)				    
 				    (<= (getx data-object :emp-no) 50)))))
 
@@ -219,6 +224,7 @@ Only peristed if persist-p is t."
 				 :name "simple-collection"
 				 :type "log"))))
 	  test-results)
+    
     (let ((objects (data-objects
 			    (get-collection (get-store *universe* "simple-store")
 					    "simple-collection"))))
@@ -248,17 +254,20 @@ Only peristed if persist-p is t."
   ;;Unload the collection (contains the data) if it is already loaded.
   (let ((collection (get-collection (get-store *universe* "simple-store")
 				    "simple-collection")))
-    (when (loaded-p collection)
-      (setf collection (make-instance 'collection
-				      :name "simple-collection"))))
+    (when (data-loaded-p collection)
+      (if (hash-table-p (data-objects collection))
+	  (clrhash (data-objects collection))
+	  (setf (data-objects collection) nil))))
    ;;Query the data in the universe
   (query-simple-data))
 
 (defun test-lazy-loading ()
   (let ((test-results)
 	(query-results (simple-example-lazy-loading)))
+
     
-    (push (list :query-result-count-51 (= (length query-results) 51))
+    (push (list :query-result-count-51 (= (length query-results) 51)
+		:actual-count (length query-results))
 	   test-results)
     test-results))
 
@@ -280,11 +289,15 @@ Only peristed if persist-p is t."
     (dolist (object results)
       (delete-data-object collection object))
 
+
+    
+    
     ;;Unload the collection (contains the data) if it is already loaded
     ;;to make sure the delete was persisted.
-    (when (loaded-p collection)
-      (setf collection (make-instance 'collection
-				      :name "simple-collection"))))
+    (when (data-loaded-p collection)
+      (if (hash-table-p (data-objects collection))
+	  (clrhash (data-objects collection))
+	  (setf (data-objects collection) nil))))
   
   ;;Query the data in the universe for the top 51 that has been deleted.
   (query-simple-data))
@@ -322,8 +335,7 @@ Only peristed if persist-p is t."
 					 :data-type (if (stringp (data-type collection))
 							(item-data-type (data-type collection))
 							(name (data-type collection)))		
-					 :values (item-values object))
-			    )
+					 :values (item-values object)))	    
 	    (persist-object collection 
 			     (list 
 			      :race (getf object :race)
@@ -333,21 +345,26 @@ Only peristed if persist-p is t."
 			      :emp-no (getf object :emp-no)))))
       
       ;;Unload the collection (contains the data) if it is already loaded.
-      (when (loaded-p collection)
-	(setf collection (make-instance 'collection
-					:name "simple-collection"))))
+      (when (data-loaded-p collection)	
+	(if (hash-table-p (data-objects collection))
+	  (clrhash (data-objects collection))
+	  (setf (data-objects collection) nil))))
+    
     ;;Query the data in the universe
     (setf test-results (query-simple-data) )
 
+    
     (list (list :no-duplicates (= (length data)
-				  (length test-results))))))
+				  (length test-results))
+		:actual-count (list (length data) (length test-results))))))
 
 (defun test-all-simple ()
   (let ((results))
     (setf results (append results (test-simple)))
     (setf results (append results (test-simple-duplicates)))
     (setf results (append results (test-lazy-loading)))
-    (setf results (append results (test-delete)))))
+    (setf results (append results (test-delete)))
+    ))
 
 (defun test-all-simple-indexed ()
   (let ((*collection-class* 'collection-indexed))
@@ -387,7 +404,7 @@ Only peristed if persist-p is t."
 			"Miller")))
 
     ;;Make sure that any previously persisted objects are already loaded from disk.
-    (unless (loaded-p collection)
+    (unless (data-loaded-p collection)
         (load-data collection))
 
     ;;Add data objects in the form of plists to the collection. naive-store expects plists
@@ -490,9 +507,10 @@ Only peristed if persist-p is t."
     (let ((collection (get-collection (get-store *universe* "simple-store")
 				      "simple-collection")))
       ;;Clear the collection
-      (when (loaded-p collection)
-	(setf collection (make-instance 'collection
-					:name "simple-collection")))))
+      (when (data-loaded-p collection)
+	(if (hash-table-p (data-objects collection))
+	  (clrhash (data-objects collection))
+	  (setf (data-objects collection) nil)))))
   
   ;;Query the data in the universe
   (query-simple-data))
@@ -506,7 +524,9 @@ Only peristed if persist-p is t."
     test-results))
 
 (defun test-all-monster ()
-  (let ((*collection-class* 'collection))
+  (let ((*collection-class* 'collection)
+	;;have to trim down moster on list duplicate checking kills speed for loding db
+	(*monster-size* 10000)) 
     (let ((results))
       (setf results (append results (test-monster-size)))
       (setf results (append results (test-monster-lazy-loading)))
@@ -690,15 +710,21 @@ Only peristed if persist-p is t."
 	(setf passed-p nil)))
     passed-p))
 
+
+(defun test-all ()
+  (tare-down-universe)
+  (and
+    (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-simple))
+    (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-simple-indexed))
+    (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-simple-items))
+    (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster))
+    (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-indexed))
+    (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-indexed-queries))
+    (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-items))
+    (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-item-queries))))
+
+
 #|
-(cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-simple))
-(cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-simple-indexed))
-(cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-simple-items))
-(cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster))
-(cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-indexed))
-(cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-indexed-queries))
-(cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-items))
-(cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-item-queries))
 
 
 ;;;IGNORE - Used to manually check stuff when writing tests

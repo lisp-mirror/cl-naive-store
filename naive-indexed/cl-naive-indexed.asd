@@ -5,5 +5,4 @@
   :licence "MIT"
   :depends-on ("cl-naive-store" "cl-murmurhash")
   :components ((:file "packages")
-	       (:file "avl-tree")
 	       (:file "naive-indexed" :depends-on ("packages"))))

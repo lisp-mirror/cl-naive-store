@@ -55,21 +55,16 @@ type definitions are read from file. See naive-store-items for usage examples. "
 For example:
 
 naive-store-items uses this to decide which files to write data to and how to load data into memory.
-In naive-store-items not all data types have their own collections, only data types marked as top
-level t have their own collections and filesfiles. Non top level type objectss are stored in their referencing data type's collections. 
+In naive-store-items not all data types have their own collections, only data types marked as top level t have their own collections and filesfiles. Non top level type objectss are stored in their referencing data type's collections. 
 
 cl-wfx uses this to structure data in a hierarchical grid.")  
    (fields :initarg :fields
 	   :accessor fields
 	   :initform nil
-	   :documentation "Field definitions that represents a data unit.")
-   )
+	   :documentation "Field definitions that represents a data unit."))
   (:documentation "A class that can be use to that represents a complex data unit.
 
-The default implementation of cl-naive-store is unaware of data-types when reading and 
-writing data objects to and from file. This was by design, to place as little burden on reading and writing
-data objects. Depending on the use of naive-store a user could customize the reading and writing methods of 
-naive-store to use data-types for validation and file layout specifics. 
+The default implementation of cl-naive-store is unaware of data-types when reading and writing data objects to and from file. This was by design, to place as little burden on reading and writing data objects. Depending on the use of naive-store a user could customize the reading and writing methods of naive-store to use data-types for validation and file layout specifics. 
 
 GUI's like cl-wfx use these to help with generic rendering of user input screens. 
 
@@ -299,6 +294,8 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
   (load-store-data-types store)
   (load-store-collections store with-data-p))
 
+;;NOTE: Not sure if the inline is a good idea, here it is heavily used but not
+;;really small enough to qualify for inline???
 (declaim (inline  values-from-key-fields%))
 (defun values-from-key-fields% (fields object)
     (let ((keys)
