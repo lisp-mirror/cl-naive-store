@@ -1,6 +1,6 @@
 (defsystem "cl-naive-items"
   :description "An extension of cl-naive-store that uses a structure called item as the data objects."
-  :version "2020.06.13"
+  :version "2020.07.08"
   :author "Phil Marneweck <phil@psychedelic.co.za>"
   :licence "MIT"
   :depends-on ("cl-murmurhash" "cl-naive-store" "cl-naive-indexed" "cl-naive-data-types" "cl-naive-data-type-defs")

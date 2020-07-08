@@ -1,22 +1,19 @@
-Keeping notes here to use to populate release notes later.
+# Version 2020.07.08
 
+A majour code refactoring exercise was under taken. Not only was code improved where possible new functionality was added and in a few cases removed.
 
-## List of Changes:
-
-# Majour Incompatibility Issues:
+## Incompatibility Issues:
 
 - load-store-collections was renamed to load-collections
 
 - loaded-p slot was removed form collection, store and universe. Use data-loaded-p in the future.
 
-- Removed handle-duplicates on univers, store and collection and replaced it with keys slot on collection that defaults to :key. This simplifies behavior for handling duplicates, and also speeds up handling of duplicates. If no keys is set to nil then duplicates are allowed, if :key is not found in the object duplicates will occur.
+- Removed handle-duplicates on universe, store and collection and replaced it with keys slot on collection that defaults to :key. This simplifies behaviour for handling duplicates, and also speeds up handling of duplicates. If no keys is set to nil then duplicates are allowed, if :key is not found in the object duplicates will occur.
 
 - Removed must-handle-duplicates since it was part and parcel of handle-duplicates.
 
-# Minor Incompatibility Issues:
 
-
-# No Compatibility Issues:
+## Other Work Done:
 
 - collection-container-loaded-p was added to use :around load-data method.
 
@@ -42,6 +39,6 @@ Keeping notes here to use to populate release notes later.
 
 - Refactored the code naive-store-items persist.lisp heavily.
 
-# Bug fixes
+## Bug fixes
 
 - Fixed add-object in core to replace object when key values match to an existing object and not to just ignore it. 
