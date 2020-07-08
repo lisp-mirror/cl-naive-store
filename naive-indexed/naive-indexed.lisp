@@ -28,9 +28,7 @@
 
 
 (defgeneric hash (object)
-  (:documentation "Returns the hash identifier for a data object. Data objects need a hash identifier
-to work with naive-store-indexed. naive-store-indexed will edit the object to add a hash identifier 
-when adding objects to a collection. naive-store-indexed uses a UUID in its default implementation."))
+  (:documentation "Returns the hash identifier for a data object. Data objects need a hash identifier to work with naive-store-indexed. naive-store-indexed will edit the object to add a hash identifier when adding objects to a collection. naive-store-indexed uses a UUID in its default implementation."))
 
 (defmethod hash (object)
   (frmt "~A" (getx object :hash)))
@@ -53,8 +51,8 @@ when adding objects to a collection. naive-store-indexed uses a UUID in its defa
        (loop for (a b) on values by #'cddr
 	  when (find a index :test 'equalp)
 	  :collect (list a b))
-       index-values))))
-
+       index-values))
+    index-values))
 
 (defgeneric index-lookup-values (collection values &key &allow-other-keys)
   (:documentation "Looks up object in key value hash index.
@@ -122,14 +120,9 @@ not have a UUID yet it looks in then value index."))
   (object-exists collection object))
 
 (defgeneric add-index (collection object &key &allow-other-keys)
-  (:documentation "Adds an object to two indexes. The first uses a UUID that will stay with the 
-object for its life time. The UUID is used when persisting the object and is never changed once 
-created. This allows us to change key values without loosing the identify of the original object. 
+  (:documentation "Adds an object to two indexes. The first uses a UUID that will stay with the object for its life time. The UUID is used when persisting the object and is never changed once created. This allows us to change key values without loosing the identify of the original object. 
 
-The second is a key value hash index to be used when looking for duplicate objects during persist.
-If you are not using data-types the order of the keys in the plist matter. To make sure that you 
-dont muck with the order of values/keys in your plists initialize all the possible value pairs 
-with nil so that way the order is set."))
+The second is a key value hash index to be used when looking for duplicate objects during persist. If you are not using data-types the order of the keys in the plist matter. To make sure that you dont muck with the order of values/keys in your plists initialize all the possible value pairs with nil so that way the order is set."))
 
 (defgeneric push-value-index (collection index-values object &key &allow-other-keys)
   (:documentation "Uses lists within the key-value-index hash-table to store/group objects that match a key value combination. 
@@ -161,8 +154,6 @@ TODO: Implement index-lookup-value that strips out duplicates??"))
 
     (setf (gethash (hash object) internal-hash) object)))
 
-
-
 (defun populate-partial-value-index (collection index-values object)
   (let ((compounded)
 	  (compounded-count 1))
@@ -191,7 +182,7 @@ TODO: Implement index-lookup-value that strips out duplicates??"))
     (push-value-index collection key-values object)
 
     ;;key-values are in effect their own value index and because it could be completely
-    ;;different from index-values it is added to valuen indexes as well.
+    ;;different from index-values it is added to value indexes as well.
     (populate-value-index collection (list key-values) object)
     (populate-value-index collection index-values object)))
 

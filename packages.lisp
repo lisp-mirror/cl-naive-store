@@ -27,6 +27,8 @@
    :print-readability-p
    :write-object
    :persist
+   :with-file-lock-write
+   :out ;;for intentiional variable capture in with-file-lock-write
    
    ;;####naive-core.lisp
    
@@ -37,7 +39,7 @@
    :name
    :location
    :data-objects
-   
+   :keys
    
    ;;:store
    :universe
@@ -87,7 +89,10 @@
    :blob-file-ext
    :blob-location
    :blob-raw
+   :blob-parent-hash
+   :blob-parent-key
    :blob-string-value
+   
    :blob-p
    
    :blob-ref-p

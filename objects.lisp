@@ -3,8 +3,7 @@
 (defgeneric deleted-p (object)
   (:documentation "Indicates if a data object has been marked as deleted. 
 
-naive-store writes data to file sequentially and when deleting data objects it does not 
-remove a data object from the underlying file it just marks it as deleted."))
+naive-store writes data to file sequentially and when deleting data objects it does not remove a data object from the underlying file it just marks it as deleted."))
 
 (defmethod deleted-p (object)
   (getx object :deleted-p))
@@ -67,11 +66,15 @@ Looks for :key or uses all values"))
   (if (not handle-duplicates-p)
       (push object
 	    (data-objects collection))
+      
       (if (keys collection)
-	  (pushnew object
-		     (data-objects collection)
-		     :test (lambda (x y)
-			     (equalp (key-values collection x) (key-values collection y))))
+	  (let ((position
+		 (position object (data-objects collection)
+			   :test (lambda (x y)
+				   (equalp (key-values collection x) (key-values collection y))))))
+	    (if position
+		(setf (nth position (data-objects collection)) object)
+		(push object (data-objects collection))))
 	  (push object
 		  (data-objects collection))))
   object)
@@ -80,12 +83,21 @@ Looks for :key or uses all values"))
   (:documentation "The default behavior is two just write what ever is given to file.
 collection is needed to write to the right file and directory.
 
-However this is where tasks checking for duplicates should be done. This is also where 
-reference objects should be converted to a reference% marker instead of writing out the actual object. 
+Notes:
+
+This is where tasks checking for duplicates should be done. This is also where reference objects should be converted to a reference% marker instead of writing out the actual object. 
 Use naive-items if the later behaviour is desired."))
  
 (defmethod persist-object ((collection collection) object &key (handle-duplicates-p t) delete-p &allow-other-keys)
-  "Writes an data object to file and adds it to the collection."
+  "Writes an data object to file and adds it to the collection. 
+
+Notes:
+
+Duplicate checking is very rudementry in cl-naive-store core, it is assumed that if the object you are persisting has the same key that it should replace what is in the db thus the object is always written to the file, but it wont cause a duplicate in the database in memory.
+
+For more advanced duplicate checking and not writing out objects when they are equal value wise look to cl-naive-items."
+
+  
   (write-to-file
    (cl-fad:merge-pathnames-as-file
 	       (pathname (location collection))
@@ -95,4 +107,5 @@ Use naive-items if the later behaviour is desired."))
    (if (not delete-p)
        (add-data-object collection object :handle-duplicates-p handle-duplicates-p)
        object)))
+
 

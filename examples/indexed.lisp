@@ -25,18 +25,20 @@
 	(add-collection store
 			(make-instance 'indexded-collection
 				       :name "simple-collection"
+				       ;;Specifying the key field, else its :key
+				       :keys '(:id)
 				       ;;Specifying the fields to set up indexes for.
-				       :indexes '(:name :surname))))
+				       :indexes '((:name :surname)))))
        (results))
       
   ;;Add some objects to the collection
-  ;;By using :key i am indicating to naive-store that this is the key to te record.
   
-  (persist-object collection (list :name "Piet" :surname "Gieter" :key 123))
-  (persist-object collection (list :name "Sannie" :surname "Gieter" :key 321))
-  (persist-object collection (list :name "Koos" :surname "Van" :key 999))
-  (persist-object collection (list :name "Frikkie" :surname "Frikkedel" :key 1001))
-  (persist-object collection (list :name "Tannie" :surname "Frikkedel" :key 1001))
+  
+  (persist-object collection (list :name "Piet" :surname "Gieter" :id 123))
+  (persist-object collection (list :name "Sannie" :surname "Gieter" :id 321))
+  (persist-object collection (list :name "Koos" :surname "Van" :id 999))
+  (persist-object collection (list :name "Frikkie" :surname "Frikkedel" :id 1001))
+  (persist-object collection (list :name "Tannie" :surname "Frikkedel" :id 1001))
 
   ;;Lookup koos using index values and add it to results
   (push
@@ -52,7 +54,7 @@
   ;;Query the collection, query-data will load the data from file if the collection is empty,
   ;;and add it to the results
   (push (query-data collection :query (lambda (data-object)				    
-					(<= (getx data-object :key) 900)))
+					(<= (getx data-object :id) 900)))
 	results)
 
   (reverse results))

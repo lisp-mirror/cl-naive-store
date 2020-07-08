@@ -1,5 +1,8 @@
 (in-package :cl-naive-items)
 
+(defun parse-item (item)
+  (plist-to-value-pairs (object-values item)))
+
 (defun item-pair-to-plist (pair)
   (list (first pair)
 	  (if (and (second pair) (listp (second pair)))			    

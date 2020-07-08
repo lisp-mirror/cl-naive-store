@@ -116,11 +116,14 @@ which contain the actual data. Each collection will have its own directory and f
 			(make-instance 'item-collection
 				       :name "simple-collection"
 				       :data-type data-type
+				       ;;not setting keys to make sure fallback to data-type
+				       ;;is done, need to add tests for both
+				       ;;:keys '(:emp-no)
 				       :indexes '((:gender :race :surname)))
 			(if (equalp *collection-class* 'collection-indexed)
 			 (make-instance *collection-class*
 					:name "simple-collection"
-					
+					:keys '(:emp-no)
 					:indexes '((:gender :race :surname)))
 			 (make-instance *collection-class*
 					:name "simple-collection"
@@ -324,32 +327,32 @@ Only peristed if persist-p is t."
     ;;Query the data in the universe
      (setf data (query-simple-data))
 
-    (let ((collection (get-collection (get-store *universe* "simple-store")
-				      "simple-collection")))
+     (let ((collection (get-collection (get-store *universe* "simple-store")
+				       "simple-collection")))
 
-      (dolist (object data)
-	(if (equalp *object-type* 'item)
-	    (persist-object collection (make-item 
+       (dolist (object data)
+	 (if (equalp *object-type* 'item)
+	     (persist-object collection (make-item 
 					 :store (store collection)
 					 :collection collection
 					 :data-type (if (stringp (data-type collection))
 							(item-data-type (data-type collection))
 							(name (data-type collection)))		
 					 :values (item-values object)))	    
-	    (persist-object collection 
+	     (persist-object collection 
 			     (list 
 			      :race (getf object :race)
 			      :gender (getf object :gender)
 			      :surname (getf object :surname)
 			      :name (getf object :name)			   
 			      :emp-no (getf object :emp-no)))))
-      
-      ;;Unload the collection (contains the data) if it is already loaded.
-      (when (data-loaded-p collection)	
-	(if (hash-table-p (data-objects collection))
-	  (clrhash (data-objects collection))
-	  (setf (data-objects collection) nil))))
-    
+       
+       ;;Unload the collection (contains the data) if it is already loaded.
+       (when (data-loaded-p collection)	
+	 (if (hash-table-p (data-objects collection))
+	     (clrhash (data-objects collection))
+	     (setf (data-objects collection) nil))))
+     
     ;;Query the data in the universe
     (setf test-results (query-simple-data) )
 
@@ -363,8 +366,7 @@ Only peristed if persist-p is t."
     (setf results (append results (test-simple)))
     (setf results (append results (test-simple-duplicates)))
     (setf results (append results (test-lazy-loading)))
-    (setf results (append results (test-delete)))
-    ))
+    (setf results (append results (test-delete)))))
 
 (defun test-all-simple-indexed ()
   (let ((*collection-class* 'collection-indexed))
@@ -722,7 +724,6 @@ Only peristed if persist-p is t."
     (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-indexed-queries))
     (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-items))
     (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-item-queries))))
-
 
 #|
 

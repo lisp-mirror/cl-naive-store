@@ -18,8 +18,10 @@
        ;;Create a collection and add it to the store
        (collection 
 	(add-collection store
-			(make-instance 'collection
-				       :name "simple-collection"))))
+			(make-instance 'collection				       
+				       :name "simple-collection"
+				       ;;Specifying the key field, else its :key
+				       :keys '(:id)))))
       
   ;;Add some objects to the collection
   (add-data-object collection (list :name "Piet" :surname "Gieter" :id 123))

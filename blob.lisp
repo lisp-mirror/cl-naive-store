@@ -5,7 +5,9 @@
   file-type
   file-ext
   location
-  raw)
+  raw
+  parent-hash
+  parent-key)
 
 (defun blob-string-value (blob)
   "Returns the value of a blob as a string."
@@ -45,7 +47,9 @@
      :file-type (getx blob-ref-values :file-type)
      :file-ext (getx blob-ref-values :file-ext)
      :location (getx blob-ref-values :location)
-     :raw str)))
+     :raw str
+     :parent-hash (getx blob-ref-values :parent-hash)
+     :parent-key (getx blob-ref-values :parent-key))))
 
 (defun write-blob (file value)
   (let ((*read-eval* nil)

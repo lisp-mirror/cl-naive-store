@@ -322,58 +322,84 @@
     (set-getsfx* field object val)))
 
 
-(defmethod (setf getsfx) (value (type (eql :lambda)) field object   &key &allow-other-keys)
+(defmethod (setf getsfx) (value (type (eql :lambda)) field object  &key &allow-other-keys)
   (setsfx-read* field object value #'consp "~S is not a cons!"))
 
-(defmethod (setf getsfx) (value (type (eql :lisp-code)) field object   &key &allow-other-keys)
+(defmethod (setf getsfx) (value (type (eql :lisp-code)) field object
+			  &key parent-hash &allow-other-keys)
   (let ((blob (getx object (getf field :name))))
     (if (blob-p blob)
 	(setf (blob-raw blob) value)
-	(setf blob (make-blob  :file-type :text
-			       :file-ext "lisp"
-			       :location ""
-			       :raw value)))
+	(if (not parent-hash)
+	    (error "Cannot create blob without parent-hash!")
+	    (setf blob (make-blob  :file-type :text
+				   :file-ext "lisp"
+				   :location ""
+				   :raw value
+				   :parent-hash parent-hash
+				   :parent-key (getf field :name))
+		  )))
     (set-getsfx* field object blob)))
 
 
-(defmethod (setf getsfx) (value (type (eql :css)) field object   &key &allow-other-keys)
+(defmethod (setf getsfx) (value (type (eql :css)) field object
+			  &key parent-hash &allow-other-keys)
   (let ((blob (getx object (getf field :name))))
     (if (blob-p blob)
 	(setf (blob-raw blob) value)
-	(setf blob (make-blob  :file-type :text
-			       :file-ext "css"
-			       :location ""
-			       :raw value)))
+	(if (not parent-hash)
+	    (error "Cannot create blob without parent-hash!")
+	    (setf blob (make-blob  :file-type :text
+				   :file-ext "css"
+				   :location ""
+				   :raw value
+				   :parent-hash parent-hash
+				   :parent-key (getf field :name)))))
     (set-getsfx* field object blob)))
 
-(defmethod (setf getsfx) (value (type (eql :html)) field object   &key &allow-other-keys)
+(defmethod (setf getsfx) (value (type (eql :html)) field object
+			  &key parent-hash &allow-other-keys)
   (let ((blob (getx object (getf field :name))))
     (if (blob-p blob)
 	(setf (blob-raw blob) value)
-	(setf blob (make-blob  :file-type :text
-			       :file-ext "html"
-			       :location ""
-			       :raw value)))
+	(if (not parent-hash)
+	    (error "Cannot create blob without parent-hash!")
+	    (setf blob (make-blob  :file-type :text
+				   :file-ext "html"
+				   :location ""
+				   :raw value
+				   :parent-hash parent-hash
+				   :parent-key (getf field :name)))))
     (set-getsfx* field object blob)))
 
-(defmethod (setf getsfx) (value (type (eql :java-script)) field object   &key &allow-other-keys)
+(defmethod (setf getsfx) (value (type (eql :java-script)) field object
+			  &key parent-hash &allow-other-keys)
   (let ((blob (getx object (getf field :name))))
     (if (blob-p blob)
 	(setf (blob-raw blob) value)
-	(setf blob (make-blob  :file-type :text
-			       :file-ext "js"
-			       :location ""
-			       :raw value)))
+	(if (not parent-hash)
+	    (error "Cannot create blob without parent-hash!")
+	    (setf blob (make-blob  :file-type :text
+				   :file-ext "js"
+				   :location ""
+				   :raw value
+				   :parent-hash parent-hash
+				   :parent-key (getf field :name)))))
     (set-getsfx* field object blob)))
 
-(defmethod (setf getsfx) (value (type (eql :text-blob)) field object   &key &allow-other-keys)
+(defmethod (setf getsfx) (value (type (eql :text-blob)) field object
+			  &key parent-hash &allow-other-keys)
   (let ((blob (getx object (getf field :name))))
     (if (blob-p blob)
 	(setf (blob-raw blob) value)
-	(setf blob (make-blob  :file-type :text
-			       :file-ext "txt"
-			       :location ""
-			       :raw value)))
+	(if (not parent-hash)
+	    (error "Cannot create blob without parent-hash!")
+	    (setf blob (make-blob  :file-type :text
+				   :file-ext "txt"
+				   :location ""
+				   :raw value
+				   :parent-hash parent-hash
+				   :parent-key (getf field :name)))))
     (set-getsfx* field object blob)))
 
 (defmethod (setf getsfx) (value (type (eql :collection)) field object

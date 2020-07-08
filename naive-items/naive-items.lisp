@@ -10,6 +10,18 @@
 		:allocation :class
 		:documentation "Then class that should be usedS to make collection objects.")))
 
+(defstruct item
+  "Data is loaded into these structures from files. Changes slot is used to store setf values when using getx the preffered accessor for values. This helps with comparing of values when persisting."
+  store
+  collection
+  data-type
+  hash
+  values
+  changes
+  versions
+  deleted-p
+  persisted-p)
+
 (defmethod hash ((item item))
   (frmt "~A" (item-hash item)))
 
@@ -21,13 +33,20 @@
   (and (listp object)
        (item-p (first object))))
 
+(defmethod object-values ((object item))
+  (item-values object))
+
+(defmethod murmurhash:murmurhash ((object item) &key)
+  (murmurhash:murmurhash (hash object)))
+
 ;;TODO:Need to hunt down instances where this function can use instead of the more
 ;;verbose code lying around.
+;;currently not used any where?
 (defun item-of-type-p (item data-type)
   "Returns t if the item is of the data type."
   (string-equal data-type (item-data-type item)))
 
-
+;;TODO: Consider removing these getx* thingies.
 (defgeneric getxo (item field-name)
   (:documentation "Gets value ignoring any changes made to the item. IE old value."))
 
@@ -42,3 +61,15 @@
 
 (defmethod exists-p ((item item) field-name)
   (get-properties (item-values item) (list field-name)))
+
+(defun key-values%% (keys values)
+  (let ((keys-values))
+    (dolist (key keys)     
+      (if (item-p (getx values key))
+	    (push (list key (item-hash (getx values key))) keys-values)
+	    (push (list key (getx values key)) keys-values)))
+    (nreverse keys-values)))
+
+(defmethod key-values ((collection item-collection) object &key &allow-other-keys)
+  (if (keys collection)
+      (key-values%% (keys collection) (object-values object))))

@@ -40,8 +40,6 @@
 			 (make-instance 'item-store
 					:name "simple-store"
        					:collection-class 'collection)))
-       
-       
        (collection)
        (fields)
        (data-type)
@@ -74,8 +72,12 @@
 			(make-instance 'item-collection ;;using items collection.
 				       :name "simple-collection"
 				       :data-type data-type
+				       ;;Not specifying the keys to show
+				       ;;that they are retrieved from the data-type
+				       ;;if if no key is set.
+				       ;;:keys ...
 				       ;;Specifying the fields to set up indexes for.
-				       :indexes '(:name :surname))))
+				       :indexes '((:name :surname)))))
   ;;Add some objects to the collection
   (persist-object collection
    (make-item 
@@ -116,7 +118,7 @@
   ;;Lookup koos using index values and add it to results
   (push
    (index-lookup-values collection (list (list :name "Koos" )
-						(list :surname "Van")))
+					 (list :surname "Van")))
    results)
 
   ;;Lookup Frikkedel using index values and add it to results

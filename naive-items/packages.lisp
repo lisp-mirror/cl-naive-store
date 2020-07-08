@@ -8,7 +8,6 @@
    :item-collection
    :item-store
    
-   
    :item
    :make-item
    :item-hash
@@ -34,11 +33,5 @@
 
    ;;####Export
    :items-to-plist
-
    :item-list-to-csv
-
-   :item-list-to-json
-
- 
- 
-   ))
+   :item-list-to-json))

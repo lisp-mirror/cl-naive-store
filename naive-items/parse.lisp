@@ -54,7 +54,7 @@
 		   (make-item
 		    :store (store collection)
 		    :collection collection
-		    :data-type (dig object :data-type)
+		    :data-type (data-type collection)
 		    :hash (frmt "~A" (dig object :hash))
 		    :values resolved-values))
 

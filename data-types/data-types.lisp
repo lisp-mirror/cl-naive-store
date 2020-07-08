@@ -73,7 +73,7 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
 
 
 (defmethod persist ((data-type data-type) &key &allow-other-keys)
-  "Persists a data-type definition and not what it contains! Path to file is of this general format
+  "Persists a data-type definition. Path to file is of this general format
 /universe/store-name/data-type-name.type."
   (let ((fields))    
     (dolist (field (fields data-type))
@@ -102,6 +102,24 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
 	      :documentation "The data-type that this collection contains objects of."))
   
   (:documentation "Collection extention to make collection of a specific data-type."))
+
+(defmethod  add-collection :after ((store store) (collection data-type-collection-mixin))
+  (when (or
+	 (not (keys collection))
+	 (equalp (keys collection) '(:key)))
+    (when (data-type collection)
+      (let ((data-type (typecase (data-type collection)
+				  (data-type
+				   (data-type collection))
+				  (t
+				   (get-data-type store (data-type collection))))))
+	(when data-type
+	  (let (keys)
+	    (dolist (field (fields data-type))	      
+	      (when (key-p field)
+		(push (name field) keys)))
+	    (when keys
+	      (setf (keys collection) (nreverse keys)))))))))
 
 (defmethod persist-collection-def ((collection data-type-collection-mixin))
   (write-to-file

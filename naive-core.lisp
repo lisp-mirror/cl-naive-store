@@ -22,7 +22,10 @@ Notes: Testing on my system (sbcl- --dynamic-space-size 12000) doing string comp
    (keys :initarg :keys
 	 :accessor keys
 	 :initform (list :key)
-	 :documentation "Keys need to be set to handle duplicates, the default is :key if :key is not found in the object then duplicates will accur."))
+	 :documentation "Keys need to be set to handle duplicates, the default is :key if :key is not found in the object then duplicates will accur.
+
+Notes:
+For collections that use cl-naive-data-type there is a fallback the data-type is checked for keys as well and the collection's keys will be set to the keys set in the data-type fields."))
   
   (:documentation "A collection of objects of a specific data-type."))
 

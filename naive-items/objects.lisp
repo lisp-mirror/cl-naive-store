@@ -22,3 +22,6 @@
 				   (data-type collection)))		
 		:values item)
 	       :allow-key-change-p allow-key-change-p)))
+
+(defmethod object-values ((object item))
+  (item-values object))

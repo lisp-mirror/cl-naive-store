@@ -1,510 +1,7 @@
 (in-package :cl-naive-items)
-;;;;There is a lot of legacy code in this file that needs to be redone!!!!
 
-(defmethod write-object ((object item) stream)
-  "Used to write an item."
-  (pprint 
-   (list
-    :store (name (store (item-collection object)))
-    :collection (name (item-collection object))
-    :data-type (if (stringp (item-data-type object))
-		   (item-data-type object)
-		   (name (item-data-type object)))
-    :hash (item-hash object)
-    :deleted-p (item-deleted-p object)
-    :values (item-values object))
-   stream))
-
-(defmethod object-values ((object item))
-  (item-values object))
-
-(declaim (inline  values-from-key-fields%))
-(defun key-values% (fields values)
-  (let ((keys))
-    (dolist (field fields)     
-      (when (key-p field)
-	(if (item-p (getx values (name field)))
-	    (push (list (name field) (item-hash (getx values (name field)))) keys)
-	    (push (list (name field) (getx values (name field))) keys))))
-    (reverse keys)))
-
-(defmethod index-values ((collection item-collection) (values item) &key &allow-other-keys)
-  (let ((index-values))
-    (dolist (index (indexes collection))
-      (push
-       (loop for (a b) on (item-values values) by #'cddr
-	  when (find a index :test 'equalp)
-	  :collect (list a b))
-       index-values))
-    index-values))
-
-(defmethod key-values ((collection item-collection) object &key &allow-other-keys)
-  (let ((data-type (or (data-type collection) (if (item-p object) (item-data-type object)))))
-
-    (when (stringp data-type)
-      ;;If types have not been loaded yet load type.
-      (unless (data-types (store collection))
-	(get-data-type-from-def (store collection) data-type))
-      
-      (setf data-type (get-data-type (store collection) data-type)))
-    
-    (unless data-type
-    ;;Raising an error here because its problem with datatype specifications some where.
-      (error "index-keys called with data-type = nil. 
-cl-wfx tip: If this happened on a save look for a mismatch between a collection and its data-type's destinations"))
-    
-    (key-values% (fields data-type) (object-values object))))
-
-(defun check-location (item &key collection)
-  (let ((col (or collection (item-collection item))))    
-    (if col
-	(progn
-	  (setf (item-collection item) col)
-	  (if (store col)
-	      (setf (item-store item) (store col))
-	      (error
-	       (format nil
-		       "Dont know which store to use to persist item ~S" item))))
-	(error (format nil "Dont know where to persist item ~S" item))))    
-  item)
-
-(defun parse-item (item)
-  (plist-to-value-pairs (object-values item)))
-
-(defun set-hash (item)
-  (unless (item-hash item)
-    (let* ((hash (uuid:make-v4-uuid)))
-      (setf (item-hash item) hash)
-      hash)))
-
-(defun item-to-reference (item location)
-  (if (item-p item)
-      (if (item-collection item)
-	  (list
-	   :store (name (item-store item))
-	   :collection (name (item-collection item))
-	   :data-type (if (stringp (item-data-type item))
-			  (item-data-type item)
-			  (name (item-data-type item)))
-	   :hash (item-hash item)
-	   :values 
-	   '(:reference% t))
-	  (list
-	   :data-type (if (stringp (item-data-type item))
-			  (item-data-type item)
-			  (name (item-data-type item)))
-	   :hash (or (item-hash item) (set-hash item ))
-	   :values (parse-to-references%
-		    item
-		    (or (item-changes item)
-			(item-values item))
-		    location)))
-      item))
-
-(defun parse-to-references% (item values location)
-  (let ((final)
-	(value-pairs (parse-item values)))
-
-    
-    (dolist (pair value-pairs)
-      (let ((key (first pair))
-	    (val (second pair)))
-
-	(if (item-p val)
-	    (setf final (append final
-				(list key (item-to-reference
-					   val
-					   location))))
-	    (if (or (and val (listp val) (listp (first val)))
-		    (and val (listp val) (item-p (first val))))
-		(let ((children))
-		  (dolist (it val)
-		    (if (item-p it)
-			(setf children
-			      (append children 
-				      (list (item-to-reference
-					    
-					     it
-					     location))))
-			(setf children (append children (list it)))))
-		  (setf final (append final (list key children))))
-		(cond ((blob-p val)
-		  
-		       (let ((file (or (and (not (empty-p (blob-location val)))
-					    (blob-location val))
-
-				       (cl-fad:merge-pathnames-as-file
-						    (pathname location)
-						    (make-pathname :directory (list :relative  (frmt "~A" key))
-								   :name (frmt "~A" (item-hash item))
-								   :type (blob-file-ext val))))))
-		
-			 ;;string-blob was converted to stream for persistence
-			 ;;have to reset it to string-blob
-			 (write-blob file (blob-raw val))
-			 (setf final (append final (list key
-							 (list :blob%
-							       (list :file-type (blob-file-type val)
-								     :file-type (blob-file-ext val)
-								     :location file)))))))
-			
-		      (t
-		       (setf final (append final (list key val)))))))))
-    final))
-
-
-(defun copy% (item)
-  (let ((copy (copy-item item)))
-    (setf (item-values copy) (copy-list (item-values item)))
-    (setf (item-changes copy) (copy-list (item-changes item)))
-    copy))
-
-(defun parse-to-references (item location)
-  (let ((ref-item (copy% item)))
-    (setf (item-values ref-item)
-	  (parse-to-references% item (item-values ref-item) location))
-    ref-item))
-
-;;Used to mark change deep in the bowls of the beast.
-(defvar *persist-p* nil)
-
-(defun check-no-collection-val (collection val allow-key-change-p)
-  (unless (item-changes val)
-    (setf (item-values val)
-	  (check-item-values% collection
-			      (item-values val)
-			      allow-key-change-p))
-    val)
-  
-  (when (item-changes val)
-    (setf *persist-p* t)
-    (setf (item-values val)
-	  (check-item-values% collection
-			      (item-changes val)
-			      allow-key-change-p))
-    (setf (item-changes val) nil)
-    val)
-
-  (unless (item-hash val)
-    (set-hash val))
-  
-  val)
-
-(defun new-duplicate-item (items)
-  (let ((new-duplicate-item ))
-	    
-    (dolist (item items)
-      (when (and (item-p item) (not (item-hash item)))
-	(setf new-duplicate-item item)))
-    new-duplicate-item))
-
-(defun remove-duplicate-items (collection values)
-  (let ((matching-hashes)
-	(keyhash (make-hash-table :test 'equalp)))
-    
-    (dolist (item values)
-      (when (item-p item)
-	(let ((key-values (key-values collection
-				(or (item-changes item) (item-values item)))))
-	  
-	  (if (gethash key-values keyhash)
-	      (setf matching-hashes (push key-values matching-hashes)))
-	  (setf (gethash key-values keyhash) (push item (gethash key-values keyhash))))))
-
-    (dolist (match matching-hashes)
-      (let* ((items (gethash match keyhash))
-	     (new-duplicate-item (new-duplicate-item items)))
-	(when new-duplicate-item
-	  (dolist (item items)
-	    (when  (item-p item)
-	      (unless (eq item new-duplicate-item)
-		(setf (item-changes item) (item-changes new-duplicate-item))))))
-	  (setf values (remove new-duplicate-item values))))
-    values))
-
-(defun check-item-values% (collection values allow-key-change-p)
-  (let ((final)
-	(value-pairs (parse-item values)))
-
-    (dolist (pair value-pairs)
-      (let ((key (first pair))
-	    (val (second pair)))
-	
-	(if (item-p val) 
-	    (setf final (append final
-				(list key
-				      (if (item-collection val)
-					  (if (item-changes val)
-					      (persist val :allow-key-change-p allow-key-change-p)
-					      val)
-					  (check-no-collection-val collection val allow-key-change-p)))))
-	    (if (or (and val (listp val) (listp (first val)))
-		    (and val (listp val) (item-p (first val))))
-		(let ((children))
-		  
-		  (dolist (it (remove-duplicate-items (store collection) val))
-		    
-		    (if (item-p it)
-			(setf children
-			      (append children 
-				      (list
-				       (if (item-collection it)
-					   (if (item-changes it)				       
-					       (persist it :allow-key-change-p allow-key-change-p)
-					       it)
-					   (check-no-collection-val collection it allow-key-change-p)))))
-			
-			(setf children (append children (list it)))))
-		  (setf final (append final (list key children))))
-		(setf final (append final (list key val)))))))     
-    final))
-
-
-(defun change-in-item-p (item)
-  (not (equalp (item-values item) (item-changes item))))
-
-
-;;TODO: This needs a serious rewrite, its a cobbled job at best.
-(defun check-item-values (item allow-key-change-p)
-
-  (let ((change-p (and (item-changes item) (change-in-item-p item)))
-	(lookup-old (or (index-lookup-uuid (item-collection item)
-					   (item-hash item))
-			(first (index-lookup-values (item-collection item)
-						    (item-values item)))))
-	(lookup-new (first (index-lookup-values (item-collection item)
-						(item-changes item))))
-	(final-item))
-
-    (when change-p
-      (when lookup-old
-	(when lookup-new
-	  (when (equalp (item-hash lookup-new) (item-hash lookup-old))
-
-	    (unless (equalp (item-values lookup-new) (item-changes item))
-
-	      (setf (item-values lookup-old)
-		    (check-item-values% (item-collection item) (item-changes item) allow-key-change-p))
-	      (setf (item-changes item) nil)
-	      (setf final-item lookup-old)))
-
-	  (unless (equalp (item-hash lookup-new) (item-hash lookup-old))
-
-	    (unless allow-key-change-p
-	      (error
-	       (format
-		nil
-		"Cant change key values causes hash diff ~%~A~%~A~%~A~%~A" 
-		(item-hash lookup-old)
-		(item-hash item)
-		(item-values lookup-old)
-		(item-values item))))
-	      
-	    (when allow-key-change-p
-	      (push (item-values lookup-old) (item-versions lookup-old))
-	      (setf (item-values lookup-old)
-		    (check-item-values% (item-collection item)
-					(item-changes item)
-					allow-key-change-p))	      
-	      (remove-data-object (item-collection item) lookup-old)	      
-	      (push item (data-objects (item-collection lookup-old)))
-	      
-	      (break "shit")
-	      
-	     ;; (add-index (item-collection item) lookup-old)
-	      (setf final-item lookup-old)
-	      )))
-	
-	(unless lookup-new
-	  (unless (equalp (key-values (item-collection lookup-old)
-				      (item-values lookup-old))
-			  (key-values (item-collection lookup-old)
-				      (item-changes lookup-old)))
-
-	    (unless allow-key-change-p
-	      (error
-	       (format
-		nil
-		"Cant change key values causes hash diff ~%~A~%~A~%~A~%~A" 
-		(item-hash lookup-old)
-		(item-hash item)
-		(item-values lookup-old)
-		(item-values item))))
-	      
-	    (when allow-key-change-p
-	      (push (item-values lookup-old) (item-versions lookup-old))
-	      (setf (item-values lookup-old)
-		    (check-item-values% (item-collection item)
-					(item-changes item)
-					allow-key-change-p))
-	      (remove-data-object (item-collection item) lookup-old)	      
-	     ;; (push item (data-objects (item-collection lookup-old)))
-	     ;; (add-index (item-collection item) lookup-old)
-	      (setf final-item lookup-old)))
-
-	  (when (equalp (key-values  (item-collection lookup-old)
-				     (item-values lookup-old))
-			(key-values (item-collection lookup-old)
-				    (item-changes lookup-old)))
-	    (setf (item-values lookup-old)
-		  (check-item-values% (item-collection item) (item-changes item)
-				      allow-key-change-p))
-	    (setf (item-changes item) nil)
-	    (setf final-item lookup-old))))
-      
-      (unless lookup-old
-
-	(when lookup-new
-	  
-	  (unless (equalp (item-values lookup-new) (item-changes item))
-	    (setf (item-values lookup-new)
-		  (check-item-values% (item-collection item) (item-changes item)
-				      allow-key-change-p))
-	    (setf (item-changes lookup-new) nil)
-	    (setf final-item lookup-new)))
-	(unless lookup-new
-	  (setf (item-values item)
-		(check-item-values% (item-collection item) (item-changes item)
-				    allow-key-change-p))
-	  (setf (item-changes item) nil)	   
-	 ;; (push item (data-objects (item-collection item)))
-	 ;; (add-index (item-collection item) item)
-	  (setf final-item item))))
-
-    (unless change-p
-      
-      (when lookup-old
-
-	(let ((wtf (check-item-values% (item-collection item)
-				       (or (item-changes item)
-					   (item-values item))
-				       allow-key-change-p)))
-
-	  (if (equalp (item-values lookup-old)
-		      (or (item-changes item)
-			  (item-values item)))
-	      (progn
-		(when *persist-p*
-		  (push (item-values lookup-old) (item-versions lookup-old))
-		  (setf (item-values lookup-old) wtf)		
-		  (setf (item-changes item) nil)
-		  (setf final-item lookup-old))
-		
-		;;Don't save nothing changed
-		(unless *persist-p*
-		  (setf (item-changes lookup-old) nil)
-		  (setf (item-changes item) nil)
-		  (setf final-item nil)))
-	      (progn
-		(push (item-values lookup-old) (item-versions lookup-old))
-		(setf (item-values lookup-old) wtf)		
-		(setf (item-changes item) nil)
-		(setf final-item lookup-old)))))
-      
-      (unless lookup-old
-
-	 (setf (item-values item)
-	       (check-item-values% (item-collection item)
-				   (or (item-changes item)
-				       (item-values item))
-				   allow-key-change-p))
-	 (setf (item-changes item) nil)	   
-	 ;;(push item (data-objects (item-collection item)))
-	 ;;(add-index (item-collection item) item)
-	 (setf final-item item)))
-    
-    (when final-item
-      
-      (setf (item-deleted-p final-item) (item-deleted-p item)))
-    
-    final-item))
-
-(defun parse-persist-object (file item)
-  ;;Parse item to persistable format
-  (let ((item-to-persist (parse-to-references item (directory-namestring file))))
-    (when  item-to-persist
-      (setf (item-persisted-p item) nil)	
-      (write-to-file file
-		     item-to-persist
-		     :if-exists :append)
-      (setf (item-persisted-p item) t))
-    item))
-
-
-(defmethod persist ((item item) &key
-				  collection
-				  file
-				  allow-key-change-p
-				  new-file-p
-				  &allow-other-keys)
-  (let ((*persist-p* nil)
-	(derived-file))
-
-    (unless file
-      ;;Resolve the location of the item
-      (setf item (check-location item :collection collection))
-
-      ;;Loads collection if not loaded yet.
-      (load-data (item-collection item))
-
-      (setf derived-file (cl-fad:merge-pathnames-as-file
-			  (pathname (location (item-collection item)))
-			  (make-pathname :name (name (item-collection item))
-					 :type "log"))))
-
-    (let ((changed-item (if new-file-p
-			    item
-			    (check-item-values item allow-key-change-p))))
-
-      (cond ((item-deleted-p item)
-	     ;;The remove must be done much earlier in the process, take care of it in item persist
-	     ;;rewrite.
-	     (remove-data-object (item-collection item) item)
-	     (parse-persist-object (or file derived-file)
-				   item))
-	    
-	    (changed-item
-             
-	     (setf item changed-item)
-	     (setf item (add-data-object (item-collection item) item))
-	     (parse-persist-object (or file derived-file)
-				   item))
-	    
-	    (t
-	     item)))))
-
-
-
-#|
-
-
-;;Started on rewrite
-
-(defgeneric parse-item-to-file-rep (collection line &key &allow-other-keys)
-  (:documentation "Parses the raw object read from file to its object reprensentation."))
-
-(defmethod parse-item-to-file-rep ((collection item-collection) object  &key top-level-p &allow-other-keys)
-  (cond ((null object)
-	 nil)
-	 
-	(top-level-p
-	 (item-to-file-rep collection object))
-	
-	((and (item-p object) (not (item-collection object))) ;;item with no collection
-	 (child-item-to-file-rep collection object))
-	
-	((and (item-p object) (item-collection object)) ;;reference-object
-	 (item-to-file-rep-reference object))
-	;;blob
-	
-	((atom object)
-	 object)
-	
-        ((consp object)
-	 (mapcar (lambda (child)
-		   (parse-item-to-file-rep collection child))
-		 object))
-        (t object)))
+(defgeneric parse-item-to-file-rep (collection object &key &allow-other-keys)
+  (:documentation "Parses the object to a representation that can be pesisted to file."))
 
 (defun item-to-file-rep-reference (item)
   (list
@@ -530,16 +27,219 @@ cl-wfx tip: If this happened on a save look for a mismatch between a collection 
 		(item-values item)))))
 
 (defun item-to-file-rep (collection item)
-  (list
-   :store (name (item-store item))
-   :collection (name (item-collection item))
-   :data-type (if (stringp (item-data-type item))
-		  (item-data-type item)
-		  (name (item-data-type item)))
+  (list   
    :hash (item-hash item)
+   :deleted-p (if (item-deleted-p item)
+		  t
+		  nil)
    :values (parse-item-to-file-rep
 	    collection
 	    (or (item-changes item)
 		(item-values item)))))
 
-|#
+(defmethod parse-item-to-file-rep ((collection item-collection) object
+				   &key top-level-p location &allow-other-keys)
+  (cond ((null object)
+	 nil)
+	 
+	(top-level-p
+	 (item-to-file-rep collection object))
+	
+	((and (item-p object) (not (item-collection object))) ;;item with no collection
+	 (child-item-to-file-rep collection object))
+	
+	((and (item-p object) (item-collection object)) ;;reference-object
+	 (item-to-file-rep-reference object))
+
+	((blob-p object)
+         
+	 (let ((file (or (and (not (empty-p (blob-location object)))
+			      (blob-location object))
+
+			 (cl-fad:merge-pathnames-as-file
+			  (pathname location)
+			  (make-pathname :directory
+					 (list :relative  (frmt "~A" (blob-parent-key object)))
+					 :name (frmt "~A" (blob-parent-hash object))
+					 :type (blob-file-ext object))))))
+		
+	   ;;TODO: move write to outside of parsing!!!!!
+	   (write-blob file (blob-raw object))
+	   
+	   (list :blob%
+		 (list :file-type (blob-file-type object)
+		       :file-type (blob-file-ext object)
+		       :location file))))
+	
+	((atom object)
+	 object)
+	
+        ((consp object)
+	 (mapcar (lambda (child)
+		   (parse-item-to-file-rep collection child))
+		 object))
+        (t object)))
+
+
+(defmethod write-object ((object item) stream)
+  "Used to write an item."
+  (if (not (item-collection object))
+      (error
+       "Item does not know its collection. Cant be written to stream. Is this a top level item?")
+      (write-object (parse-item-to-file-rep (item-collection object) object
+					    :top-level-p t
+					    :location (location (item-collection object))) 
+		    stream)))
+
+
+(defgeneric check-item-values (object &key &allow-other-keys)
+  (:documentation "Parses the object to a representation that can be pesisted to file."))
+
+(defun check-child-item-values (object)
+  ;;TODO: remove duplicate children
+  ;;if children without a collection how to get the keys without going to the
+  ;;data-type definition???
+  ;;is duplicates not just an issue because of the way wfx is lazy to do its own
+  ;;duplicate checking?
+  ;;(remove-duplicate-items collection values)
+  (mapcar (lambda (child)
+	    (check-item-values child))
+	  object))
+
+(defun check-keys-and-synq (old new allow-key-change-p)
+  (if (equalp (key-values (item-collection new) new)
+	      (key-values (item-collection old) old))
+      (progn
+	    (setf (item-changes old) (or (item-changes new) (item-values new)))
+	    old)	      
+      (if allow-key-change-p
+	  (progn
+	    (setf (item-changes old) (or (item-changes new) (item-values new)))
+	    old)
+	  (error (frmt "Attempted key change not allowed ~%~S~%with~%~S" old new)))))
+
+(defun check-item-values-top (item allow-key-change-p)
+  (let* ((key-vals (key-values (item-collection item) item))
+	(lookup-old (or (index-lookup-uuid (item-collection item)
+					   (item-hash item))
+			(and key-vals
+			     (first (index-lookup-values
+				     (item-collection item)
+				     key-vals)))))
+	 (final-item))
+
+   ;; (break "~A" key-vals)
+    (if lookup-old
+	(if (eql item lookup-old)
+	  (setf final-item item)
+	  
+	  (if (item-hash item)
+	      (if (not (equalp (item-hash item) (item-hash lookup-old)))
+		  (error (frmt "Clobbering ~%~S~%with~%~S" lookup-old item))
+		  (progn
+		    (setf final-item (check-keys-and-synq lookup-old item allow-key-change-p))
+		    ))
+	      (progn
+		(setf final-item (check-keys-and-synq lookup-old item allow-key-change-p))
+		)))
+	(setf final-item item))
+        
+    (setf (item-values final-item)
+	  (check-item-values (item-values final-item)))
+    final-item))
+
+(defmethod check-item-values (object
+			      &key top-level-p allow-key-change-p &allow-other-keys)
+  (cond ((null object)
+	 nil)
+	(top-level-p
+	 (check-item-values-top object allow-key-change-p))	
+	((item-p object) ;;reference-object
+	 (setf (item-values object) (check-item-values (item-values object)))
+	 object)
+
+	((blob-p object)
+         object)
+	
+	((atom object)
+	 object)
+	((consp object)
+	  (check-child-item-values object))
+	(t
+	 object)))
+
+(defun check-location (item &key collection)
+  (let ((col (or collection (item-collection item))))    
+    (if col
+	(progn
+	  (setf (item-collection item) col)
+	  (if (store col)
+	      (setf (item-store item) (store col))
+	      (error
+	       (format nil
+		       "Dont know which store to use to persist item ~S" item))))
+	(error (format nil "Dont know where to persist item ~S" item))))    
+  item)
+
+(defun parse-persist-object (file item)
+  (with-file-lock-write (file)
+    (fresh-line out)
+    (write-object item out)
+    (fresh-line out))
+  item)
+
+(defmethod persist ((item item) &key
+				  collection
+				  file
+				  allow-key-change-p
+				  new-file-p
+				  &allow-other-keys)
+  (let ((*persist-p* nil)
+	(derived-file))
+
+    (unless file
+      ;;Resolve the location of the item
+      (setf item (check-location item :collection collection))
+
+      
+      ;;Loads collection if not loaded yet.
+      (load-data (item-collection item))
+
+      (setf derived-file (cl-fad:merge-pathnames-as-file
+			  (pathname (location (item-collection item)))
+			  (make-pathname :name (name (item-collection item))
+					 :type "log"))))
+
+
+    (cond ((item-deleted-p item)
+	   (remove-data-object (item-collection item) item)
+	   (parse-persist-object (or file derived-file)
+				 item)
+	   (setf (item-persisted-p item) t))
+	  (t	   
+	   (let* ((changed-item (if new-file-p
+				    item
+				    (check-item-values item
+						       :allow-key-change-p allow-key-change-p
+						       :top-level-p t)))
+		  ;;parsing the objects because its the easiest way to check
+		  ;;equality of objets, especially hierarchical objects.
+		  (original-item-parsed
+		   (parse-item-to-file-rep (item-collection item) item
+					   :top-level-p t
+					   :location (location (item-collection item))))
+		  (changed-item-parsed
+		   (parse-item-to-file-rep (item-collection changed-item) changed-item
+					   :top-level-p t
+					   :location (location (item-collection changed-item)))))
+	     
+	     (when (or (empty-p (hash changed-item))
+		       (not (equalp (getx original-item-parsed :values)
+				    (getx changed-item-parsed :values))))
+	       
+	       (add-data-object (item-collection changed-item) changed-item)
+	       (parse-persist-object (or file derived-file)
+				     changed-item-parsed)
+	       (setf (item-persisted-p item) t)))))))
+
+

@@ -6,8 +6,7 @@
   :depends-on ("cl-murmurhash" "cl-naive-store" "cl-naive-indexed" "cl-naive-data-types" "cl-naive-data-type-defs")
   :components ((:file "packages")
 	       (:file "common" :depends-on ("packages"))
-	       
-               (:file "naive-items" :depends-on ("common"))
+	       (:file "naive-items" :depends-on ("common"))
 	       (:file "data-types" :depends-on ("naive-items"))
 	       (:file "objects" :depends-on ("data-types"))
 	       (:file "indexed" :depends-on ("objects"))
