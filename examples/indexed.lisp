@@ -1,6 +1,6 @@
 ;;Setup to use cl-naive-store
 (require 'cl-naive-store)
-(defpackage :naive-examples (:use :cl :cl-naive-store :cl-naive-indexed))
+(defpackage :naive-examples (:use :cl :cl-getx :cl-naive-store :cl-naive-indexed))
 (in-package :naive-examples)
 
 ;;Create a class that inherits form indexed-collection-mixin and collection.
@@ -25,20 +25,20 @@
 	(add-collection store
 			(make-instance 'indexded-collection
 				       :name "simple-collection"
-				       ;;Specifying the key field, else its :key
+				       ;;Specifying the key element, else its :key
 				       :keys '(:id)
-				       ;;Specifying the fields to set up indexes for.
+				       ;;Specifying the elements to set up indexes for.
 				       :indexes '((:name :surname)))))
        (results))
       
-  ;;Add some objects to the collection
+  ;;Add some documents to the collection
   
   
-  (persist-object collection (list :name "Piet" :surname "Gieter" :id 123))
-  (persist-object collection (list :name "Sannie" :surname "Gieter" :id 321))
-  (persist-object collection (list :name "Koos" :surname "Van" :id 999))
-  (persist-object collection (list :name "Frikkie" :surname "Frikkedel" :id 1001))
-  (persist-object collection (list :name "Tannie" :surname "Frikkedel" :id 1001))
+  (persist-document collection (list :name "Piet" :surname "Gieter" :id 123))
+  (persist-document collection (list :name "Sannie" :surname "Gieter" :id 321))
+  (persist-document collection (list :name "Koos" :surname "Van" :id 999))
+  (persist-document collection (list :name "Frikkie" :surname "Frikkedel" :id 1001))
+  (persist-document collection (list :name "Tannie" :surname "Frikkedel" :id 1001))
 
   ;;Lookup koos using index values and add it to results
   (push
@@ -53,8 +53,8 @@
 
   ;;Query the collection, query-data will load the data from file if the collection is empty,
   ;;and add it to the results
-  (push (query-data collection :query (lambda (data-object)				    
-					(<= (getx data-object :id) 900)))
+  (push (query-data collection :query (lambda (document)				    
+					(<= (getx document :id) 900)))
 	results)
 
   (reverse results))

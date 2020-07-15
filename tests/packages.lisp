@@ -1,11 +1,13 @@
 (in-package :common-lisp-user)
 
 (defpackage :cl-naive-store-tests
-  (:use :cl :cl-naive-store
+  (:use :cl
+	:cl-getx
+	:cl-naive-store
 	:cl-naive-indexed
-	:cl-naive-data-types
-	:cl-naive-data-type-defs
-	:cl-naive-items)
+	:cl-naive-document-types
+	:cl-naive-document-type-defs
+	:cl-naive-documents)
   (:export
    :*universe*
    :test-simple

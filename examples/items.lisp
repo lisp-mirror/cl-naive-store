@@ -1,19 +1,19 @@
 ;;Setup to use cl-naive-store
 (require 'cl-naive-store)
-(defpackage :naive-examples (:use :cl :cl-naive-store
+(defpackage :naive-examples (:use :cl
+				  :cl-getx :cl-naive-store
 				  :cl-naive-indexed
-				  :cl-naive-data-types
-				  :cl-naive-data-type-defs
-				  :cl-naive-items))
+				  :cl-naive-document-types
+				  :cl-naive-document-type-defs
+				  :cl-naive-documents))
 (in-package :naive-examples)
 
 ;;Create a data definition for an employee
 ;;It looks like a lot but dont panic its simple.
-(defparameter *employee-data-type*
+(defparameter *employee-document-type*
   '(:name "employee"
     :label "Employee"
-    :top-level-p t
-    :fields ((:name :emp-no
+    :elements ((:name :emp-no
 	      :label "Employee No"
 	      :db-type :string
 	      :key-p t
@@ -37,82 +37,80 @@
 
 (let* (;;Create a store and add it to the universe
        (store (add-store *universe*
-			 (make-instance 'item-store
+			 (make-instance 'document-store
 					:name "simple-store"
        					:collection-class 'collection)))
        (collection)
-       (fields)
-       (data-type)
+       (elements)
+       (document-type)
        (results))
 
   ;;initialize the data employee data definition.
-  (dolist (field (getf *employee-data-type* :fields))
+  (dolist (element (getf *employee-document-type* :elements))
       (setf
-       fields 
-       (append fields 
+       elements 
+       (append elements 
 	       (list (make-instance 
-		      'field
-		      :name (getf field :name)
-		      :key-p (getf field :key-p)
-		      :type-def (getf field :type-def)
-		      :attributes (getf field :attributes))))))
+		      'element
+		      :name (getf element :name)
+		      :key-p (getf element :key-p)
+		      :type-def (getf element :type-def)
+		      :attributes (getf element :attributes))))))
 
-  (setf data-type (add-data-type
+  (setf document-type (add-document-type
 		   store
 		   (make-instance 
-		    'data-type
-		    :name (getf *employee-data-type* :name)
-		    :label (getf *employee-data-type* :label)
-		    :top-level-p
-		    (getf *employee-data-type* :top-level-p)
-		    :fields fields)))
+		    'document-type
+		    :name (getf *employee-document-type* :name)
+		    :label (getf *employee-document-type* :label)                    
+		    :elements elements)))
 
   ;;Create a collection and add it to the store
   (setf collection (add-collection store
-			(make-instance 'item-collection ;;using items collection.
+			(make-instance 'document-collection ;;using documents collection.
 				       :name "simple-collection"
-				       :data-type data-type
+				       :document-type document-type
 				       ;;Not specifying the keys to show
-				       ;;that they are retrieved from the data-type
+				       ;;that they are retrieved from the document-type
 				       ;;if if no key is set.
 				       ;;:keys ...
-				       ;;Specifying the fields to set up indexes for.
+				       ;;Specifying the elements to set up indexes for.
 				       :indexes '((:name :surname)))))
-  ;;Add some objects to the collection
-  (persist-object collection
-   (make-item 
+  ;;Add some documents to the collection
+  (persist-document collection
+   (make-document 
     :store (store collection)
     :collection collection
-    :data-type "employee"		
-    :values (list :name "Piet" :surname "Gieter" :emp-no 123)))
+    :type-def "employee"		
+    :elements (list :name "Piet" :surname "Gieter" :emp-no 123)))
 
-  (persist-object collection
-   (make-item 
+  (persist-document collection
+   (make-document 
     :store (store collection)
     :collection collection
-    :data-type "employee"		
-    :values (list :name "Sannie" :surname "Gieter" :emp-no 321)))
+    :type-def "employee"		
+    :elements (list :name "Sannie" :surname "Gieter" :emp-no 321)))
 
-  (persist-object collection
-   (make-item 
+  (persist-document collection
+   (make-document 
     :store (store collection)
     :collection collection
-    :data-type "employee"		
-    :values (list :name "Koos" :surname "Van" :emp-no 999)))
+    :type-def "employee"		
+    :elements (list :name "Koos" :surname "Van" :emp-no 999)))
 
-  (persist-object collection
-   (make-item 
+  (persist-document collection
+   (make-document 
     :store (store collection)
     :collection collection
-    :data-type "employee"		
-    :values (list :name "Frikkie" :surname "Frikkedel" :emp-no 1001)))
+    :type-def "employee"		
+    :elements (list :name "Frikkie" :surname "Frikkedel" :emp-no 1001)))
 
-  (persist-object collection
-   (make-item 
+  (persist-document collection
+   (make-document 
     :store (store collection)
     :collection collection
-    :data-type "employee"		
-    :values (list :name "Tannie" :surname "Frikkedel" :emp-no 1001)))
+    :type-def "employee"		
+    :elements (list :name "Tannie" :surname "Frikkedel" :emp-no 1001)))
   
  
   ;;Lookup koos using index values and add it to results
@@ -128,8 +126,8 @@
 
   ;;Query the collection, query-data will load the data from file if the collection is empty,
   ;;and add it to the results
-  (push (query-data collection :query (lambda (data-object)				    
-					(<= (getx data-object :emp-no) 900)))
+  (push (query-data collection :query (lambda (document)				    
+					(<= (getx document :emp-no) 900)))
 	results)
 
   (reverse results))

@@ -1,6 +1,6 @@
 ;;Setup to use cl-naive-store
 (require 'cl-naive-store)
-(defpackage :naive-examples (:use :cl :cl-naive-store))
+(defpackage :naive-examples (:use :cl :cl-getx :cl-naive-store))
 (in-package :naive-examples)
 
 ;;Create a universe
@@ -21,18 +21,18 @@
 	(add-collection store
 			(make-instance 'collection
 				       :name "simple-collection"
-				       ;;Specifying the key field, else its :key
+				       ;;Specifying the key element, else its :key
 				       :keys '(:id)))))
       
-  ;;Add some objects to the collection
-  (persist-object collection (list :name "Piet" :surname "Gieter" :id 123))
-  (persist-object collection (list :name "Sannie" :surname "Gieter" :id 321))
-  (persist-object collection (list :name "Koos" :surname "Van" :id 999))
+  ;;Add some documents to the collection
+  (persist-document collection (list :name "Piet" :surname "Gieter" :id 123))
+  (persist-document collection (list :name "Sannie" :surname "Gieter" :id 321))
+  (persist-document collection (list :name "Koos" :surname "Van" :id 999))
   
-  ;;Clear the collection, ie unload objects from memory so we can show that it has been persisted.
-  (setf (data-objects collection) nil)
+  ;;Clear the collection, ie unload documents from memory so we can show that it has been persisted.
+  (setf (documents collection) nil)
 
   ;;Query the collection, query-data will load the data from file if the collection is empty
-  (query-data collection :query (lambda (data-object)				    
-				  (<= (getx data-object :id) 900))))
+  (query-data collection :query (lambda (document)				    
+				  (<= (getx document :id) 900))))
 
