@@ -1,6 +1,6 @@
 (defsystem "cl-naive-store"
   :description "This is a naive, persisted, in memory (lazy loading) data store for Common Lisp."
-  :version "2020.7.11"
+  :version "2020.7.16"
   :author "Phil Marneweck <phil@psychedelic.co.za>"
   :licence "MIT"
   :depends-on ("cl-fad" "split-sequence" "uuid" "local-time" "cl-getx")

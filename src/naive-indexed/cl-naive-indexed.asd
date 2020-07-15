@@ -1,6 +1,6 @@
 (defsystem "cl-naive-indexed"
   :description "Adds simple indexing to cl-naive-store"
-  :version "2020.7.11"
+  :version "2020.7.16"
   :author "Phil Marneweck <phil@psychedelic.co.za>"
   :licence "MIT"
   :depends-on ("cl-naive-store" "cl-murmurhash" "cl-getx")

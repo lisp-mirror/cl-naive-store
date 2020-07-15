@@ -1,6 +1,6 @@
 (defsystem "cl-naive-documents"
   :description "An extension of cl-naive-store that uses a structure called document as the data documents."
-  :version "2020.7.11"
+  :version "2020.7.16"
   :author "Phil Marneweck <phil@psychedelic.co.za>"
   :licence "MIT"
   :depends-on ("cl-murmurhash"

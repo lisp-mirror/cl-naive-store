@@ -1,44 +1,27 @@
-# Version 2020.07.08
+# Version 2020.07.16
 
-A majour code refactoring exercise was under taken. Not only was code improved where possible new functionality was added and in a few cases removed.
+A majour code refactoring exercise was under taken. Add backward compatibility was mostly abandoned. Sorry if that hurts you, it hurts me more I have a lot of projects to update now, but the changes where desperately needed.
+
+When updating the examples 2 to 3 text replaces fixed the combatibility issues so it should not be to bad since 99% of the old expose api was for implementors and not users their should be very little pain.
+
+Implmentors api's where moved to seperate packages to limit the public api.
 
 ## Incompatibility Issues:
 
-- load-store-collections was renamed to load-collections
+Only listing the public/user api issues in broad strokes. Thousands of lines of code was changed,deleted or replaced so I list of changes is not really practical.
 
-- loaded-p slot was removed form collection, store and universe. Use data-loaded-p in the future.
+data-items was renamed to documents
+data-types where renamed to document-types
+add-data-object was renamed to add-document
+persist-data-object was renamed to persist-document
+data-type was renamed to document-type
+field war renamed to element
 
-- Removed handle-duplicates on universe, store and collection and replaced it with keys slot on collection that defaults to :key. This simplifies behaviour for handling duplicates, and also speeds up handling of duplicates. If no keys is set to nil then duplicates are allowed, if :key is not found in the document duplicates will occur.
 
-- Removed must-handle-duplicates since it was part and parcel of handle-duplicates.
-
+The implementor's api was mostly rewritten.
 
 ## Other Work Done:
 
-- collection-container-loaded-p was added to use :around load-data method.
-
-- data-loaded-p was added to test if a collection, store or universe was truely/completely loaded.
-
-- Added :before method for query-data query-document and naive-reduce to ensure data is lazy loaded.
-
-- find-document-by-hash was added to help with different collection containers.
-
-- set-print-reabability and print-readability-p was to set on *print-readably* for write-document
-
-- Exported write-document so that it can be specialized if needed.
-
-- Moved lazy loading when querying to :before methods.
-
-- Updated and changed a lot of doc strings.
-
-- Refactored code al over the place.
-
-- Adjusted tests to cope with compatibility breaks.
-
-- Stripped out experimental avl tree stuff.
-
-- Refactored the code naive-store-documents persist.lisp heavily.
 
 ## Bug fixes
 
-- Fixed add-document in core to replace document when key values match to an existing document and not to just ignore it. 
