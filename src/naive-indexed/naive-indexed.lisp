@@ -2,7 +2,8 @@
 
 ;;TODO: Doing partial-indexing doubles the time it takes to load a database
 ;;Try to delay or spool of partial indexing on different thread.
-(defparameter *do-partial-indexing* t)
+(defparameter *do-partial-indexing* t
+  "When this is set to t (which is the default), indexing is done for the individual elements of the indexes as well.")
 
 (defclass indexed-collection-mixin ()
   ((documents :initarg :documents
@@ -19,7 +20,7 @@
 	    :initform nil
 	    :documentation "List of index combinations. Also indexes members partially if *partial-indexing* is t, for example '((:emp-no :surname gender)) is indexed as (:emp-no :surname :gender), (:emp-no :surname), :emp-no, :surname and :gender"))
   
-  (:documentation "Collection extention to add very basic indexes."))
+  (:documentation "Collection extension to add very basic indexes."))
 
 (defgeneric hash (document)
   (:documentation "Returns the hash identifier for a data document. Data documents need a hash identifier to work with naive-store-indexed. naive-store-indexed will edit the document to add a hash identifier when adding documents to a collection. naive-store-indexed uses a UUID in its default implementation."))
@@ -27,7 +28,7 @@
 (defmethod hash (document)
   (frmt "~A" (getx document :hash)))
 
-(defgeneric (setf hash) (value document ))
+(defgeneric (setf hash) (value document))
 
 (defmethod (setf hash) (value document)
   (setf (getx document :hash) (frmt "~A" value)))

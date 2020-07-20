@@ -85,7 +85,7 @@ Does lazy loading."))
 	(documents collection))))
 
 (defgeneric query-document (collection &key query &allow-other-keys)
-  (:documentation "Returns the first last-data document found, and any others that satisfies the query
+  (:documentation "Returns the first last document found, and any others that satisfies the query
 
 NOTES:
 

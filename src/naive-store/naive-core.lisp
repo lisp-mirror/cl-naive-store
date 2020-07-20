@@ -7,11 +7,11 @@
 	  :documentation "The store that this collection belongs to.")
    (name :initarg :name
 	 :accessor name
-	 :documentation "The collection name string.")   
+	 :documentation "The collection name.")   
    (location :initarg :location
 	     :accessor location
 	     :initform nil
-	     :documentation "The directory path to where files for this collection is stored.")
+	     :documentation "The directory path to where files for this collection are stored.")
    (documents :initarg :documents
 	  :accessor documents
 	  :initform nil
@@ -24,7 +24,7 @@ NOTES:
    (keys :initarg :keys
 	 :accessor keys
 	 :initform (list :key)
-	 :documentation "Keys need to be set to handle duplicates, the default is :key if :key is not found in the document then duplicates will accur.
+	 :documentation "Keys need to be set to handle duplicates, the default is :key if :key is not found in the document then duplicates will occur.
 
 NOTES:
 
@@ -39,12 +39,12 @@ For collections that use cl-naive-document-type there is a fallback the document
 	     :documentation "The universe this store belongs to.")
    (name :initarg :name
 	 :accessor name
-	 :documentation "Store name string.")
+	 :documentation "Store name.")
    (collection-class :initarg :collection-class
 		:accessor collection-class
 		:initform 'collection
 		:allocation :class
-		:documentation "Then class that should be used to make collection documents.")
+		:documentation "The class that should be used to make collections.")
    (collections :initarg :collections
 		:accessor collections
 		:initform nil
@@ -54,7 +54,7 @@ For collections that use cl-naive-document-type there is a fallback the document
 	     :initform nil
 	     :documentation "The directory path to the document-type files and collection files for this store.")
    )
-  (:documentation "Data types and their associated collections are organized into groups called stores. 
+  (:documentation "Document types and their associated collections are organized into groups called stores. 
 
 NOTES:
 
@@ -70,7 +70,7 @@ collection-class and document-type-class is delcaritively specied here because t
 		:accessor store-class
 		:initform 'store
 		:allocation :class
-		:documentation "The class that should be used to make store documents. 
+		:documentation "The class that should be used to make stores. 
 
 NOTES:
 
@@ -85,7 +85,7 @@ files are loaded. (see store notes for more about this.).")
   (:documentation "Stores are held by a universe to make up a database." ))
 
 (defgeneric get-store (universe store-name)
-  (:documentation "Returns a store document if found in the universe."))
+  (:documentation "Returns a store if found in the universe."))
 
 (defmethod get-store ((universe universe) store-name)  
   (dolist (store (stores universe))
@@ -100,6 +100,9 @@ files are loaded. (see store notes for more about this.).")
      (when (string-equal collection-name (name collection))
        (return-from get-collection collection))))
 
+(defgeneric persist (object &key &allow-other-keys)
+  (:documentation "Writes various store structural objects to "))
+  
 (defmethod persist ((store store) &key &allow-other-keys)
   "Persists a store definition and not what it contains! Path to file is of this general format
 /universe/store-name/store-name.store."
@@ -261,7 +264,7 @@ If you change the collections underlying document-type in (documents collection)
 
 NOTES:
 
-load-data could have been used to load universe or store as well but those have a wealth of other key word parameters to control exactly what to do that makes the load-data sigature a nightmare to understand. So seperate methods load-stores (for universe) and load-collections (for a store) exists for that."))
+load-data could have been used to load universe or store as well but those have a wealth of other key word parameters to control exactly what to do that makes the load-data signature a nightmare to understand. So separate methods load-stores (for universe) and load-collections (for a store) exists for that."))
 
 (defgeneric ensure-location (object)
   (:documentation "Tries to find or build path to cl-naive-store files."))

@@ -25,10 +25,10 @@
 						  :type "store"))))
 
 (defgeneric load-collections (store  &key with-data-p &allow-other-keys)
-  (:documentation "Finds and loads collections of a store, with or without data documents."))
+  (:documentation "Finds and loads collections of a store, with or without documents."))
 
 (defmethod load-collections ((store store) &key with-data-p &allow-other-keys)
-  "Finds and loads collection for a store, with or without data documents."
+  "Finds and loads collection for a store, with or without documents."
   (let ((files (find-collection-definitions store)))
     (dolist (file files)
       (let ((file-contents))

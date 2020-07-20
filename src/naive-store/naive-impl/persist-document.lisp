@@ -23,8 +23,7 @@ IMPL NOTES:
 
 specialize element type like this (element-type (eql :blob)). DONT specialize on object
 type directly because that will break type-of-doc-element. If you specialize element you need
-to supply your own implementation of type-of-doc-element as well.
-"))
+to supply your own implementation of type-of-doc-element as well."))
 
 (defmethod persist-form (collection document (element-type (eql :document))
 			 &key &allow-other-keys)
@@ -77,7 +76,8 @@ to supply your own implementation of type-of-doc-element as well.
 	 (persist-parse collection (cdr sexp)
 			(cons (car sexp) doc)))))
 
-(defgeneric persist-delete-document (collection document file &key &allow-other-keys))
+(defgeneric persist-delete-document (collection document file &key &allow-other-keys)
+  (:documentation "Marks document as deleted."))
 
 (defmethod persist-delete-document (collection document file
 				    &key &allow-other-keys)

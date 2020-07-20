@@ -27,7 +27,6 @@
 (defun document-type-def ()
   '(:name "employee"
        :label "Employee"
-       :top-level-p t
        :elements ((:name :emp-no
 		       :label "Employee No"
 		       :db-type :string
@@ -83,8 +82,6 @@
       'document-type
       :name (getf document-type-def :name)
       :label (getf document-type-def :label)
-      :top-level-p
-      (getf document-type-def :top-level-p)
       :elements elements))))
 
 (defun setup-universe (&optional location)

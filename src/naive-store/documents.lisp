@@ -7,9 +7,7 @@ NOTES:
 
 Exists to ease the compatibility of various implementation functions. Basically it blurs the line between plists and more complex documents like cl-naive-documents document struct.
 
-This helps keep the amount of specializations needed down considerably.
-
-"))
+This helps keep the amount of specializations needed down considerably."))
 
 ;;TODO: Add a setf
 (defmethod document-values (document)
@@ -32,7 +30,7 @@ Checks the collection keys or uses hash."))
 
 IMPL NOTES:
 
-This is an essential part of loading and persiting documents, take care when implementing."))
+This is an essential part of loading and persisting documents, take care when implementing."))
 
 (defmethod existing-document (collection document  &key &allow-other-keys)
   (let ((position (position document (documents collection)
@@ -71,7 +69,8 @@ naive-store writes data to file sequentially and when deleting data documents it
 					  (key-values collection documentx)
 					  documentx)))))
 
-(defgeneric delete-document (collection document &key &allow-other-keys))
+(defgeneric delete-document (collection document &key &allow-other-keys)
+  (:documentation "Removes a document from the collection, marks the document as deleted and persists the deleted document to disk."))
 
 (defmethod delete-document ((collection collection) document &key &allow-other-keys)
     (remove-document collection document)
@@ -79,7 +78,7 @@ naive-store writes data to file sequentially and when deleting data documents it
     (persist-document collection document :delete-p t))
 
 (defgeneric add-document (collection document &key &allow-other-keys)
-  (:documentation "adds a document to the collection, it DOES NOT PERSIST the change, if you want adding with persistance use persist-document or persist the collection as a whole after you have done your adding.
+  (:documentation "Adds a document to the collection, it DOES NOT PERSIST the change, if you want adding with persistance use persist-document or persist the collection as a whole after you have done your adding.
 
 add-document returns multiple values:
 
@@ -92,8 +91,6 @@ NOTES:
 In general you should not be calling add-document directly, you should use persist-document. Calling add-document directly is allowed so you can create temporary collections that can be thrown away.
 
 cl-naive-store does not have a update-document function, add-document does both and its behaviour can be complex depending on the key parameters supplied. Also the behaviour can differ for different types of collections. Check the appropriate collection documentation for more details."))
-
-
 
 (defmethod add-document ((collection collection) document
 			    &key (handle-duplicates-p t) (replace-existing-p t) &allow-other-keys)

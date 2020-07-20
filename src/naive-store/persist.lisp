@@ -1,6 +1,6 @@
 (in-package :cl-naive-store)
 
-(defgeneric persist (document &key &allow-other-keys)
+(defgeneric persist (object &key &allow-other-keys)
   (:documentation "Persist is used to write \"stuff\" to files."))
   
 (defmethod persist ((list list) &key file (if-exists :append)

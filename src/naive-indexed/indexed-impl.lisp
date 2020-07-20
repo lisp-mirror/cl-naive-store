@@ -24,7 +24,7 @@
 (defgeneric push-value-index (collection index-values document &key &allow-other-keys)
   (:documentation "Uses lists within the key-value-index hash-table to store/group documents that match a key value combination. 
 
-On updates of documents could end up with duplicate documents returned by the index lookup. The speed more than makes up for the occactional duplicate for now!
+On updates of documents could end up with duplicate documents returned by the index lookup. The speed more than makes up for the occasional duplicate for now!
 
 TODO: Implement index-lookup-value that strips out duplicates??"))
 
@@ -77,13 +77,7 @@ TODO: Implement index-lookup-value that strips out duplicates??"))
     (remove document (gethash (cl-murmurhash:murmurhash index-values)
 			  (key-value-index collection)))))
 
-(defmethod remove-value-index ((collection indexed-values-hashtables-mixin)
-			     index-values document &key &allow-other-keys)
-  
-  (let ((internal-hash (gethash (cl-murmurhash:murmurhash index-values)
-				(key-value-index collection))))         
-    (when internal-hash
-      (remhash (hash document) internal-hash))))
+
 
 
 

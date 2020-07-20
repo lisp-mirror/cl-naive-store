@@ -10,7 +10,7 @@
 
 (defmethod naive-reduce ((collection indexed-collection-mixin)
 			 &key index-values query function initial-value)
-  "Exstends naive-reduce to be able to take advantage of indexing. Reduce is done on values retrieved by the supplier index."
+  "Extends naive-reduce to be able to take advantage of indexing. Reduce is done on values retrieved by the supplier index."
   
   (naive-reduce (or (indexed-values collection index-values)
 		    (documents collection))
@@ -20,7 +20,7 @@
 
 (defmethod query-data ((collection indexed-collection-mixin)
 		       &key index-values query &allow-other-keys)
-  "Exstends query-data to be able to take advantage of indexing. Query is done on values retrieved by the supplier index."
+  "Extends query-data to be able to take advantage of indexing. Query is done on values retrieved by the supplier index."
   (query-data (or (indexed-values collection index-values)
 		  (documents collection))
 	      :query query))

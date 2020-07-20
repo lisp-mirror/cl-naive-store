@@ -232,7 +232,7 @@ cl-document-types requirements are minimal and its up to you to load your type-d
 
 (defmethod getx (document (element cl-naive-document-types:element) &key &allow-other-keys)
   (let ((db-type (db-type-get-set element)))
-    (getsfx document element db-type)))
+    (getxe document element db-type)))
 
 (defmethod (setf getx) (value document (element cl-naive-document-types:element)
 			 &key &allow-other-keys)
@@ -298,8 +298,7 @@ cl-document-types requirements are minimal and its up to you to load your type-d
 			  &key &allow-other-keys)
   (setxe-read* element document value #'symbolp  "~S is not a symbol!"))
 
-(defmethod (setf getxe) (value (type (eql :keyword))
-			  &key &allow-other-keys)
+(defmethod (setf getxe) (value document element (type (eql :keyword)) &key &allow-other-keys)
   (setxe-read* element document value #'keywordp  "~S is not a keyword!"))
 
 (defmethod (setf getxe) (value document element (type (eql :number))
@@ -364,24 +363,24 @@ cl-document-types requirements are minimal and its up to you to load your type-d
     (setf (getx document name) final-val)))
 
 
-(defmethod validate-xe ((type (eql :collection-contained-document)) value
-			 &key documents &allow-other-keys)
-    (let* ((valid (find value documents)))
+(defmethod validate-xe (document element (type (eql :collection-contained-document)) value
+			 &key &allow-other-keys)
+    (let* ((valid (find value document)))
      (values valid (if (not valid)
 		      (frmt "Value ~A not found in ~A" value
 			    (digx element :db-type :collection))))))
 
 
-(defmethod validate-xe ((type (eql :collection)) value
-			 &key documents &allow-other-keys)
-    (let* ((valid (find value documents)))
+(defmethod validate-xe (document element (type (eql :collection)) value
+			 &key &allow-other-keys)
+    (let* ((valid (find value document)))
      (values valid (if (not valid)
 		      (frmt "Value ~A not found in ~A" value
 			    (digx element :db-type :collection))))))
 
-(defmethod validate-xe ((type (eql :document)) value
-			 &key documents &allow-other-keys)
-    (let* ((valid (find value documents)))
+(defmethod validate-xe (document element (type (eql :document)) value
+			 &key &allow-other-keys)
+    (let* ((valid (find value document)))
      (values valid (if (not valid)
 		      (frmt "Value ~A not found in ~A" value
 			    (digx element :db-type :collection))))))
@@ -474,7 +473,7 @@ cl-document-types requirements are minimal and its up to you to load your type-d
     (setf (getx document name) final-val)))
 
 (defmethod (setf getxe) (value document element (type (eql :collection-contained-document))
-			  element document   &key &allow-other-keys)
+			  &key &allow-other-keys)
   (let ((name (getx element :name))
 	(final-val))
     

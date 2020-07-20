@@ -26,7 +26,7 @@ NOTES:
 
 Elements can reference simple types, a complex document or documents based on other document-types. 
 
-naive-store can be used as a hierarchical database or a flat databes or a mix."))
+naive-store can be used as a hierarchical database or a flat databases or a mix."))
 
 (defclass document-type ()
   ((store :initarg :store
@@ -44,7 +44,7 @@ naive-store can be used as a hierarchical database or a flat databes or a mix.")
 	       :documentation "The class that should be used to make element documents. 
 NOTES:
 
-element-class is delcaritively specied here because so that elements can be dynamicly created when definition type definitions are read from file. See naive-store-documents for usage examples. ")
+element-class is declaratively specified here because so that elements can be dynamicly created when definition type definitions are read from file. See naive-store-documents for usage examples. ")
    (label :initarg :label
 	  :accessor label
 	  :initform nil
@@ -282,8 +282,7 @@ IMPL NOTES: To deal with customization of document-type.")
 	      (setf file-contents (read in nil))
 	      (close in))))
 	
-	(when file-contents
-	  
+	(when file-contents	  
 	  (let ((document-type (get-document-type store (getx file-contents :document-type)))
 		(collection))
 	    

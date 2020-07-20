@@ -1,6 +1,6 @@
 (in-package :documents-impl)
 
-(defmethod naive-impl:type-of-doc-element ((collectino document-collection) element)
+(defmethod naive-impl:type-of-doc-element ((collection document-collection) element)
   (cond ((blob-p element)
 	 :blob)       
 	((and (document-p element) (not (document-collection element)))

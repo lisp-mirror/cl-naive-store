@@ -1,6 +1,6 @@
 (in-package :cl-naive-indexed)
 
-(defmethod find-document-by-hash (collection hash)
+(defmethod indexed-impl::find-document-by-hash (collection hash)
  (index-lookup-hash
   collection
   hash))

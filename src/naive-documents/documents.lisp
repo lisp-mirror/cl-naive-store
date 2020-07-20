@@ -1,7 +1,5 @@
 (in-package :cl-naive-documents)
 
-
-
 (defmethod existing-document ((collection document-collection) document
 			      &key key-values &allow-other-keys)
   (or
