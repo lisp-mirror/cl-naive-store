@@ -1,6 +1,6 @@
 # Version 2020.07.16
 
-A majour code refactoring exercise was under taken. Add backward compatibility was mostly abandoned. Sorry if that hurts you, it hurts me more I have a lot of projects to update now, but the changes where desperately needed.
+A majour code refactoring exercise was under taken and backward compatibility was mostly abandoned. Sorry if that hurts you, it hurts me more I have a lot of projects to update now, but the changes where desperately needed.
 
 When updating the examples 2 to 3 text replaces fixed the combatibility issues so it should not be to bad since 99% of the old expose api was for implementors and not users their should be very little pain.
 
