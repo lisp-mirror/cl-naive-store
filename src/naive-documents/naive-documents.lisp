@@ -57,7 +57,7 @@ persisted-p = indicates that the document has been peristed.
 ;;currently not used any where?
 (defun document-of-type-p (document document-type)
   "Returns t if the document is of the data type."
-  (string-equal document-type (document-type document)))
+  (string-equal document-type (document-type-def document)))
 
 ;;TODO: Consider removing these getx* thingies.
 (defgeneric getxo (document element-name)

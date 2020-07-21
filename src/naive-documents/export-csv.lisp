@@ -33,7 +33,7 @@
 		     t)
 	 
 	 (write-pair-csv (list
-		      :document-type (document-type tree))
+		      :document-type (document-type-def tree))
 		     stream
 		     nil)
 	 

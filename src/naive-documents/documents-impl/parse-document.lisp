@@ -58,7 +58,7 @@
 		       (make-document
 			:store (store collection)
 			:collection collection
-			:type-def (document-type collection)
+			:type-def (cl-naive-document-types:document-type collection)
 			:hash (frmt "~A" (digx sexp :hash))
 			:elements resolved-values))
 	       

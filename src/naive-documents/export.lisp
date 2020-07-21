@@ -23,7 +23,7 @@
 				 (list :hash (document-hash tree)))))
 	   (setf values (append values
 				(document-pair-to-plist
-				 (list :document-type (document-type tree)))))
+				 (list :document-type (document-type-def tree)))))
 	   (dolist (pair (parse-document tree))
 	     (setf values (append values (document-pair-to-plist pair))))
 	   values))

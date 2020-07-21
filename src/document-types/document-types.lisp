@@ -190,12 +190,11 @@ IMPL NOTES: To deal with customization of document-type.")
     (when document-type-def
       (let ((elements)
 	    (document-type (add-document-type 
-			store 
-			(make-instance (document-type-class store)
-				       :name (getx document-type-def :name)
-				       :label (getx document-type-def :label)
-				       :top-level-p (getx document-type-def :top-level-p)
-				       :elements nil))))
+			    store 
+			    (make-instance (document-type-class store)
+					   :name (getx document-type-def :name)
+					   :label (getx document-type-def :label)
+					   :elements nil))))
 	
 	(dolist (element (getx document-type-def :elements))
 	 (setf elements 
@@ -249,12 +248,11 @@ IMPL NOTES: To deal with customization of document-type.")
       
       (let ((elements)
 	    (document-type (add-document-type 
-			store 
-			(make-instance (document-type-class store)
-				       :name (getx type-contents :name)
-				       :label (getx type-contents :label)
-				       :top-level-p (getx type-contents :top-level-p)
-				       :elements nil))))
+			    store 
+			    (make-instance (document-type-class store)
+					   :name (getx type-contents :name)
+					   :label (getx type-contents :label)
+					   :elements nil))))
 	
 	(dolist (element (getx type-contents :elements))
 	 (setf elements 

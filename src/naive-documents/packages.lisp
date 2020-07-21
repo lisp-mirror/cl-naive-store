@@ -16,7 +16,7 @@
    :document
    :make-document
    :document-hash
-   :document-type
+   :document-type-def
    :document-elements
    :document-changes
    :document-versions

@@ -40,9 +40,9 @@
   (list
    :store (name (document-store document))
    :collection (name (document-collection document))
-   :type (if (stringp (document-type document))
-	     (document-type document)
-	     (name (document-type document)))
+   :type (if (stringp (document-type-def document))
+	     (document-type-def document)
+	     (name (document-type-def document)))
    :hash (document-hash document)
    :elements '(:reference% t)))
 
@@ -51,9 +51,9 @@
 			 &key root parent &allow-other-keys)
   (declare  (ignorable root) (ignorable parent))
   (list
-   :type (if (stringp (document-type document))
-		  (document-type document)
-		  (name (document-type document)))
+   :type (if (stringp (document-type-def document))
+		  (document-type-def document)
+		  (name (document-type-def document)))
    :hash (document-hash document)
    :elements (naive-impl:persist-parse collection			    
 			    (or (document-changes document)
@@ -86,7 +86,7 @@
          
 	 (naive-impl:persist-parse
 	  collection (cdr element)
-	  (if (naive-impl:type-of-doc-element collection collection (car element))
+	  (if (naive-impl:type-of-doc-element collection (car element))
 	      (cons
 	       (naive-impl:persist-form
 		collection

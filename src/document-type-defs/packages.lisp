@@ -4,7 +4,6 @@
   (:use :cl :cl-getx :cl-naive-store)
   (:export
    :*example-type-defs*
-   :getfx
-   :getsfx
-   :validate-sfx
+   :getxe   
+   :validate-xe
    :db-type-get-set))

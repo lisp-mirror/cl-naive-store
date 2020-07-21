@@ -136,7 +136,7 @@ Indexes will be updated by default, if you want to stop index updates set update
     (cond (existing-document
 	   (when (and (not (empty-p (hash document)))
 		      (not (equalp (hash document) (hash existing-document))))             
-	     (error "A document with a different hash but a document with the same key values already exists. You are not allowed to clobber an existing object with a new hash because you are violating hash consistency of the store. ~%~S~%~S" document existing-document))
+	     (error "A document with a different hash but a document with the same key values already exists.~% You are not allowed to clobber an existing object with a new hash because you are ~%violating hash consistency of the store. ~%~%~S~%~S" document existing-document))
 	   (when replace-existing-p	     
 	     (setf (hash document) (hash existing-document))
 	     (when update-index-p

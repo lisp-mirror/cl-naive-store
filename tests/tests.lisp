@@ -24,7 +24,7 @@
 
 (defparameter *collection-class* 'collection)
 
-(defun document-type-def ()
+(defun document-type-def-x ()
   '(:name "employee"
        :label "Employee"
        :elements ((:name :emp-no
@@ -61,7 +61,7 @@
         :documentation "This type represents a simple employee master."))
 
 (defun init-document-type (store)
-  (let ((document-type-def (document-type-def))
+  (let ((document-type-def (document-type-def-x))
 	(elements))
 
     
@@ -182,7 +182,7 @@ which contain the actual data. Each collection will have its own directory and f
 				    :store (store collection)
 				    :collection collection
 				    :type-def (if (stringp (document-type collection))
-						       (document-type (document-type collection))
+						       (document-type collection)
 						       (name (document-type collection)))		
 				    :elements document))
 		(add-document collection document)))))))
@@ -336,7 +336,7 @@ Only peristed if persist-p is t."
 				:store (store collection)
 				:collection collection
 				:type-def (if (stringp (document-type collection))
-					  (document-type (document-type collection))
+					  (document-type collection)
 					  (name (document-type collection)))		
 				:elements (document-elements document)))	    
 	     (persist-document collection 
@@ -428,7 +428,7 @@ Only peristed if persist-p is t."
 				   :store (store collection)
 				   :collection collection
 				   :type-def (if (stringp (document-type collection))
-						      (document-type (document-type collection))
+						      (document-type collection)
 						      (name (document-type collection)))		
 				   :elements document))
 	       ;;To speed up loading of documents I am switching of duplicate handling.

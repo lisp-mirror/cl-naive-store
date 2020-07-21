@@ -41,7 +41,7 @@
 		     t)
 	 
 	 (write-pair-json (list
-		      :document-type (document-type tree))
+		      :document-type (document-type-def tree))
 		     stream
 		     nil)
 	 
