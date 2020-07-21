@@ -11,7 +11,7 @@
 	       "cl-naive-document-type-defs")
   :components ((:file "packages")
 	       (:file "documents-impl/package" :depends-on ("packages"))
-	       (:file "naive-documents" :depends-on ("common"))
+	       (:file "naive-documents" :depends-on ("documents-impl/package"))
 	       (:file "documents-impl/parse-document" :depends-on ("naive-documents"))
 	       (:file "documents-impl/persist-document" :depends-on ("naive-documents"))
 	       (:file "document-types" :depends-on ("naive-documents"))
