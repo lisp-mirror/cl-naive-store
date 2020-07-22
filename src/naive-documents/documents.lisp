@@ -106,9 +106,13 @@
 		 ;;clobbering 
 		 (when (not existing-document)
 		   (add-document collection (or merged-document document)))
-                 
+
+		;; (break "~A" prepped-document-parsed)
+		 
 		 (naive-impl:write-to-file file (naive-impl:persist-form
 						  collection
 						  (or merged-document document)
 						  :document))
-		 (setf (document-persisted-p (or merged-document document)) t))))))))
+		 (setf (document-persisted-p (or merged-document document)) t))
+
+	       (or merged-document document)))))))

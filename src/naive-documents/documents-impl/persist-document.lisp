@@ -1,11 +1,11 @@
 (in-package :documents-impl)
 
-(defmethod naive-impl:type-of-doc-element ((collection document-collection) element)
+(defmethod naive-impl:type-of-doc-element ((collection document-collection) element)  
   (cond ((blob-p element)
 	 :blob)       
-	((and (document-p element) (not (document-collection element)))
-	 :reference)
 	((and (document-p element) (document-collection element))
+	 :reference)
+	((and (document-p element) (not (document-collection element)))
 	 :child-document)	
 	(t nil)))
 
@@ -34,7 +34,7 @@
 	:parent-accessor (getx blob :parent-accessor))))
 
 (defmethod naive-impl:persist-form ((collection document-collection) document
-			 (element-type (eql :reference-form))
+			 (element-type (eql :reference))
 			 &key root parent &allow-other-keys)
   (declare  (ignorable root) (ignorable parent))
   (list
@@ -62,8 +62,10 @@
 			    :root root
 			    :parent document)))
 
-(defmethod naive-impl:persist-form ((collection document-collection) document (element-type (eql :document))
-			 &key root parent &allow-other-keys)
+(defmethod naive-impl:persist-form ((collection document-collection) document
+				    (element-type (eql :document))
+				    &key root parent &allow-other-keys)
+  
   (declare  (ignorable root) (ignorable parent))
   (list   
    :hash (document-hash document)
@@ -79,28 +81,20 @@
 
 (defmethod naive-impl:persist-parse ((collection document-collection) element doc
 				     &key root parent &allow-other-keys)
-  
+
+;;  (break "~A ~A ~%~A" (consp (car element)) (naive-impl:type-of-doc-element collection (car element)) element )
   (cond ((null element)
 	 (nreverse doc))                   
         ((consp (car element))
          
 	 (naive-impl:persist-parse
 	  collection (cdr element)
-	  (if (naive-impl:type-of-doc-element collection (car element))
-	      (cons
-	       (naive-impl:persist-form
-		collection
-		(car element)
-		(naive-impl:type-of-doc-element collection (car element))
-		:root root
-		:parent parent)
-	       doc)
-	      (cons (naive-impl:persist-parse collection
-					      (car element)
-					      nil
-					      :root root
-					      :parent parent)
-		    doc))
+	  (cons (naive-impl:persist-parse collection
+					  (car element)
+					  nil
+					  :root root
+					  :parent parent)
+		doc)
 
 	  :root root
 	  :parent parent))
@@ -108,7 +102,17 @@
          
 	 (naive-impl:persist-parse collection
 				   (cdr element)
-				   (cons (car element) doc)
+				   (cons
+				    (if (naive-impl:type-of-doc-element collection (car element))
+					(naive-impl:persist-form
+					 collection
+					 (car element)
+					 (naive-impl:type-of-doc-element collection (car element))
+					 :root root
+					 :parent parent)
+					(car element))
+
+				    doc)
 				   :root root
 				   :parent parent))))
 

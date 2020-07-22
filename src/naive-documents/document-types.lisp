@@ -1,17 +1,17 @@
 (in-package :cl-naive-documents)
 
-(defmethod getfx ((document document) element &key  &allow-other-keys)
+(defmethod getx ((document document) element &key  &allow-other-keys)
   (let ((db-type (db-type-get-set element)))
     (getsfx db-type element document)))
 
 
-(defmethod (setf getfx) (value (document document) element
+(defmethod (setf getx) (value (document document) element
 			 &key &allow-other-keys)
   
   (let ((db-type (db-type-get-set element)))
      (setf (getsfx db-type element document) value)))
 
-(defmethod (setf getsfx) (value (type (eql :document)) element (document document)
+(defmethod (setf getxe) (value (type (eql :document)) element (document document)
 			  &key &allow-other-keys)
 
   (let ((name (getx element :name))
@@ -24,7 +24,7 @@
     (setf (getx document name) final-val)))
 
 
-(defmethod (setf getsfx) (value (type (eql :contained-document)) element (document document)   
+(defmethod (setf getxe) (value (type (eql :contained-document)) element (document document)   
 			 &key &allow-other-keys)
   (let ((name (getx element :name))
 	(final-val))
@@ -37,7 +37,7 @@
 	  (setf final-val nil)))
     (setf (getx document name) final-val)))
 
-(defmethod (setf getsfx) (value (type (eql :collection-contained-document))
+(defmethod (setf getxe) (value (type (eql :collection-contained-document))
 			  element (document document)   &key &allow-other-keys)
   (let ((name (getx element :name))
 	(final-val))
@@ -52,25 +52,25 @@
 
 
 
-(defmethod getsfx ((type (eql :lisp-code)) element document &key &allow-other-keys)
-  (cl-naive-document-type-defs::getsfx* element document))
+(defmethod getxe ((type (eql :lisp-code)) document element &key &allow-other-keys)
+  (cl-naive-document-type-defs::getxe* document element))
 
-(defmethod getsfx ((type (eql :java-script)) element document &key &allow-other-keys)
-  (cl-naive-document-type-defs::getsfx* element document))
+(defmethod getxe ((type (eql :java-script)) document element &key &allow-other-keys)
+  (cl-naive-document-type-defs::getxe* document element))
 
-(defmethod getsfx ((type (eql :css)) element document &key &allow-other-keys)
-  (cl-naive-document-type-defs::getsfx* element document))
+(defmethod getxe ((type (eql :css)) document element &key &allow-other-keys)
+  (cl-naive-document-type-defs::getxe* document element))
 
-(defmethod getsfx ((type (eql :html)) element document &key &allow-other-keys)
-  (cl-naive-document-type-defs::getsfx* element document))
+(defmethod getxe ((type (eql :html)) document element &key &allow-other-keys)
+  (cl-naive-document-type-defs::getxe* document element))
 
-(defmethod getsfx ((type (eql :text-blob)) element document &key &allow-other-keys)
-  (cl-naive-document-type-defs::getsfx* element document))
+(defmethod getxe ((type (eql :text-blob)) document element &key &allow-other-keys)
+  (cl-naive-document-type-defs::getxe* document element))
 
 
 ;;BLOBS
 
-(defmethod (setf getsfx) (value (type (eql :lisp-code)) element document
+(defmethod (setf getxe) (value (type (eql :lisp-code)) element document
 			  &key parent-hash &allow-other-keys)
   (let ((blob (getx document (getf element :name))))
     (if (blob-p blob)
@@ -83,10 +83,10 @@
 				   :raw value                                   
 				   :parent-accessor (getf element :name))
 		  )))
-    (cl-naive-document-type-defs::set-getsfx* element document blob)))
+    (cl-naive-document-type-defs::set-getxe* blob document element)))
 
 
-(defmethod (setf getsfx) (value (type (eql :css)) element document
+(defmethod (setf getxe) (value (type (eql :css)) document element
 			  &key parent-hash &allow-other-keys)
   (let ((blob (getx document (getf element :name))))
     (if (blob-p blob)
@@ -98,9 +98,9 @@
 				   :location ""
 				   :raw value                                   
 				   :parent-accessor (getf element :name)))))
-    (cl-naive-document-type-defs::set-getsfx* element document blob)))
+    (cl-naive-document-type-defs::set-getxe* blob document element)))
 
-(defmethod (setf getsfx) (value (type (eql :html)) element document
+(defmethod (setf getxe) (value (type (eql :html)) document element
 			  &key parent-hash &allow-other-keys)
   (let ((blob (getx document (getf element :name))))
     (if (blob-p blob)
@@ -112,9 +112,9 @@
 				   :location ""
 				   :raw value
 				   :parent-accessor (getf element :name)))))
-    (cl-naive-document-type-defs::set-getsfx* element document blob)))
+    (cl-naive-document-type-defs::set-getxe* blob document element)))
 
-(defmethod (setf getsfx) (value (type (eql :java-script)) element document
+(defmethod (setf getxe) (value (type (eql :java-script)) document element
 			  &key parent-hash &allow-other-keys)
   (let ((blob (getx document (getf element :name))))
     (if (blob-p blob)
@@ -126,9 +126,9 @@
 				   :location ""
 				   :raw value
 				   :parent-accessor (getf element :name)))))
-    (cl-naive-document-type-defs::set-getsfx* element document blob)))
+    (cl-naive-document-type-defs::set-getxe* blob document element)))
 
-(defmethod (setf getsfx) (value (type (eql :text-blob)) element document
+(defmethod (setf getxe) (value (type (eql :text-blob)) document element
 			  &key parent-hash &allow-other-keys)
   (let ((blob (getx document (getf element :name))))
     (if (blob-p blob)
@@ -140,4 +140,4 @@
 				   :location ""
 				   :raw value
 				   :parent-accessor (getf element :name)))))
-    (cl-naive-document-type-defs::set-getsfx* element document blob)))
+    (cl-naive-document-type-defs::set-getxe* blob document element)))

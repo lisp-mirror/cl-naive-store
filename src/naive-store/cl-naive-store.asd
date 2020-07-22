@@ -17,10 +17,8 @@
 	       (:file "naive-impl/parse-document" :depends-on ("naive-impl/files"))
 	       (:file "naive-impl/persist-document" :depends-on ("naive-impl/files"))
 	       (:file "load" :depends-on ("naive-impl/parse-document"))
-	       (:file "query" :depends-on ("naive-core"))
-               
-
-	       ;;(:file "maintenance" :depends-on ("naive-core"))
+	       (:file "query" :depends-on ("naive-core"))              
+	       (:file "maintenance" :depends-on ("naive-impl/persist-document"))
 
 
 ))
