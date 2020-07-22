@@ -149,6 +149,8 @@ If you set replace-existing-p to nil then an existing document wont be replaced 
 	   collection
 	   (add-document collection document
 			      :handle-duplicates-p handle-duplicates-p)
-	   nil)))))
+	   nil)))
+	)
+  document)
 
 

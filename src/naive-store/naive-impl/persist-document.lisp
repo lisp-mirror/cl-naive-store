@@ -27,7 +27,7 @@ to supply your own implementation of type-of-doc-element as well."))
 
 (defmethod persist-form (collection document (element-type (eql :document))
 			 &key &allow-other-keys)
-  (break "shit")
+  (break "persist-form :document")
   document)
 
 ;;TODO: Sort out blob paths once and for all!!!!
@@ -41,6 +41,11 @@ to supply your own implementation of type-of-doc-element as well."))
 
 (defmethod persist-form (collection reference (element-type (eql :reference))
 			 &key &allow-other-keys)
+  ;;TODO: to get references to work we need to add collection info to the document
+  ;;when peristing. But not persist those for top level documents only refernces.
+  ;;still desiding if it would be useful and if naive-documents should not be the only
+  ;;thing that can handle references.
+  (break "persist-form :reference")
   reference)
 
 ;;TODO: Deal with tests that is not just the funciton name
@@ -62,19 +67,19 @@ to supply your own implementation of type-of-doc-element as well."))
 	 (nreverse doc))                   
         ((consp (car sexp))                    
 	 (persist-parse collection (cdr sexp)
-			(if (type-of-doc-element collection (car sexp))
-                            (cons
+			(cons (persist-parse collection
+						 (car sexp)
+						 nil)
+				  doc)))
+	(t
+	 (persist-parse collection (cdr sexp)
+			(cons
+			 (if (type-of-doc-element collection (car sexp))
 			     (persist-form collection
 					   (car sexp)
 					   (type-of-doc-element collection (car sexp)))
-			     doc)
-			    (cons (persist-parse collection
-						 (car sexp)
-						 nil)
-				  doc))))
-	(t
-	 (persist-parse collection (cdr sexp)
-			(cons (car sexp) doc)))))
+			     (car sexp))
+			 doc)))))
 
 (defgeneric persist-delete-document (collection document file &key &allow-other-keys)
   (:documentation "Marks document as deleted."))

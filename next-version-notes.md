@@ -22,3 +22,8 @@ Fixed find-document-by-hash for naive-indexed
 
 Added maintenance back into asd
 
+Added tests for reference objects to tests
+
+Removed duplicate getx for naive-documents that was clobbering normal behaviour
+
+Removed with-standard-io-syntax from with-open-file-lock to prevent *print-readably* defualting to t. The default behaviour for naive-store should *print-readably* = nil.

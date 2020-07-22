@@ -61,13 +61,12 @@ NOTES: You could achieve the same with with-output-to-string, but now you dont h
 				   :direction ,direction%
 				   :if-exists ,if-exists%
 				   :if-does-not-exist ,if-does-not-exist%)
-	   (with-standard-io-syntax
-	     ,@body))))))
+	   ,@body)))))
 
 (defun write-to-file (file object &key (if-exists :append))
   "Writes to file using with-open-file-lock."
   (with-open-file-lock (stream file :if-exists if-exists)
-      (fresh-line stream)
+    (fresh-line stream)
       (write-object object stream)
       (fresh-line stream)))
 

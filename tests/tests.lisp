@@ -25,9 +25,21 @@
 (defparameter *collection-class* 'collection)
 
 (defun document-type-def-x ()
-  '(:name "employee"
-       :label "Employee"
-       :elements ((:name :emp-no
+  '((:name "asset-register"
+     :label "Asset Register"
+     :elements ((:name :asset-no
+		       :label "Asset No"
+		       :db-type :string
+		       :key-p t
+		       :attributes (:display t :editable t)) 
+		(:name :description
+		       :label "Description"
+		       :db-type :string
+		       :attributes (:display t :editable t)))
+     :documentation "This type represents a simple employee master.")
+    (:name "employee"
+     :label "Employee"
+     :elements ((:name :emp-no
 		       :label "Employee No"
 		       :db-type :string
 		       :key-p t
@@ -37,17 +49,17 @@
 		       :db-type (:type :string
 				       :complex-type :value-list
 				       :elements ("Male"
-						"Female"))
+						  "Female"))
 		       :attributes (:display t :editable t))
 		(:name :race
 		       :label "Race"
 		       :db-type (:type :string
 				       :complex-type :value-list
 				       :elements ("African"
-						"White"
-						"Indian"
-						"Chinese"
-						"Coloured"))
+						  "White"
+						  "Indian"
+						  "Chinese"
+						  "Coloured"))
 		       :attributes (:display t :editable t))
 
 		(:name :name
@@ -57,32 +69,42 @@
 		(:name :surname
 		       :label "Surname"
 		       :db-type :string
+		       :attributes (:display t :editable t))
+		(:name :asset
+		       :label "Asset"
+		       :db-type (:type :document
+				       :complex-type :document
+				       :elements )
 		       :attributes (:display t :editable t)))
-        :documentation "This type represents a simple employee master."))
+     :documentation "This type represents a simple employee master.")))
 
 (defun init-document-type (store)
-  (let ((document-type-def (document-type-def-x))
-	(elements))
+  (let ((document-type-defs (document-type-def-x))
+	
+	(types))
 
-    
-    (dolist (element (getf document-type-def :elements))
-      (setf
-       elements 
-       (append elements 
-	       (list (make-instance 
-		      'element
-		      :name (getf element :name)
-		      :key-p (getf element :key-p)
-		      :type-def (getf element :type-def)
-		      :attributes (getf element :attributes))))))
+    (dolist (type-def document-type-defs)
+      (let ((elements))
+	(dolist (element (getf type-def :elements))
+	  (setf
+	   elements 
+	   (append elements 
+		   (list (make-instance 
+			  'element
+			  :name (getf element :name)
+			  :key-p (getf element :key-p)
+			  :type-def (getf element :type-def)
+			  :attributes (getf element :attributes))))))
 
-    (add-document-type
-     store
-     (make-instance 
-      'document-type
-      :name (getf document-type-def :name)
-      :label (getf document-type-def :label)
-      :elements elements))))
+	(push (add-document-type
+	       store
+	       (make-instance 
+		'document-type
+		:name (getf type-def :name)
+		:label (getf type-def :label)
+		:elements elements))
+	      types)))
+    (reverse types)))
 
 (defun setup-universe (&optional location)
   "Sets up the the simple universe that will contain the data. Use the add-* functions to add 
@@ -105,26 +127,40 @@ which contain the actual data. Each collection will have its own directory and f
 					      *store-class*)
 					  :name "simple-store"
 					  :collection-class *collection-class*)))
-	 (document-type (if (equalp *document-type* 'document)
-			(init-document-type store))))
+	 (document-types (if (equalp *document-type* 'document)
+			    (init-document-type store))))
     
     (add-collection store
 		    (if (equalp *document-type* 'document)
 			(make-instance 'document-collection
-				       :name "simple-collection"
-				       :document-type document-type
-				       ;;not setting keys to make sure fallback to document-type
-				       ;;is done, need to add tests for both
-				       ;;:keys '(:emp-no)
-				       :indexes '((:gender :race :surname)))
+					 :name "asset-collection"
+					 :document-type (first document-types)
+					 :keys '(:asset-no))
 			(if (equalp *collection-class* 'collection-indexed)
 			    (make-instance *collection-class*
-					   :name "simple-collection"
-					   :keys '(:emp-no)
-					   :indexes '((:gender :race :surname)))
+					 :name "asset-collection"
+					 :keys '(:asset-no))
 			    (make-instance *collection-class*
-					   :name "simple-collection"
-					   :keys '(:emp-no)))))
+					 :name "asset-collection"
+					 :keys '(:asset-no)))))
+
+    (add-collection store
+		    (if (equalp *document-type* 'document)
+			(make-instance 'document-collection
+					 :name "simple-collection"
+					 :document-type (second document-types)
+					 ;;not setting keys to make sure fallback to document-type
+					 ;;is done, need to add tests for both
+					 ;;:keys '(:emp-no)
+					 :indexes '((:gender :race :surname)))
+			(if (equalp *collection-class* 'collection-indexed)
+			    (make-instance *collection-class*
+					     :name "simple-collection"
+					     :keys '(:emp-no)
+					     :indexes '((:gender :race :surname)))
+			    (make-instance *collection-class*
+					     :name "simple-collection"
+					     :keys '(:emp-no)))))
     
     
     ))
@@ -145,6 +181,8 @@ which contain the actual data. Each collection will have its own directory and f
 (defun populate-simple-data (persist-p &key (size 100))
   (let ((collection (get-collection (get-store *universe* "simple-store")
 				    "simple-collection"))
+	(asset-collection (get-collection (get-store *universe* "simple-store")
+				    "asset-collection"))
 	(emp-race '("African" "White" "Indian" "Chinese" "Coloured"))
 	(emp-gender '("Male" "Female"))
 	(emp-surnames '("Smith"
@@ -162,7 +200,19 @@ which contain the actual data. Each collection will have its own directory and f
     ;;Add data documents in the form of plists to the collection. naive-store expects plists
     ;;by default. 
     (dotimes (x size)
-      (let* ((document (list 
+      (let* ((asset (if (equalp *document-type* 'document)
+			(persist-document
+			 asset-collection
+			 (make-document 
+			  :store (store asset-collection)
+			  :collection asset-collection
+			  :type-def (if (stringp (document-type asset-collection))
+					(document-type asset-collection)
+					(name (document-type asset-collection)))		
+			  :elements (list :description x :asset-no x)))
+			(list :description x :asset-no x)))
+	     (document (list
+			:asset asset
 			:race (random-from-list emp-race)
 			:gender (random-from-list emp-gender)
 			:surname (random-from-list emp-surnames)
@@ -174,17 +224,17 @@ which contain the actual data. Each collection will have its own directory and f
 	;;Persisting individual documents in a loop like this is slow, because the file is opened
 	;;closed each time. Use (persist collection) if you are going to add lots of data, see
 	;;populate-monster-data if you want to see how to use it.
-	(if persist-p	  
+	(if persist-p
 	    (persist-document collection document)
 	    (if (equalp *document-type* 'document)
 		(add-document collection
-				   (make-document 
-				    :store (store collection)
-				    :collection collection
-				    :type-def (if (stringp (document-type collection))
-						       (document-type collection)
-						       (name (document-type collection)))		
-				    :elements document))
+			      (make-document 
+			       :store (store collection)
+			       :collection collection
+			       :type-def (if (stringp (document-type collection))
+					     (document-type collection)
+					     (name (document-type collection)))		
+			       :elements document))
 		(add-document collection document)))))))
 
 (defun query-simple-data ()  
@@ -193,6 +243,19 @@ which contain the actual data. Each collection will have its own directory and f
 
     (query-data collection :query (lambda (document)				    
 				    (<= (getx document :emp-no) 50)))))
+
+(defun query-ref-doc ()  
+  (let* ((collection (get-collection (get-store *universe* "simple-store")
+				    "simple-collection"))
+	(reference-doc
+	 (query-document collection :query (lambda (document)				    
+					     (= (getx document :emp-no) 1)))))
+    (if (document-p reference-doc)
+	(if (index-lookup-hash (get-collection (get-store *universe* "simple-store")
+						 "asset-collection")
+				 (hash (getx reference-doc :asset)))
+	      reference-doc)
+	reference-doc)))
 
 (defun simple-example (persist-p)
   "This example sets up a store and populates a collection with a 100 data documents and then queries 
@@ -214,31 +277,39 @@ Only peristed if persist-p is t."
     (push (list :universe-directory-exists
 		(probe-file
 		 (cl-fad:merge-pathnames-as-directory
-				     (get-temp)
-				     (make-pathname :directory '(:relative "data-universe" "simple-store")))))
+		  (get-temp)
+		  (make-pathname :directory '(:relative "data-universe" "simple-store")))))
 	  test-results)
    
     (push (list :collection-log-exists
 		(probe-file
 		 (cl-fad:merge-pathnames-as-file
 		  (get-temp)
-		  (make-pathname :directory '(:relative "data-universe" "simple-store" "simple-collection")
+		  (make-pathname :directory
+				 '(:relative "data-universe" "simple-store" "simple-collection")
 				 :name "simple-collection"
 				 :type "log"))))
 	  test-results)
     
     (let ((documents (documents
-			    (get-collection (get-store *universe* "simple-store")
-					    "simple-collection"))))
-       (push (list :documents-count-100
+		      (get-collection (get-store *universe* "simple-store")
+				      "simple-collection"))))
+      (push (list :documents-count-100
 		  (= (if (hash-table-p documents)
 			 (hash-table-count documents)
 			 (length documents))
 		     100))
-	    test-results))
+	    test-results)
+
+      (push (list :reference-document-found
+		  (getx (query-ref-doc) :asset)
+		  (query-ref-doc))
+
+       test-results)
+      )
 
     (push (list :query-result-count-51 (= (length query-results) 51))
-	   test-results)
+	  test-results)
     (tare-down-universe)
     test-results))
 

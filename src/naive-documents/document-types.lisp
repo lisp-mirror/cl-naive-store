@@ -1,16 +1,5 @@
 (in-package :cl-naive-documents)
 
-(defmethod getx ((document document) element &key  &allow-other-keys)
-  (let ((db-type (db-type-get-set element)))
-    (getsfx db-type element document)))
-
-
-(defmethod (setf getx) (value (document document) element
-			 &key &allow-other-keys)
-  
-  (let ((db-type (db-type-get-set element)))
-     (setf (getsfx db-type element document) value)))
-
 (defmethod (setf getxe) (value (type (eql :document)) element (document document)
 			  &key &allow-other-keys)
 
