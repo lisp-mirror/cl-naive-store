@@ -20,6 +20,8 @@ Fixed perist-parse to check for types in the right place
 
 Fixed find-document-by-hash for naive-indexed
 
+22 Jun 2020
+
 Added maintenance back into asd
 
 Added tests for reference objects to tests

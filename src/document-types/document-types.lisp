@@ -109,6 +109,7 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
 	(when document-type
 	  (let (keys)
 	    (dolist (element (elements document-type))	      
+	      (when (key-p element)
 		(push (name element) keys)))
 	    (when keys
 	      (setf (keys collection) (nreverse keys)))))))))
