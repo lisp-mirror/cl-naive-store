@@ -306,14 +306,15 @@ load-data could have been used to load universe or store as well but those have 
 
   (if force-reload-p
       (call-next-method)
-      (when (not (collection-container-loaded-p (documents collection)))
-	
-	(let ((*busy-loading* *busy-loading*))	  
-	  (unless (string-equal *busy-loading* (name collection))
-	    
-	    (setf *busy-loading* (name collection))
-	    (call-next-method))
-	  (setf *busy-loading* nil)))))
+      (progn
+	(when (not (collection-container-loaded-p (documents collection)))
+	  
+	  (let ((*busy-loading* *busy-loading*))	  
+	    (unless (string-equal *busy-loading* (name collection))
+	      
+	      (setf *busy-loading* (name collection))
+	      (call-next-method))
+	    (setf *busy-loading* nil))))))
 
 
 (defgeneric data-loaded-p (container &key *allow-other-keys)

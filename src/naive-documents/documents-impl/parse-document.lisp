@@ -2,7 +2,9 @@
 
 (defun document-values-p (list)
   "Checks if plist contains :values keyword which would indicate the plist represents an document."
-  (find :values list :test #'equalp))
+  (or
+   (find :elements list :test #'equalp)
+   (find :values list :test #'equalp)))
 
 
 (defmethod naive-impl:type-of-sexp ((collection document-collection) document-form)
@@ -26,11 +28,18 @@
 	      (document-values-p document-form)
 	      ;;TODO: For backwards compatibility with cl-naive-items, revisit this one day
 	      (or
-	       (digx document-form :values :reference%)
+	       (digx document-form :elements :reference%)
 	       (digx document-form :values :reference%)))
 	 :reference)
 	
-	(t nil)))
+	(t
+	 (if (or
+	      (find :type document-form)
+	       (find :document-type document-form )
+	       (find :data-type document-form ))
+	     (break "Parsing is missing a child or reference ~%~A" document-form))
+
+	 nil)))
 
 
 (defmethod naive-impl:compose-special ((collection document-collection) sexp (type (eql :document)))
@@ -66,12 +75,14 @@
     
     final-document))
 
-(defmethod naive-impl:compose-special ((collection document-collection) sexp (type (eql :child-document)))
+(defmethod naive-impl:compose-special ((collection document-collection) sexp
+				       (type (eql :child-document)))
   (make-document
    ;;TODO: For backwards compatibility
    :type-def (or
-	  (digx sexp :document-type)
-	  (digx sexp :item-type))
+	      (digx sexp :type)
+	      (digx sexp :document-type)
+	      (digx sexp :data-type))
    :hash (frmt "~A" (getx sexp :hash))
    ;;TODO: For backwards compatibility with cl-naive-items, revisit this one day
    :elements (naive-impl:compose-parse collection (or (digx sexp :elements)
@@ -84,6 +95,6 @@
   (read-blob (cdr sexp)))
 
 (defmethod naive-impl:compose-document ((collection document-collection) document-form &key &allow-other-keys)
-    (naive-impl:compose-special collection
+  (naive-impl:compose-special collection
 		     document-form
 		     :document))

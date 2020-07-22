@@ -65,6 +65,59 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
 
 
 
+(defmethod getx ((element element) accessor &key &allow-other-keys)
+  ""
+  
+  (cond ((equalp accessor :name)
+	 (name element))
+	((equalp accessor :type-def)
+	 (type-def element))
+	((equalp accessor :key-p)
+	 (key-p element))
+	((equalp accessor :attributes)
+	 (attributes element))))
+
+(defmethod (setf getx) (value (element element) accessor &key &allow-other-keys)
+  ""
+  
+  (cond ((equalp accessor :name)
+	 (setf (name element) value))
+	((equalp accessor :type-def)
+	 (setf (type-def element) value))
+	((equalp accessor :key-p)
+	 (setf (key-p element) value))
+	((equalp accessor :attributes)
+	 (setf (attributes element) value))))
+
+(defmethod getx ((document-type document-type) accessor &key &allow-other-keys)
+  ""
+  
+  (cond ((equalp accessor :store)
+	 (store document-type))
+	((equalp accessor :name)
+	 (name document-type))
+	((equalp accessor :element-class)
+	 (element-class document-type))
+	((equalp accessor :label)
+	 (label document-type))
+	((equalp accessor :elements)
+	 (elements document-type))))
+
+(defmethod (setf getx) (value (document-type document-type) accessor &key &allow-other-keys)
+  ""
+  
+  (cond ((equalp accessor :store)
+	 (setf (store document-type) value))
+	((equalp accessor :name)
+	 (setf (name document-type) value))
+	((equalp accessor :element-class)
+	 (setf (element-class document-type) value))
+	((equalp accessor :label)
+	 (setf (label document-type) value))
+	((equalp accessor :elements)
+	 (setf (elements document-type) value))))
+
+
 (defmethod persist ((document-type document-type) &key &allow-other-keys)
   "Persists a document-type definition. Path to file is of this general format
 /universe/store-name/document-type-name.type."

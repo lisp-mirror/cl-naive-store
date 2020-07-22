@@ -573,8 +573,11 @@ Only peristed if persist-p is t."
   (tare-down-universe)
   ;;Setup the data universe aka the documents that will contain the data
   (setup-universe)
+
   ;;Generate some data and put it in the universe documents
   (populate-monster-data t :size *monster-size*)
+
+  
   
   (when *universe*
     ;;Unload the collection (contains the data) if it is already loaded.
@@ -585,6 +588,7 @@ Only peristed if persist-p is t."
 	(if (hash-table-p (documents collection))
 	  (clrhash (documents collection))
 	  (setf (documents collection) nil)))))
+
   
   ;;Query the data in the universe
   (query-simple-data))
@@ -593,7 +597,7 @@ Only peristed if persist-p is t."
   (let ((test-results)
 	(query-results (monster-example-lazy-loading)))
  
-    (push (list :lazy-query-result-count-51 (= (length query-results) 51))
+    (push (list :lazy-query-result-count-51 (= (length query-results) 51) (length query-results))
 	   test-results)
     test-results))
 

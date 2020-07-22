@@ -44,10 +44,10 @@ store and universe using getx."
 	 (document-changes document))
 	((equalp accessor :deleted-p%%)
 	 (document-deleted-p document))
-       (t
-	(or
-	 (getf (document-changes document) accessor)
-	 (getf (document-elements document) accessor)))))
+	(t         
+	 (or
+	  (getf (document-changes document) accessor)
+	  (getf (document-elements document) accessor)))))
 
 (defmethod (setf getx) (value (document document) accessor
 		  &key (change-control-p t) &allow-other-keys
@@ -78,6 +78,17 @@ store and universe using getx."
 	  (setf (getf (document-elements document) accessor) value))))
   value)
 
+
+(defmethod getx ((document document) (element cl-naive-document-types:element) &key &allow-other-keys)
+  (let ((db-type (db-type-get-set element)))
+    (getxe document element db-type)))
+
+(defmethod (setf getx) (value (document document) (element cl-naive-document-types:element)
+			 &key &allow-other-keys)
+   (let ((db-type (db-type-get-set element)))
+     (setf (getxe document element db-type) value)))
+
+;;TODO: Is this still needed???
 (defun naive-dig (place indicators)
   (let* ((indicator (pop indicators))
 	 (val (if indicator

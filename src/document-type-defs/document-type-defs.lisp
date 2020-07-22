@@ -217,17 +217,17 @@ cl-document-types requirements are minimal and its up to you to load your type-d
 
 
 (defun db-type-get-set (element)
-  (cond ((listp (getx element :db-type))
-	 (cond ((equalp (getx (getx element :db-type) :complex-type)
+  (cond ((listp (getx element :type-def))
+	 (cond ((equalp (getx (getx element :type-def) :complex-type)
 			:value-list)
-		(getx (getx element :db-type) :type))
-	       ((equalp (getx (getx element :db-type) :complex-type)
+		(getx (getx element :type-def) :type))
+	       ((equalp (getx (getx element :type-def) :complex-type)
 			:key-value-list)
-		(getx (getx element :db-type) :type))
+		(getx (getx element :type-def) :type))
 	       (t
-		(getx (getx element :db-type) :complex-type))))
+		(getx (getx element :type-def) :complex-type))))
 	(t
-	 (getx element :db-type))))
+	 (getx element :type-def))))
 
 
 (defmethod getx (document (element cl-naive-document-types:element) &key &allow-other-keys)
@@ -240,25 +240,25 @@ cl-document-types requirements are minimal and its up to you to load your type-d
     (setf (getxe document element db-type) value)))
 
 (defun getxe* (document element)
-  (let* ((name (getf element :name)))
+  (let* ((name (getx element :name)))
     (getx document name)))
 
 (defgeneric getxe (document element type &key &allow-other-keys))
 
 (defmethod getxe (document element type &key &allow-other-keys)
-  (getxe* element document))
+  (getxe* document element))
 
 (defun element-type-val (element key)
-  (Let ((type (getf element :db-type)))
+  (Let ((type (getx element :type-def)))
     (when (listp type)
-	(getf type key))))
+	(getx type key))))
 
 (defun set-getxe* (value document element )
   (let* ((name (getx element :name)))
     (setf (getx document name) value)))
 
 (defun setxe-read* (value document element type-test read-error)
-  (let* ((name (getf element :name))
+  (let* ((name (getx element :name))
 	 (*read-eval* nil)
 	 (final-val))
     
@@ -284,30 +284,30 @@ cl-document-types requirements are minimal and its up to you to load your type-d
 
 ;;TODO: how to do collection checking, additional parameters/keys
 ;;when and how to pass
-(defmethod (setf getxe) :around (value type element document   
+(defmethod (setf getxe) :around (value document element type     
 				  &key &allow-other-keys)
   (when (validate-xe document element type value)    
     (call-next-method)))
 
 (defmethod (setf getxe) (value document element type 
 			  &key &allow-other-keys)
-  (setf (getx document (getf element :name)) (frmt "~A" value)))
+  (setf (getx document (getx element :name)) (frmt "~A" value)))
 
 
 (defmethod (setf getxe) (value document element (type (eql :symbol))     
 			  &key &allow-other-keys)
-  (setxe-read* element document value #'symbolp  "~S is not a symbol!"))
+  (setxe-read* value document element #'symbolp  "~S is not a symbol!"))
 
 (defmethod (setf getxe) (value document element (type (eql :keyword)) &key &allow-other-keys)
-  (setxe-read* element document value #'keywordp  "~S is not a keyword!"))
+  (setxe-read* value document element #'keywordp  "~S is not a keyword!"))
 
 (defmethod (setf getxe) (value document element (type (eql :number))
 			 &key &allow-other-keys)
-  (setxe-read* element document value #'numberp "~R is not a number!"))
+  (setxe-read* value document element #'numberp "~R is not a number!"))
 
 (defmethod (setf getxe) (value document element (type (eql :integer))
 			 &key &allow-other-keys)
-  (setxe-read* element document value #'numberp "~R is not an integer!"))
+  (setxe-read* value document element #'numberp "~R is not an integer!"))
 
 (defmethod (setf getxe) (value document element (type (eql :date-time))
 			  &key &allow-other-keys)
@@ -325,11 +325,11 @@ cl-document-types requirements are minimal and its up to you to load your type-d
 
 (defmethod (setf getxe) (value document element (type (eql :date))
 			 &key &allow-other-keys)
-  (set-getxe* element document value))
+  (set-getxe* value document element))
 
 (defmethod (setf getxe) (value document element (type (eql :time))
 			 &key &allow-other-keys)
-  (set-getxe* element document value))
+  (set-getxe* value document element))
 
 (defmethod (setf getxe) (value document element (type (eql :boolean))   
 			  &key &allow-other-keys)
@@ -341,7 +341,7 @@ cl-document-types requirements are minimal and its up to you to load your type-d
 
 
 (defmethod (setf getxe) (value document element (type (eql :lambda)) &key &allow-other-keys)
-  (setxe-read* element document value #'consp "~S is not a cons!"))
+  (setxe-read* value document element #'consp "~S is not a cons!"))
 
 
 (defmethod (setf getxe) (value document element (type (eql :collection))
@@ -368,7 +368,7 @@ cl-document-types requirements are minimal and its up to you to load your type-d
     (let* ((valid (find value document)))
      (values valid (if (not valid)
 		      (frmt "Value ~A not found in ~A" value
-			    (digx element :db-type :collection))))))
+			    (digx element :type-def :collection))))))
 
 
 (defmethod validate-xe (document element (type (eql :collection)) value
@@ -376,25 +376,25 @@ cl-document-types requirements are minimal and its up to you to load your type-d
     (let* ((valid (find value document)))
      (values valid (if (not valid)
 		      (frmt "Value ~A not found in ~A" value
-			    (digx element :db-type :collection))))))
+			    (digx element :type-def :collection))))))
 
 (defmethod validate-xe (document element (type (eql :document)) value
 			 &key &allow-other-keys)
     (let* ((valid (find value document)))
      (values valid (if (not valid)
 		      (frmt "Value ~A not found in ~A" value
-			    (digx element :db-type :collection))))))
+			    (digx element :type-def :collection))))))
 
 (defmethod (setf getxe) (value document element (type (eql :value-string-list))   
 			 &key &allow-other-keys)
   (let* ((name (getx element :name))
-	 (delimiter (if (stringp (digx element :db-type :delimiter))
-			(coerce (digx element :db-type :delimiter)
+	 (delimiter (if (stringp (digx element :type-def :delimiter))
+			(coerce (digx element :type-def :delimiter)
 				'character)
-			(coerce (eval (digx element :db-type :delimiter))
+			(coerce (eval (digx element :type-def :delimiter))
 				'character)
 			))
-	 (type (digx element :db-type :type))
+	 (type (digx element :type-def :type))
 	 (split (split-sequence:split-sequence delimiter value))
 	 (list))
     (dolist (x split)
@@ -410,18 +410,18 @@ cl-document-types requirements are minimal and its up to you to load your type-d
 
 (defmethod validate-xe (value document element (type (eql :value-list))
 			 &key &allow-other-keys)
-  (let* ((list (or (and (digx element :db-type :values-script)
-			(eval (digx element :db-type :values-script)))
-		   (digx element :db-type :values)))
+  (let* ((list (or (and (digx element :type-def :values-script)
+			(eval (digx element :type-def :values-script)))
+		   (digx element :type-def :values)))
 	 (*read-eval* nil)
 	 (valid ))
 
     (if (functionp list)
-	(setf list (funcall (eval (digx element :db-type :values-script)) document)))
+	(setf list (funcall (eval (digx element :type-def :values-script)) document)))
 
-    (setf valid (find (if (not (or (equalp (digx element :db-type :type) :string)
-				   (equalp (digx element :db-type :type) :link)
-				   (equalp (digx element :db-type :type) :text)))
+    (setf valid (find (if (not (or (equalp (digx element :type-def :type) :string)
+				   (equalp (digx element :type-def :type) :link)
+				   (equalp (digx element :type-def :type) :text)))
 			  (if (and value (not (empty-p value)))
 			      (read-from-string value))
 			  value)
@@ -434,19 +434,19 @@ cl-document-types requirements are minimal and its up to you to load your type-d
 (defmethod (setf getxe) (value document element (type (eql :value-list)) 
 			 &key &allow-other-keys)
   (let* ((name (getx element :name))
-	 (list (or (and (digx element :db-type :values-script)
-			(eval (digx element :db-type :values-script)))
-		   (digx element :db-type :values)))
+	 (list (or (and (digx element :type-def :values-script)
+			(eval (digx element :type-def :values-script)))
+		   (digx element :type-def :values)))
 	 (*read-eval* nil)
 	 (val ))
 
     (if (functionp list)
-	(setf list (funcall (eval (digx element :db-type :values-script)) document)))
+	(setf list (funcall (eval (digx element :type-def :values-script)) document)))
 
    ;; (break "~s~%~%~s~%~%~s" (read-from-string value) value list)
-    (setf val (find (if (not (or (equalp (digx element :db-type :type) :string)
-				 (equalp (digx element :db-type :type) :link)
-				 (equalp (digx element :db-type :type) :text)))
+    (setf val (find (if (not (or (equalp (digx element :type-def :type) :string)
+				 (equalp (digx element :type-def :type) :link)
+				 (equalp (digx element :type-def :type) :text)))
 			(if (and value (not (empty-p value)))
 			    (read-from-string value))
 			value)
@@ -456,12 +456,12 @@ cl-document-types requirements are minimal and its up to you to load your type-d
 
 (defmethod (setf getxe) (value document element (type (eql :key-value-list)) 
 			 &key &allow-other-keys)
-  (setf (getxe (digx element :db-type :type) element document) value))
+  (setf (getxe (digx element :type-def :type) element document) value))
 
 ;;TODO: Check for dulplicates?
 (defmethod (setf getxe) (value document element (type (eql :collection-documents))   
 			  &key &allow-other-keys)
-  (set-getxe* element document value))
+  (set-getxe* value document element))
 
 
 (defmethod (setf getxe) (value document element (type (eql :contained-document))   

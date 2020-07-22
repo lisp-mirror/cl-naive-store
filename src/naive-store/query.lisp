@@ -60,7 +60,7 @@ NOTES:
 Does lazy loading."))
 
 (defmethod query-data :before ((collection collection) &key &allow-other-keys)
-  "Lazy loading data."
+  "Lazy loading data."  
   (load-data collection))
 
 (defmethod query-data ((collection collection) &key query &allow-other-keys)  

@@ -51,9 +51,11 @@
 			 &key root parent &allow-other-keys)
   (declare  (ignorable root) (ignorable parent))
   (list
-   :type (if (stringp (document-type-def document))
-		  (document-type-def document)
-		  (name (document-type-def document)))
+   :document-type (if (stringp (document-type-def document))
+	     (document-type-def document)
+	     (if (not (document-type-def document))
+		 (break "Cannot save children with on document-type ~%~S" document)
+		 (name (document-type-def document))))
    :hash (document-hash document)
    :elements (naive-impl:persist-parse collection			    
 			    (or (document-changes document)

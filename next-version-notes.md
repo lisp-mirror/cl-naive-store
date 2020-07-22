@@ -29,3 +29,13 @@ Added tests for reference objects to tests
 Removed duplicate getx for naive-documents that was clobbering normal behaviour
 
 Removed with-standard-io-syntax from with-open-file-lock to prevent *print-readably* defualting to t. The default behaviour for naive-store should *print-readably* = nil.
+
+Fixed method confusion for getx of (document document) (element element) vs document (element element)
+
+Added getx for document-type and element
+
+Fixed load parsing of child and reference documents where they where not picked up by the type check.
+
+Fixed type-defs parameter order for various functions.
+
+Fixed checking for real changes in persist-document, document-persisted-p was unreliable.
