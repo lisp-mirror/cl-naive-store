@@ -277,7 +277,7 @@ cl-document-types requirements are minimal and its up to you to load your type-d
 
 (defgeneric validate-xe (document element type value &key &allow-other-keys))
 
-(defmethod validate-xe (document element type value &key &allow-other-keys)
+(defmethod validate-xe (document element type value &key &allow-other-keys)  
   (if (digx element :attributes :setf-validate)
       (funcall (digx element :attributes :setf-validate) value)
       (values t nil)))
@@ -285,9 +285,13 @@ cl-document-types requirements are minimal and its up to you to load your type-d
 ;;TODO: how to do collection checking, additional parameters/keys
 ;;when and how to pass
 (defmethod (setf getxe) :around (value document element type     
-				  &key &allow-other-keys)
-  (when (validate-xe document element type value)    
-    (call-next-method)))
+				 &key &allow-other-keys)
+  ;;TODO: Figure out what to do in validate-xe
+  ;;it is no longer clear if it is needed or what it
+  ;;it is trying to do
+  (call-next-method)
+  ;;  (when (validate-xe document element type value))
+  )
 
 (defmethod (setf getxe) (value document element type 
 			  &key &allow-other-keys)
@@ -372,14 +376,18 @@ cl-document-types requirements are minimal and its up to you to load your type-d
 
 
 (defmethod validate-xe (document element (type (eql :collection)) value
-			 &key &allow-other-keys)
-    (let* ((valid (find value document)))
+			&key &allow-other-keys)
+
+  (break "here we go again ~S" document)
+  (let* ((valid (find value document)))
+    
      (values valid (if (not valid)
 		      (frmt "Value ~A not found in ~A" value
 			    (digx element :type-def :collection))))))
 
 (defmethod validate-xe (document element (type (eql :document)) value
-			 &key &allow-other-keys)
+			&key &allow-other-keys)
+  
     (let* ((valid (find value document)))
      (values valid (if (not valid)
 		      (frmt "Value ~A not found in ~A" value
@@ -409,7 +417,8 @@ cl-document-types requirements are minimal and its up to you to load your type-d
     (setf (getx document name) list)))
 
 (defmethod validate-xe (value document element (type (eql :value-list))
-			 &key &allow-other-keys)
+			&key &allow-other-keys)
+  
   (let* ((list (or (and (digx element :type-def :values-script)
 			(eval (digx element :type-def :values-script)))
 		   (digx element :type-def :values)))

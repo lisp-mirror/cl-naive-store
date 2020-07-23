@@ -200,7 +200,7 @@ IMPL NOTES: To deal with customization of document-type.")
 		   (make-pathname :name collection-name
 				  :type "col")))
 	(collection-def))
-
+    
     (with-open-file (in filename :if-does-not-exist :create)
       (with-standard-io-syntax
 	(when in

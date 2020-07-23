@@ -39,3 +39,5 @@ Fixed load parsing of child and reference documents where they where not picked 
 Fixed type-defs parameter order for various functions.
 
 Fixed checking for real changes in persist-document, document-persisted-p was unreliable.
+
+Fixed collection-class init for document-types

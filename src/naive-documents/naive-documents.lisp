@@ -5,11 +5,10 @@
   (:documentation "Document collection class used to specialize on for cl-naive-documents."))
 
 (defclass document-store (document-type-store-mixin store)
-  ((collection-class :initarg :collections-class
-		:accessor collection-class
-		:initform 'document-collection
-		:allocation :class
-		:documentation "Then class that should be used to make collection documents."))
+  ()
+  (:default-initargs
+   :collection-class 'document-collection
+    )
   (:documentation "cl-naive-documents specialization of store."))
 
 (defstruct document
