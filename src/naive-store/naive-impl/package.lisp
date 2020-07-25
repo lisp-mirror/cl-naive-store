@@ -19,7 +19,6 @@
    :wrap-in-list
    :wrap-in-loader
 
-   :write-object
    :write-to-file
    :write-list-to-file
 

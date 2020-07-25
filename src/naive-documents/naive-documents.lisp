@@ -51,6 +51,9 @@ persisted-p = indicates that the document has been peristed.
 (defmethod murmurhash:murmurhash ((document document) &key)
   (murmurhash:murmurhash (hash document)))
 
+(defmethod murmurhash:murmurhash ((timestamp local-time:timestamp) &key)
+  (murmurhash:murmurhash (let ((poes)) (local-time:format-timestring poes  timestamp) poes)))
+
 ;;TODO:Need to hunt down instances where this function can use instead of the more
 ;;verbose code lying around.
 ;;currently not used any where?
@@ -71,8 +74,11 @@ persisted-p = indicates that the document has been peristed.
 (defmethod getxn ((document document) element-name)  
   (getx (document-changes document) element-name))
 
+(defmethod cl-getx:place-exists-p ((document document) element-name)
+  (cl-getx:place-exists-p (document-elements document) element-name))
+
 (defmethod exists-p ((document document) element-name)
-  (get-properties (document-elements document) (list element-name)))
+  (cl-getx:place-exists-p document element-name))
 
 (defun key-values%% (keys values)
   (let ((keys-values))

@@ -40,4 +40,15 @@ Fixed type-defs parameter order for various functions.
 
 Fixed checking for real changes in persist-document, document-persisted-p was unreliable.
 
+23 Jul 2020
+
 Fixed collection-class init for document-types
+
+Disabled validate-xe
+
+Fixed init args for document-store class
+
+25 Jul 2020
+
+Dropped write-object and kin
+

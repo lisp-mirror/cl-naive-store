@@ -67,13 +67,13 @@ NOTES: You could achieve the same with with-output-to-string, but now you dont h
   "Writes to file using with-open-file-lock."
   (with-open-file-lock (stream file :if-exists if-exists)
     (fresh-line stream)
-      (write-object object stream)
-      (fresh-line stream)))
+    (write object :stream stream)
+    (fresh-line stream)))
 
 (defun write-list-items-to-file (file list &key (if-exists :append))
   "Does not wrap items in ()."
   (with-open-file-lock (stream file :if-exists if-exists)
     (dolist (object list)
       (fresh-line stream)
-      (write-object object stream)
+      (write object :stream stream)
       (fresh-line stream))))

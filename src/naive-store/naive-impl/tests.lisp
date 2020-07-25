@@ -68,6 +68,7 @@
 				   :type "string")))
 		  (content "Testing 1 2 3 ...")
 		  (result ))
+	      (ensure-directories-exist path)
 	      (with-open-file (stream path :direction :output :if-exists :supersede)
 		(write-string content stream))
 
@@ -129,81 +130,6 @@
 	      (setf file-found-p  (probe-file path))
 	      (values file-found-p (format nil "~A not found." lock)))))
 
-
-(run-test 'wrap-in-list
-	  (lambda ()
-	    (let ((out (make-string-output-stream))
-		  (result))
-	      
-	      (naive-impl:wrap-in-list (out) (write "wrapped" :stream out))
-	      
-	      (setf result (get-output-stream-string out))
-	      (values (equalp result
-			      "(\"wrapped\")")
-		      result))))
-
-(run-test 'wrap-in-loader
-	  (lambda ()
-	    (let ((out (make-string-output-stream))
-		  (result))
-	      
-	      (naive-impl:wrap-in-loader (out 'loader) (write "wrapped" :stream out))
-	      (setf result (get-output-stream-string out))
-
-	      (values (equalp result
-			  "#.(loader \"wrapped\")")
-		      result))))
-
-
-(run-test 'write-object.default
-	  (lambda ()
-	    (let ((out (make-string-output-stream))
-		  (result))
-	      
-	      (naive-impl:write-object 'test out)
-	      (setf result (get-output-stream-string out))
-
-	      (values (equalp result
-			  "TEST")
-		      result))))
-
-(run-test 'write-object.default
-	  (lambda ()
-	    (let ((out (make-string-output-stream))
-		  (result))
-	      
-	      (naive-impl:write-object 'test out)
-	      (setf result (get-output-stream-string out))
-
-	      (values (equalp result
-			  "TEST")
-		      result))))
-
-(run-test 'write-object.list
-	  (lambda ()
-	    (let ((out (make-string-output-stream))
-		  (result))
-	      
-	      (naive-impl:write-object (list 1 2 3) out)
-	      (setf result (get-output-stream-string out))
-
-	      (values (equalp result
-			  "(1 2 3)")
-		      result))))
-
-
-(run-test 'write-object.hashtable
-	  (lambda ()
-	    (let ((out (make-string-output-stream))
-		  (table (make-hash-table :test 'equal))
-		  (result))
-	      (setf (gethash :test table) 1)
-	      (setf (gethash :more table) 2)
-	      (naive-impl:write-object table out)
-	      (setf result (get-output-stream-string out))
-	      (values (equalp result
-			  "(:|HASH-TABLE| (:KEY :TEST :OBJECT 1) (:KEY :MORE :OBJECT 2) )")
-		      result))))
 
 
 ;;TODO: This test is dependent on the implementation pretty printing.

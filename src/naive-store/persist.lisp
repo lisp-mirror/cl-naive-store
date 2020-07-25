@@ -8,7 +8,7 @@
   "Writes a list of data documents to a file as individual documents."
   
   (naive-impl:with-open-file-lock (stream file :if-exists if-exists)
-    (naive-impl::write-object list stream)))
+    (write list :stream stream)))
 
 
 (defmethod persist ((hash hash-table) &key file (if-exists :append)
@@ -16,7 +16,7 @@
   "Writes the values of a hash table to a file as individual documents."
   
   (naive-impl:with-open-file-lock (stream file :if-exists if-exists)
-    (naive-impl::write-object hash stream)))
+    (write hash :stream stream)))
 
 
 

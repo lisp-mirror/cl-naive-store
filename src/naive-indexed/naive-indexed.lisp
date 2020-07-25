@@ -98,7 +98,6 @@ The second is a key value hash index to be used when looking for duplicate docum
 			       document &key &allow-other-keys)
   (remove-index collection document))
 
-
 ;;NOTE: Doing this because murmurhash is creating duplicates when you go beyond 10 million index values
 (defun try-better-value-match (collection list key-values)
   (dolist (document list)
