@@ -54,3 +54,8 @@ Added murmurhash for local-time:timestamp
 
 Dropped write-object and kin
 
+27 Jun 2020
+
+Changed some errors to write to log instead
+
+Added more check on ensure path for collections.
