@@ -209,22 +209,30 @@ IMPL NOTES: To deal with customization of document-type.")
 
     (when collection-def
       (let ((document-type (get-document-type store (or (getx collection-def :document-type)
+							;;TODO: Backwards compatibility
 							(getx collection-def :data-type)))))
 	(unless document-type
 	  (load-store-document-types store)
 	  (setf document-type (get-document-type store (or (getx collection-def :document-type)
+							   ;;TODO: Backwards compatibility
 							   (getx collection-def :data-type)))))
 
 	(unless document-type
 	  (error "Collection document-type could not be found."))
 	
 	(when document-type
+	  (let ((collection))
+	    (setf collection
+		  (make-instance (collection-class store)
+				 :store store
+				 :name (getx collection-def :name)
+				 :location (getx collection-def :location)
+				 :document-type document-type))
+	    (setf (location collection) (ensure-location collection))
+	    collection)
+
 	  
-	  (make-instance (collection-class store)
-			 :store store
-			 :name (getx collection-def :name)
-			 :location (getx collection-def :location)
-			 :document-type document-type))))))
+	  )))))
 
 (defgeneric get-document-type-from-def (store document-type-name)
   (:documentation "Tries to find the document definition on disk."))
@@ -336,12 +344,20 @@ IMPL NOTES: To deal with customization of document-type.")
 	      (close in))))
 	
 	(when file-contents	  
-	  (let ((document-type (get-document-type store (getx file-contents :document-type)))
+	  (let ((document-type (get-document-type store
+						  (or
+						   (getx file-contents :document-type)
+						   ;;TODO: remove later, backward compatibility issue
+						   (getx file-contents :data-type))))
 		(collection))
 	    
 	    (unless document-type
 	      (load-store-document-types store)
-	      (setf document-type (get-document-type store (getx file-contents :document-type))))
+	      (setf document-type (get-document-type store
+						     (or
+						      (getx file-contents :document-type)
+						      ;;TODO: remove later, backward compatibility issue
+						      (getx file-contents :data-type)))))
 
 	    (unless document-type
 	      (error "Collection document-type not found."))
