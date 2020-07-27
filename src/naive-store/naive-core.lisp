@@ -288,7 +288,9 @@ load-data could have been used to load universe or store as well but those have 
 				    :type "store")))))))
 
 (defmethod ensure-location ((object collection))
-  (if (not (empty-p (location object)))
+  (if (and (not (empty-p (location object)))
+	   (equalp (pathname-type (pathname (location object)))
+		   "log"))      
       (location object)
       (if (not (store object))
 	  (error "Collection store not set, cant ensure location.")

@@ -50,5 +50,7 @@ Fixed init args for document-store class
 
 25 Jul 2020
 
+Added murmurhash for local-time:timestamp
+
 Dropped write-object and kin
 

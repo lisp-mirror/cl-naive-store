@@ -37,7 +37,8 @@
 	      (find :type document-form)
 	       (find :document-type document-form )
 	       (find :data-type document-form ))
-	     (break "Parsing is missing a child or reference ~%~A" document-form))
+	     (naive-impl:write-log (location (universe (store collection)))
+			:error (list "Parsing is missing a child or reference ~%~A"  document-form)))
 
 	 nil)))
 
@@ -54,7 +55,8 @@
 	 (final-document))
 
     (if (getx sexp :deleted-p)
-	(remove-document collection existing-document)        
+	(if existing-document
+	    (remove-document collection existing-document))        
 	(cond (existing-document
 	       (unless (equalp (document-elements existing-document) resolved-values)
 		 (push (document-elements existing-document)

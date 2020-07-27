@@ -208,10 +208,12 @@ IMPL NOTES: To deal with customization of document-type.")
 	  (close in))))
 
     (when collection-def
-      (let ((document-type (get-document-type store (getx collection-def :document-type))))
+      (let ((document-type (get-document-type store (or (getx collection-def :document-type)
+							(getx collection-def :data-type)))))
 	(unless document-type
 	  (load-store-document-types store)
-	  (setf document-type (get-document-type store (getx collection-def :document-type))))
+	  (setf document-type (get-document-type store (or (getx collection-def :document-type)
+							   (getx collection-def :data-type)))))
 
 	(unless document-type
 	  (error "Collection document-type could not be found."))
