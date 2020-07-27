@@ -97,6 +97,7 @@
   ;;TODO: dealing with historical data should remove the check some time
   ;;was most likely to ensure balanced plists, should maybe implement that again
   ;;would make checking for types simpler
+  
   (if (listp (car (cdr sexp)))
       (read-blob (car (cdr sexp)))
       (read-blob (cdr sexp))))

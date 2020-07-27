@@ -8,7 +8,7 @@
   raw
   parent-accessor)
 
-(defmethod getx ((blob blob) accessor &key &allow-other-keys)
+(defmethod cl-getx:getx ((blob blob) accessor &key &allow-other-keys)
   "getx for blobs"
   (cond ((equalp accessor :file-type)
 	 (blob-file-type blob))
@@ -23,7 +23,7 @@
         (t
 	 nil)))
 
-(defmethod (setf cl-getx) (value (blob blob) accessor &key &allow-other-keys)
+(defmethod (setf cl-getx:getx) (value (blob blob) accessor &key &allow-other-keys)
   (cond ((equalp accessor :file-type)
 	 (setf (blob-file-type blob) value))
 	((equalp accessor :file-ext)

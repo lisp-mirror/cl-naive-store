@@ -55,7 +55,7 @@
 
 
 (defmethod persist-document ((collection document-collection) document
-			     &key allow-key-change-p delete-p  &allow-other-keys)
+			     &key allow-key-change-p delete-p file-name &allow-other-keys)
   "persist-document for document-collection is leniant in what it takes as a document, it can be of type document or a plist."
   (let ((*persisting-p* nil))
     (declare (special *persisting-p*))
@@ -71,7 +71,7 @@
 
     
     
-    (let ((file (ensure-location collection)))
+    (let ((file (or file-name (ensure-location collection))))
       (cond ((or delete-p (deleted-p document))
 	     (naive-impl:persist-delete-document collection document file))
 	    (t	   
@@ -96,13 +96,17 @@
 		      (or merged-document document)
 		      :document)))
 
-	       (when (or (empty-p (getx (or merged-document document) :hash))
-			  (document-changes (or merged-document document))
-			  (not existing-document)
-			  (not (document-persisted-p (or merged-document document)))
-			  (reference-documents-equal-p original-document-parsed
+               
+
+	       (when (or file-name
+			 (empty-p (getx (or merged-document document) :hash))
+			 (document-changes (or merged-document document))
+			 (not existing-document)
+			 (not (document-persisted-p (or merged-document document)))
+			 (reference-documents-equal-p original-document-parsed
 						      prepped-document-parsed))
-		                
+
+                 
 		 ;;To allow persist after loading stuff, add will cause error about
 		 ;;clobbering 
 		 (when (not existing-document)

@@ -28,17 +28,24 @@
     ;;TODO: move write to outside of parsing!!!!!
     (write-blob file (blob-raw blob))
 
-    (list :file-type (getx blob :file-type)
-	:file-ext (getx blob :file-ext)
-	:location (getx blob :location)
-	:parent-accessor (getx blob :parent-accessor))))
+    (list :blob%
+     
+     (list :file-type (getx blob :file-type)
+	   :file-ext (getx blob :file-ext)
+	   :location (getx blob :location)
+	   :parent-accessor (getx blob :parent-accessor)))))
 
 (defmethod naive-impl:persist-form ((collection document-collection) document
 			 (element-type (eql :reference))
 			 &key root parent &allow-other-keys)
   (declare  (ignorable root) (ignorable parent))
+
+  
   (list
-   :store (name (document-store document))
+   :store (if (and (not (document-store document))
+		   (document-collection document))
+	      (name (store (document-collection document)))
+	      (name (document-store document)))
    :collection (name (document-collection document))
    :type (if (stringp (document-type-def document))
 	     (document-type-def document)
@@ -50,12 +57,16 @@
 			 (element-type (eql :child-document))
 			 &key root parent &allow-other-keys)
   (declare  (ignorable root) (ignorable parent))
+  
   (list
    :document-type (if (stringp (document-type-def document))
 	     (document-type-def document)
 	     (if (not (document-type-def document))
 		 (break "Cannot save children with on document-type ~%~S" document)
-		 (name (document-type-def document))))
+		 ;;TODO: Need to see why objects with no full doc type is arriving here
+		 (if (symbolp (document-type-def document))
+		     (document-type-def document)
+		     (name (document-type-def document)))))
    :hash (document-hash document)
    :elements (naive-impl:persist-parse collection			    
 			    (or (document-changes document)

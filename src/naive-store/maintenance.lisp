@@ -32,9 +32,20 @@
     
     (when documents
       (dolist (document documents)
-	(cl-naive-store::persist document
-				 :file new-file
+	
+	(cl-naive-store::persist-document collection  document
+				 :file-name new-file
 				 :new-file-p t))
       (fad:copy-file new-file
 		     log-file
 		     :overwrite t))))
+
+(defgeneric sanitize-universe (universe &key &allow-other-keys)
+  (:documentation "Sanitize all collections of a universe. See sanitize-data-file for details."))
+
+(defmethod sanitize-universe (universe &key &allow-other-keys)
+     (load-stores universe)
+
+  (dolist (store (stores universe))
+    (dolist (collection (collections store))
+      (sanitize-data-file collection))))
