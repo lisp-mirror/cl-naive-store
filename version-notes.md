@@ -62,7 +62,3 @@ Fixed checking for real changes in persist-document, document-persisted-p was un
 Fixed collection-class init for document-types
 
 Fixed init args for document-store class
-
-
-
-
