@@ -141,5 +141,3 @@
 						(list :surname "Gieter"))))))
  
   (setf (getx sannie :surname) "Potgieter")
-
-  sannie)

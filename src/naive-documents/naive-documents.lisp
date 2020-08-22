@@ -68,6 +68,7 @@ persisted-p = indicates that the document has been peristed.
 (defmethod getxo ((document document) element-name)
   (getx (document-elements document) element-name))
 
+;;TODO: Is this still required because getx defaults to returning the new value??
 (defgeneric getxn (document element-name)
   (:documentation "Gets changed value made to the document. IE new value."))
 

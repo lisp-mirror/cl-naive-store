@@ -4,7 +4,7 @@
   :author "Phil Marneweck"
   :licence "MIT"
   ;;TODO: add feature to conditional depend on UUID and cl-murmurhash...really?
-  :depends-on ("cl-fad" "split-sequence" "uuid" "local-time" "cl-getx" "cl-murmurhash")
+  :depends-on ("cl-fad" "split-sequence" "uuid" "local-time" "cl-getx" "cl-murmurhash" "ironclad")
   :components
   ((:module "naive-store"
 	    :pathname "../naive-store/"
@@ -23,6 +23,8 @@
 			  (:file "load" :depends-on ("naive-impl/parse-document"))
 			  (:file "query" :depends-on ("naive-core"))              
 			  (:file "maintenance" :depends-on ("naive-impl/persist-document"))))
+
+   
    
    ;;Having to use depreciated #+ reader and not :feature or :if-feature because
    ;;asdf requires "all the component classes to defined" ...see Conditional Code in
@@ -96,6 +98,18 @@
 			 (:file "export" :depends-on ("indexed"))
 			 (:file "export-csv" :depends-on ("export"))
 			 (:file "export-json" :depends-on ("export"))))
+
+    #+(or :naive-documents
+	 (and (not :naive-store)
+	      (not :naive-indexed)
+	      (not :naive-document-types)
+	      (not :naive-document-type-defs)
+	      (not :naive-documents)))
+   (:module "naive-merkle"
+	    :pathname "../naive-merkle/"
+	    :depends-on ("naive-documents")
+	    :components ((:file "package")	       
+			 (:file "merkle" :depends-on ("package"))))
 
    #+:naive-store-tests
    (:module "naive-store-tests"

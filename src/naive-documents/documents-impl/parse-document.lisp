@@ -1,9 +1,10 @@
 (in-package :documents-impl)
 
 (defun document-values-p (list)
-  "Checks if plist contains :values keyword which would indicate the plist represents an document."
+  "Checks if plist contains :elements keyword which would indicate the plist represents an document."
   (or
    (find :elements list :test #'equalp)
+   ;;TODO: Here for backwards compatibility remove some time
    (find :values list :test #'equalp)))
 
 
@@ -16,9 +17,10 @@
 	      (symbolp (first document-form))
 	      (> (length document-form) 1)
 	      (document-values-p document-form)
-	      ;;TODO: For backwards compatibility with cl-naive-items, revisit this one day
+	     
 	      (not (or
 		    (digx document-form :elements :reference%)
+		     ;;TODO: For backwards compatibility with cl-naive-items, revisit this one day
 		    (digx document-form :values :reference%))))
 	 :child-document)
 	((and (listp document-form)
@@ -26,9 +28,10 @@
 	      (symbolp (first document-form))
 	      (> (length document-form) 1)
 	      (document-values-p document-form)
-	      ;;TODO: For backwards compatibility with cl-naive-items, revisit this one day
+	     
 	      (or
 	       (digx document-form :elements :reference%)
+	        ;;TODO: For backwards compatibility with cl-naive-items, revisit this one day
 	       (digx document-form :values :reference%)))
 	 :reference)
 	
@@ -88,8 +91,8 @@
    :hash (frmt "~A" (getx sexp :hash))
    ;;TODO: For backwards compatibility with cl-naive-items, revisit this one day
    :elements (naive-impl:compose-parse collection (or (digx sexp :elements)
-						    (digx sexp :values))
-				     nil)))
+						      (digx sexp :values))
+				       nil)))
 
 
 (defmethod naive-impl:compose-special ((collection document-collection) sexp (type (eql :blob)))

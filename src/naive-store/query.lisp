@@ -1,6 +1,13 @@
 (in-package :cl-naive-store)
 
-;;;; Query and naive-reduce is exists to hide the structure/internals of the collection form the user, the so its for convenience all the functionality here could be done with plain map and reduce cl functions.
+;;;; Query and naive-reduce exists to hide the structure/internals of the
+;;;; collection form the user, so its for convenience all the functionality
+;;;; here could be done with plain map and reduce cl functions.
+;;;; Also when shards (previously called buckets) is reintroduced a lot more internals
+;;;; will be hidden by these functions.
+
+;;;;TODO: Bring back shards
+;;;;TODO: Consider integrating/extending query-* for queries accross http aka naive-api's
 
 (defgeneric naive-reduce (collection &key query function initial-value &allow-other-keys)
   (:documentation "Uses query to select data documents from a collection and applies the function to 

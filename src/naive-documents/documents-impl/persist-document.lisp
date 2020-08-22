@@ -69,11 +69,11 @@
 		     (name (document-type-def document)))))
    :hash (document-hash document)
    :elements (naive-impl:persist-parse collection			    
-			    (or (document-changes document)
-				(document-elements document))
-			    nil
-			    :root root
-			    :parent document)))
+				       (or (document-changes document)
+					   (document-elements document))
+				       nil
+				       :root root
+				       :parent document)))
 
 (defmethod naive-impl:persist-form ((collection document-collection) document
 				    (element-type (eql :document))
