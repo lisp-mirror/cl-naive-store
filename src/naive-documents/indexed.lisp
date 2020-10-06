@@ -1,6 +1,7 @@
 (in-package :cl-naive-documents)
 
-(defmethod index-values ((collection document-collection) (values document) &key &allow-other-keys)
+(defmethod indexed-impl:index-values ((collection document-collection) (values document)
+				      &key &allow-other-keys)
   (let ((index-values))
     (dolist (index (indexes collection))
       (push

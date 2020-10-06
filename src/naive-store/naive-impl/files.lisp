@@ -19,6 +19,7 @@ Source: Giovanni Gigante https://sourceforge.net/p/cl-cookbook/patches/8/|#"
 		 :finally (close ,lock-file))
 	      ,@body)
 	 (ignore-errors
+	   ;;TODO: Add logging of errors here!!!!
 	   (delete-file ,lock-path))))))
 
 
@@ -58,17 +59,23 @@ NOTES: You could achieve the same with with-output-to-string, but now you dont h
 	   (,if-does-not-exist% ,if-does-not-exist))
        (with-file-lock (,file%)
 	 (with-open-file (,stream ,file%
-				   :direction ,direction%
-				   :if-exists ,if-exists%
-				   :if-does-not-exist ,if-does-not-exist%)
-	   ,@body)))))
+				    :direction ,direction%
+				    :if-exists ,if-exists%
+				    :if-does-not-exist ,if-does-not-exist%)
+	     ,@body)))))
 
 (defun write-to-file (file object &key (if-exists :append))
-  "Writes to file using with-open-file-lock."
+  "Writes to file using with-open-file-lock."  
   (with-open-file-lock (stream file :if-exists if-exists)
     (fresh-line stream)
     (write object :stream stream)
     (fresh-line stream)))
+
+(defun write-to-stream (stream object)
+  "Writes to stream with fresh-lines."  
+  (fresh-line stream)
+  (write object :stream stream)
+  (fresh-line stream))
 
 (defun write-list-items-to-file (file list &key (if-exists :append))
   "Does not wrap items in ()."

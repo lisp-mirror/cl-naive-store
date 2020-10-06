@@ -46,12 +46,15 @@
 	 nil)))
 
 
-(defmethod naive-impl:compose-special ((collection document-collection) sexp (type (eql :document)))
-  (let* ((resolved-values (naive-impl:compose-parse collection
-						    ;;TODO: For backwards compatibility 
-						    (or (digx sexp :elements)
-							(digx sexp :values))
-						    nil))
+(defmethod naive-impl:compose-special ((collection document-collection) shard sexp
+				       (type (eql :document)))
+    (let* ((resolved-values
+	    (naive-impl:compose-parse collection
+				      shard
+				      ;;TODO: For backwards compatibility 
+				      (or (digx sexp :elements)
+					  (digx sexp :values))
+				      nil))
 	 (existing-document (index-lookup-hash 
 				 collection
 				 (digx sexp :hash)))
@@ -81,7 +84,7 @@
     final-document))
 
 (defmethod naive-impl:compose-special ((collection document-collection) sexp
-				       (type (eql :child-document)))
+				       shard (type (eql :child-document)))
   (make-document
    ;;TODO: For backwards compatibility
    :type-def (or
@@ -90,13 +93,16 @@
 	      (digx sexp :data-type))
    :hash (frmt "~A" (getx sexp :hash))
    ;;TODO: For backwards compatibility with cl-naive-items, revisit this one day
-   :elements (naive-impl:compose-parse collection (or (digx sexp :elements)
+   :elements (naive-impl:compose-parse collection
+				       shard
+				       (or (digx sexp :elements)
 						      (digx sexp :values))
 				       nil)))
 
 
-(defmethod naive-impl:compose-special ((collection document-collection) sexp (type (eql :blob)))
-  (declare (ignorable collection))
+(defmethod naive-impl:compose-special ((collection document-collection) shard
+				       sexp (type (eql :blob)))
+  (declare (ignorable collection) (ignorable shard))
   ;;TODO: dealing with historical data should remove the check some time
   ;;was most likely to ensure balanced plists, should maybe implement that again
   ;;would make checking for types simpler
@@ -105,7 +111,9 @@
       (read-blob (car (cdr sexp)))
       (read-blob (cdr sexp))))
 
-(defmethod naive-impl:compose-document ((collection document-collection) document-form &key &allow-other-keys)
+(defmethod naive-impl:compose-document ((collection document-collection) shard document-form
+					&key &allow-other-keys)
   (naive-impl:compose-special collection
-		     document-form
-		     :document))
+			      shard
+			      document-form
+			      :document))

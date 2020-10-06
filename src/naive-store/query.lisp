@@ -9,6 +9,10 @@
 ;;;;TODO: Bring back shards
 ;;;;TODO: Consider integrating/extending query-* for queries accross http aka naive-api's
 
+
+
+
+
 (defgeneric naive-reduce (collection &key query function initial-value &allow-other-keys)
   (:documentation "Uses query to select data documents from a collection and applies the function to 
 those documents returning the result.
@@ -17,35 +21,51 @@ NOTES:
 
 Does lazy loading."))
 
-(defmethod naive-reduce :before ((collection collection) &key &allow-other-keys)
+(defmethod naive-reduce :before ((collection collection) &key shards &allow-other-keys)
   "Lazy loading data."
-  (load-data collection))
+   (if shards
+      (cl-naive-store::load-shards collection shards)
+      (load-data collection)))
 
-(defmethod naive-reduce ((collection collection) &key query function initial-value  &allow-other-keys)
-  (naive-reduce (documents collection)
-		:query query
-		:function function
-		:initial-value initial-value))
+(defvar *query-lock* (bt:make-lock))
+
+(defmethod naive-reduce ((collection collection) &key query function initial-value shards  &allow-other-keys)
+  (let ((%result% nil))
+    (do-sequence (shard (or shards
+			    (shards collection))
+			:parallel-p t)
+      
+      (let ((result (naive-reduce (documents shard)
+				  :query query
+				  :function function
+				  :initial-value initial-value)))
+	(bt:with-recursive-lock-held (*query-lock*)
+				     
+				     (setf %result%
+					   (concatenate 'list %result%
+							result)))))
+    %result%))
 
 ;;:TODO: This should be target to move to cl-query or something
-(defmethod naive-reduce ((hash-table hash-table) &key query function initial-value  &allow-other-keys)
+(defmethod naive-reduce ((hash-table hash-table) &key query function initial-value
+						   &allow-other-keys)
   (let ((result initial-value))
-    (maphash
-     (lambda (key document)
-       (declare (ignore key))
-       (if query
-	   (if (funcall query document)
-	       (if function
-		   (setf result (funcall function result document))
-		   (push document result)))
-	   (if function
-	       (setf result (funcall function result document))
-	       (push document result))))
-     hash-table)
-    result))
+	       (maphash
+		(lambda (key document)
+		  (declare (ignore key))
+		  (if query
+		      (if (funcall query document)
+			  (if function
+			      (setf result (funcall function result document))
+			      (push document result)))
+		      (if function
+			  (setf result (funcall function result document))
+			  (push document result))))
+		hash-table)
+	       result))
 
 ;;:TODO: This should be target to move to cl-query or something
-(defmethod naive-reduce ((list list) &key query function initial-value  &allow-other-keys)
+(defmethod naive-reduce ((sequence sequence) &key query function initial-value  &allow-other-keys)  
   (reduce #'(lambda (result document)
 	      (if query
 		  (if (apply query (list document))
@@ -56,8 +76,10 @@ Does lazy loading."))
 		  (if function		       
 		      (funcall function result document)
 		      (push document result))))
-	  list
+	  sequence
 	  :initial-value initial-value))
+
+
 
 (defgeneric query-data (collection &key query &allow-other-keys)
   (:documentation "Returns the data that satisfies the query.
@@ -66,15 +88,31 @@ NOTES:
 
 Does lazy loading."))
 
-(defmethod query-data :before ((collection collection) &key &allow-other-keys)
+(defmethod query-data :before ((collection collection) &key shards &allow-other-keys)
   "Lazy loading data."  
-  (load-data collection))
+  (if shards
+      (cl-naive-store::load-shards collection shards)
+      (load-data collection)))
 
-(defmethod query-data ((collection collection) &key query &allow-other-keys)  
-  (query-data (documents collection)
-		  :query query))
 
-(defmethod query-data ((store store) &key collection-name query &allow-other-keys)
+
+(defmethod query-data ((collection collection) &key query shards &allow-other-keys)
+  (let ((%result% nil))    
+    (do-sequence (shard (if shards
+			    shards
+			    (shards collection))
+			:parallel-p t)
+      
+      (let ((result (query-data (documents shard)
+				:query query)))
+	(bt:with-recursive-lock-held (*query-lock*)
+				     
+				     (setf %result%
+					   (concatenate 'list %result%
+							result)))))    
+    %result%))
+
+(defmethod query-data ((store store) &key collection-name query shards &allow-other-keys)
   (let ((collection (get-collection store collection-name)))
     
     (unless collection
@@ -86,10 +124,7 @@ Does lazy loading."))
       (unless collection
 	(error "Could not find or create collection ~A" collection-name)))
     
-    (if query
-	(query-data collection
-		    :query query)
-	(documents collection))))
+    (query-data collection :query query :shards shards)))
 
 (defgeneric query-document (collection &key query &allow-other-keys)
   (:documentation "Returns the first last document found, and any others that satisfies the query
@@ -98,12 +133,14 @@ NOTES:
 
 Does lazy loading."))
 
-(defmethod query-document :before ((collection collection) &key &allow-other-keys)
+(defmethod query-document :before ((collection collection) &key shards &allow-other-keys)
   "Lazy loading data."
-  (load-data collection))
+  (if shards
+      (cl-naive-store::load-shards collection shards)
+      (load-data collection)))
 
-(defmethod query-document ((collection collection) &key query &allow-other-keys)
-  (let ((documents (query-data collection :query query)))
+(defmethod query-document ((collection collection) &key query shards &allow-other-keys)
+  (let ((documents (query-data collection :query query :shards shards)))
     (values (first documents) (rest documents))))
 
 (defmethod query-document ((store store) &key collection-name query &allow-other-keys)
@@ -111,16 +148,16 @@ Does lazy loading."))
     (values (first documents) (rest documents))))
 
 ;;Dont use map-append, it falls apart at 10 mil records.
-(defmethod query-data ((list list) &key query &allow-other-keys)
+(defmethod query-data ((sequence sequence) &key query &allow-other-keys)
   (let ((results))
     (if query
 	(setf results (reduce #'(lambda (result document)		 
 				  (if (apply query (list document))
 				    (push document result)
 				    result))
-			      list
+			      sequence
 			      :initial-value '()))
-	list)
+	(coerce sequence 'list))
      results))
 
 ;;:TODO: This should be target to move to cl-query or something
@@ -137,8 +174,8 @@ Does lazy loading."))
     documents))
 
 ;;:TODO: This should be target to move to cl-query or something
-(defmethod query-document ((list list) &key query &allow-other-keys)
-   (let ((documents (query-data list :query query)))
+(defmethod query-document ((list list) &key query shards &allow-other-keys)
+   (let ((documents (query-data list :query query :shards shards)))
     (values (first documents) (rest documents))))
 
 ;;:TODO: This should be target to move to cl-query or something

@@ -378,7 +378,7 @@ cl-document-types requirements are minimal and its up to you to load your type-d
 (defmethod validate-xe (document element (type (eql :collection)) value
 			&key &allow-other-keys)
 
-  (break "here we go again ~S" document)
+  
   (let* ((valid (find value document)))
     
      (values valid (if (not valid)
@@ -451,8 +451,7 @@ cl-document-types requirements are minimal and its up to you to load your type-d
 
     (if (functionp list)
 	(setf list (funcall (eval (digx element :type-def :values-script)) document)))
-
-   ;; (break "~s~%~%~s~%~%~s" (read-from-string value) value list)
+   
     (setf val (find (if (not (or (equalp (digx element :type-def :type) :string)
 				 (equalp (digx element :type-def :type) :link)
 				 (equalp (digx element :type-def :type) :text)))

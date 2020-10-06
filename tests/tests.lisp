@@ -19,6 +19,8 @@
 
 (defparameter *monster-size* 100000)
 
+(defparameter *use-shards* nil)
+
 (defclass collection-indexed (indexed-collection-mixin collection)
   ())
 
@@ -152,28 +154,32 @@ which contain the actual data. Each collection will have its own directory and f
 					 ;;not setting keys to make sure fallback to document-type
 					 ;;is done, need to add tests for both
 					 ;;:keys '(:emp-no)
+					 :shard-elements (if *use-shards*
+							     (list :race))
 					 :indexes '((:gender :race :surname)))
 			(if (equalp *collection-class* 'collection-indexed)
 			    (make-instance *collection-class*
 					     :name "simple-collection"
 					     :keys '(:emp-no)
-					     :indexes '((:gender :race :surname)))
+					     :indexes '((:gender :race :surname))
+					     :shard-elements (if *use-shards*
+							     (list :race)))
 			    (make-instance *collection-class*
 					     :name "simple-collection"
-					     :keys '(:emp-no)))))
-    
-    
-    ))
+					     :keys '(:emp-no)
+					     :shard-elements (if *use-shards*
+							     (list :race))))))))
 
 (defun tare-down-universe ()
   "Deletes any peristed data from exmaples."
+;;  (break "?")
   (unless *universe*
-    (cl-fad:delete-directory-and-files *location* :if-does-not-exist :ignore))
+    (cl-fad:delete-directory-and-files *location* :if-does-not-exist :ignore)
+    )
   (when *universe*
-    (cl-fad:delete-directory-and-files (location *universe*) :if-does-not-exist :ignore)
-    (setf *universe* nil))
-  
-  )
+    (cl-fad:delete-directory-and-files (location *universe*) :if-does-not-exist :ignore)    
+    (setf *universe* nil)
+    ))
 
 (defun random-from-list (list)
   (nth (random (length list)) list))
@@ -225,7 +231,9 @@ which contain the actual data. Each collection will have its own directory and f
 	;;closed each time. Use (persist collection) if you are going to add lots of data, see
 	;;populate-monster-data if you want to see how to use it.
 	(if persist-p
-	    (persist-document collection document)
+	    (progn
+	      (persist-document asset-collection asset)
+	      (persist-document collection document))
 	    (if (equalp *document-type* 'document)
 		(add-document collection
 			      (make-document 
@@ -240,7 +248,7 @@ which contain the actual data. Each collection will have its own directory and f
 (defun query-simple-data ()  
   (let ((collection (get-collection (get-store *universe* "simple-store")
 				    "simple-collection")))
-
+;;    (break "~A" collection)
     (query-data collection :query (lambda (document)				    
 				    (<= (getx document :emp-no) 50)))))
 
@@ -267,6 +275,7 @@ Only peristed if persist-p is t."
   (setup-universe)
   ;;Generate some data and put it in the universe documents
   (populate-simple-data persist-p :size 100)
+  
   ;;Query the data in the universe
   (query-simple-data))
 
@@ -280,16 +289,17 @@ Only peristed if persist-p is t."
 		  (get-temp)
 		  (make-pathname :directory '(:relative "data-universe" "simple-store")))))
 	  test-results)
-   
-    (push (list :collection-log-exists
-		(probe-file
-		 (cl-fad:merge-pathnames-as-file
-		  (get-temp)
-		  (make-pathname :directory
-				 '(:relative "data-universe" "simple-store" "simple-collection")
-				 :name "simple-collection"
-				 :type "log"))))
-	  test-results)
+
+    (unless *use-shards*
+      (push (list :collection-log-exists
+		  (probe-file
+		   (cl-fad:merge-pathnames-as-file
+		    (get-temp)
+		    (make-pathname :directory
+				   '(:relative "data-universe" "simple-store" "simple-collection")
+				   :name "simple-collection"
+				   :type "log"))))
+	    test-results))
     
     (let ((documents (documents
 		      (get-collection (get-store *universe* "simple-store")
@@ -305,12 +315,13 @@ Only peristed if persist-p is t."
 		  (getx (query-ref-doc) :asset)
 		  (query-ref-doc))
 
-       test-results)
-      )
+       test-results))
 
     (push (list :query-result-count-51 (= (length query-results) 51))
 	  test-results)
-    (tare-down-universe)
+    
+    ;;(tare-down-universe)
+
     test-results))
 
 (defun simple-example-lazy-loading ()
@@ -327,10 +338,10 @@ Only peristed if persist-p is t."
   ;;Unload the collection (contains the data) if it is already loaded.
   (let ((collection (get-collection (get-store *universe* "simple-store")
 				    "simple-collection")))
+
+    
     (when (data-loaded-p collection)
-      (if (hash-table-p (documents collection))
-	  (clrhash (documents collection))
-	  (setf (documents collection) nil))))
+      (clear-collection collection)))
    ;;Query the data in the universe
   (query-simple-data))
 
@@ -367,10 +378,8 @@ Only peristed if persist-p is t."
     
     ;;Unload the collection (contains the data) if it is already loaded
     ;;to make sure the delete was persisted.
-    (when (data-loaded-p collection)
-      (if (hash-table-p (documents collection))
-	  (clrhash (documents collection))
-	  (setf (documents collection) nil))))
+    (when (data-loaded-p collection)      
+      (clear-collection collection)))
   
   ;;Query the data in the universe for the top 51 that has been deleted.
   (query-simple-data))
@@ -419,10 +428,9 @@ Only peristed if persist-p is t."
 			      :emp-no (getf document :emp-no)))))
        
        ;;Unload the collection (contains the data) if it is already loaded.
-       (when (data-loaded-p collection)	
-	 (if (hash-table-p (documents collection))
-	     (clrhash (documents collection))
-	     (setf (documents collection) nil))))
+       (when (data-loaded-p collection)
+	 (setf (shards collection) nil)
+	 ))
      
     ;;Query the data in the universe
     (setf test-results (query-simple-data) )
@@ -437,7 +445,8 @@ Only peristed if persist-p is t."
     (setf results (append results (test-simple)))
     (setf results (append results (test-simple-duplicates)))
     (setf results (append results (test-lazy-loading)))
-    (setf results (append results (test-delete)))))
+    (setf results (append results (test-delete)))
+    ))
 
 (defun test-all-simple-indexed ()
   (let ((*collection-class* 'collection-indexed))
@@ -451,22 +460,25 @@ Only peristed if persist-p is t."
 (defun query-monster-data ()
   (let ((collection (get-collection (get-store *universe* "simple-store")
 				    "simple-collection")))
-    
-    (query-data collection :query (lambda (document)				    
-				    (or (and
-					 (>= (getx document :emp-no) 50)
-					 (<= (getx document :emp-no) 100))
-					(and
-					 (>= (getx document :emp-no) (/ *monster-size* 2))
-					 (<= (getx document :emp-no) (+ (/ *monster-size* 2) 100)))
-					(and
-					 (>= (getx document :emp-no) (- *monster-size* 50))
-					 (<= (getx document :emp-no) *monster-size*)))))))
+    (query-data collection :query
+		(let ((size *monster-size*))
+		  (lambda (document)
+		    
+		    (or (and
+			 (>= (getx document :emp-no) 50)
+			 (<= (getx document :emp-no) 100))
+			(and
+			 (>= (getx document :emp-no) (/ size 2))
+			 (<= (getx document :emp-no) (+ (/ size 2) 100)))
+			(and
+			 (>= (getx document :emp-no) (- size 50))
+			 (<= (getx document :emp-no) size))))))))
 
 (defun populate-monster-data (persist-p &key (size 100))
   (let ((collection (get-collection (get-store *universe* "simple-store")
 				    "simple-collection"))
 	(emp-race '("African" "White" "Indian" "Chinese" "Coloured"))
+	(shards (make-hash-table :test 'equalp))
 	(emp-gender '("Male" "Female"))
 	(emp-surnames '("Smith"
 			"Johnson"
@@ -476,22 +488,37 @@ Only peristed if persist-p is t."
 			"Davis"
 			"Miller")))
 
+    (when *use-shards*
+      ;;Used to speed up adding documents.
+ ;;     (setf (gethash "African" shards) (get-shard collection (naive-impl:make-mac (list "African"))))
+ ;;     (setf (gethash "White" shards) (get-shard collection (naive-impl:make-mac (list "White"))))
+ ;;     (setf (gethash "Indian" shards) (get-shard collection (naive-impl:make-mac (list "Indian"))))
+ ;;     (setf (gethash "Chinese" shards) (get-shard collection (naive-impl:make-mac (list "Chinese"))))
+      ;;     (setf (gethash "Coloured" shards) (get-shard collection (naive-impl:make-mac (list "Coloured"))))
+      )
+
+   ;; (break "? ~A" collection)
     ;;Make sure that any previously persisted documents are already loaded from disk.
     (unless (data-loaded-p collection)
         (load-data collection))
 
+   ;; (break "??~A" collection)
     ;;Add data documents in the form of plists to the collection. naive-store expects plists
     ;;by default.
     (format t "Add ~A documents to collection" size)
     (time
      (progn
        (dotimes (x size)
-	 (let* ((document (list 
-			   :race (random-from-list emp-race)
+	 (let* ((race (random-from-list emp-race))
+		(document (list 
+			   :race race
 			   :gender (random-from-list emp-gender)
 			   :surname (random-from-list emp-surnames)
 			   :name (format nil "Slave No ~A" x)			   
 			   :emp-no x)))
+
+	   
+	   
 	   ;;Add documents to collcetion
 	   (if (equalp *document-type* 'document)
 	       (add-document collection
@@ -500,16 +527,21 @@ Only peristed if persist-p is t."
 				   :collection collection
 				   :type-def (if (stringp (document-type collection))
 						      (document-type collection)
-						      (name (document-type collection)))		
-				   :elements document))
+						      (name (document-type collection)))
+				   
+				   :elements document)
+				  :shard (if *use-shards* (gethash race shards)))
 	       ;;To speed up loading of documents I am switching of duplicate handling.
 	       (add-document collection document
-				:handle-duplicates-p nil))))))
+			     :handle-duplicates-p nil
+			     :shard (if *use-shards* (gethash race shards))))))))
 
+    
     (format t "Persist collection")
     (time
      (when persist-p
-       (persist collection)))))
+       (persist collection)))
+    ))
 
 
 (defun monster-size-example (persist-p)
@@ -533,35 +565,38 @@ Only peristed if persist-p is t."
   (let* ((test-results)
 	 (query-results (monster-size-example t))
 	 (query-length (length query-results)))
-    
+
     (push (list :universe-directory-exists
 		(probe-file
 		 (cl-fad:merge-pathnames-as-directory
 				     (get-temp)
 				     (make-pathname :directory '(:relative "data-universe" "simple-store")))))
 	  test-results)
-   
-    (push (list :collection-log-exists
-		(probe-file
-		 (cl-fad:merge-pathnames-as-file
-		  (get-temp)
-		  (make-pathname :directory '(:relative "data-universe" "simple-store" "simple-collection")
-				 :name "simple-collection"
-				 :type "log"))))
-	  test-results)
+    (unless *use-shards*
+      (push (list :collection-log-exists
+		  (probe-file
+		   (cl-fad:merge-pathnames-as-file
+		    (get-temp)
+		    (make-pathname :directory '(:relative "data-universe" "simple-store" "simple-collection")
+				   :name "simple-collection"
+				   :type "log"))))
+	    test-results))
+    
     (let ((documents (documents
-			    (get-collection (get-store *universe* "simple-store")
-					    "simple-collection"))))       
+		      (get-collection (get-store *universe* "simple-store")
+				      "simple-collection"))))       
        (push (list :documents-count-monster
 		  (= (if (hash-table-p documents)
 			 (hash-table-count documents)
 			 (length documents))
 		     *monster-size*))
 	    test-results))
+    
+    (push (list :query-result-count-202 (= query-length 202) query-length)
+	  test-results)
+    
+    ;;(tare-down-universe)
 
-    (push (list :query-result-count-202 (= query-length 202))
-	   test-results)
-    (tare-down-universe)
     test-results))
 
 
@@ -577,17 +612,14 @@ Only peristed if persist-p is t."
   ;;Generate some data and put it in the universe documents
   (populate-monster-data t :size *monster-size*)
 
-  
-  
   (when *universe*
     ;;Unload the collection (contains the data) if it is already loaded.
     (let ((collection (get-collection (get-store *universe* "simple-store")
 				      "simple-collection")))
       ;;Clear the collection
       (when (data-loaded-p collection)
-	(if (hash-table-p (documents collection))
-	  (clrhash (documents collection))
-	  (setf (documents collection) nil)))))
+	(clear-collection collection)
+	)))
 
   
   ;;Query the data in the universe
@@ -608,7 +640,7 @@ Only peristed if persist-p is t."
     (let ((results))
       (setf results (append results (test-monster-size)))
       (setf results (append results (test-monster-lazy-loading)))
-      (tare-down-universe)
+     ;; (tare-down-universe)
       results)))
 
 (defun test-all-monster-indexed ()
@@ -616,7 +648,7 @@ Only peristed if persist-p is t."
       (let ((results))
 	(setf results (append results (test-monster-size)))
 	(setf results (append results (test-monster-lazy-loading)))
-	(tare-down-universe)
+	;;(tare-down-universe)
 	results)))
 
 (defun test-all-monster-documents ()
@@ -791,6 +823,7 @@ Only peristed if persist-p is t."
 
 
 (defun test-all (&optional (*monster-size* 100000))
+  
   (tare-down-universe)
   (and
     (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-simple))
@@ -803,6 +836,29 @@ Only peristed if persist-p is t."
     (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-document-queries))))
 
 #|
+
+
+(push :naive-store-tests *features*)
+(ql:quickload :cl-naive-store :verbose t)
+(setf cl-naive-store-tests::*use-shards* t)
+
+(cl-naive-store-tests::test-all 100000)
+
+
+
+(cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-simple-indexed))
+(cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-simple-documents))
+(cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster))
+(cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-indexed))
+(cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-indexed-queries))
+(cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-documents))
+(cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-document-queries))
+
+;;(cl-naive-store-tests::test-monster-size)
+;;(length (cl-naive-store-tests::query-monster-data))
+;;(length (cl-naive-store-tests::query-simple-data))
+
+
 
 
 ;;;IGNORE - Used to manually check stuff when writing tests

@@ -10,7 +10,7 @@
 	(t nil)))
 
 ;;TODO: Sort out blob paths once and for all!!!!
-(defmethod naive-impl:persist-form ((collection document-collection) blob (element-type (eql :blob))
+(defmethod naive-impl:persist-form ((collection document-collection) shard blob (element-type (eql :blob))
 			 &key root parent &allow-other-keys)
   (declare  (ignorable root) (ignorable parent))
   (let ((file (or (and (not (empty-p (blob-location blob)))
@@ -35,7 +35,7 @@
 	   :location (getx blob :location)
 	   :parent-accessor (getx blob :parent-accessor)))))
 
-(defmethod naive-impl:persist-form ((collection document-collection) document
+(defmethod naive-impl:persist-form ((collection document-collection) shard document
 			 (element-type (eql :reference))
 			 &key root parent &allow-other-keys)
   (declare  (ignorable root) (ignorable parent))
@@ -49,11 +49,13 @@
    :collection (name (document-collection document))
    :type (if (stringp (document-type-def document))
 	     (document-type-def document)
-	     (name (document-type-def document)))
+	     (if (document-type-def document)
+		 (name (document-type-def document))
+		 (error "Missing type def")))
    :hash (document-hash document)
    :elements '(:reference% t)))
 
-(defmethod naive-impl:persist-form ((collection document-collection) document
+(defmethod naive-impl:persist-form ((collection document-collection) shard document
 			 (element-type (eql :child-document))
 			 &key root parent &allow-other-keys)
   (declare  (ignorable root) (ignorable parent))
@@ -68,18 +70,19 @@
 		     (document-type-def document)
 		     (name (document-type-def document)))))
    :hash (document-hash document)
-   :elements (naive-impl:persist-parse collection			    
+   :elements (naive-impl:persist-parse collection
+				       shard
 				       (or (document-changes document)
 					   (document-elements document))
 				       nil
 				       :root root
 				       :parent document)))
 
-(defmethod naive-impl:persist-form ((collection document-collection) document
+(defmethod naive-impl:persist-form ((collection document-collection) shard document
 				    (element-type (eql :document))
 				    &key root parent &allow-other-keys)
-  
   (declare  (ignorable root) (ignorable parent))
+  
   (list   
    :hash (document-hash document)
    :deleted-p (if (document-deleted-p document)
@@ -87,22 +90,22 @@
 		  nil)
    :elements (naive-impl:persist-parse
 	      collection
+	      shard
 	      (or (document-changes document)
 		  (document-elements document))
 	      nil
 	      :root document)))
 
-(defmethod naive-impl:persist-parse ((collection document-collection) element doc
+(defmethod naive-impl:persist-parse ((collection document-collection) shard element doc
 				     &key root parent &allow-other-keys)
 
-;;  (break "~A ~A ~%~A" (consp (car element)) (naive-impl:type-of-doc-element collection (car element)) element )
   (cond ((null element)
 	 (nreverse doc))                   
         ((consp (car element))
-         
 	 (naive-impl:persist-parse
 	  collection (cdr element)
 	  (cons (naive-impl:persist-parse collection
+					  shard
 					  (car element)
 					  nil
 					  :root root
@@ -112,13 +115,14 @@
 	  :root root
 	  :parent parent))
 	(t
-         
 	 (naive-impl:persist-parse collection
+				   shard
 				   (cdr element)
 				   (cons
 				    (if (naive-impl:type-of-doc-element collection (car element))
 					(naive-impl:persist-form
 					 collection
+					 shard
 					 (car element)
 					 (naive-impl:type-of-doc-element collection (car element))
 					 :root root

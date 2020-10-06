@@ -25,19 +25,19 @@ Checks the collection keys or uses hash."))
 		(equalp a :deleted-p))
      :collect (list a b)))
 
-(defgeneric existing-document (collection document  &key &allow-other-keys)
+(defgeneric existing-document (collection shard document  &key &allow-other-keys)
   (:documentation "Finds any documents with the same key values. This could return the exact same document or a similar document.
 
 IMPL NOTES:
 
 This is an essential part of loading and persisting documents, take care when implementing."))
 
-(defmethod existing-document (collection document  &key &allow-other-keys)
-  (let ((position (position document (documents collection)
+(defmethod existing-document (collection shard document &key &allow-other-keys)
+  (let ((position (position document (documents shard)
 			   :test (lambda (x y)
 				   (equalp (key-values collection x)
 					   (key-values collection y))))))
-    (values (and position (nth position (documents collection)))
+    (values (and position (elt (documents shard) position))
 	    position)))
 
 
@@ -55,31 +55,40 @@ naive-store writes data to file sequentially and when deleting data documents it
   (setf (getx document :deleted-p) value)
   document)
 
-(defgeneric remove-document (collection document &key &allow-other-keys)
+(defgeneric remove-document (collection document &key shard &allow-other-keys)
   (:documentation "Removes an document from the collection and its indexes. See add-document."))
 
-(defmethod remove-document ((collection collection) document &key &allow-other-keys)  
-  (setf (documents collection)
+(defmethod remove-document ((collection collection) document &key shard &allow-other-keys)
+  (unless shard
+    (setf shard (get-shard collection (document-shard-mac collection document))))
+  
+  (setf (documents shard)
 	(remove (if (keys collection)
 		    (key-values collection document)
 		    document)
-		(documents collection)
+		(documents shard)
 		:test #'equalp :key (lambda (documentx)
 				      (if (keys collection)
 					  (key-values collection documentx)
 					  documentx)))))
 
-(defgeneric delete-document (collection document &key &allow-other-keys)
+(defgeneric delete-document (collection document &key shard &allow-other-keys)
   (:documentation "Removes a document from the collection, marks the document as deleted and persists the deleted document to disk."))
 
-(defmethod delete-document ((collection collection) document &key &allow-other-keys)
-    (remove-document collection document)
-    (setf (deleted-p document) t)
-    (persist-document collection document :delete-p t))
+(defmethod delete-document ((collection collection) document &key shard &allow-other-keys)
+  (unless shard
+    (setf shard (get-shard collection (document-shard-mac collection document))))
+  
+  (remove-document collection document :shard shard)
+  (setf (deleted-p document) t)
+  (persist-document collection document :delete-p t))
 
-(defgeneric add-document (collection document &key &allow-other-keys)
+;;TODO: Deal with shards
+(defgeneric add-document (collection document &key shard &allow-other-keys)
   (:documentation "Adds a document to the collection, it DOES NOT PERSIST the change, if you want adding with persistance use persist-document or persist the collection as a whole after you have done your adding.
 
+Supply shard the document should belong to if you can, especially if you have a lot of documents to add to a specific shard. If not supplied the (shard-elements collection) will be used to calculate which shard to use for the document.
+ 
 add-document returns multiple values:
 
 The first returned value is the actual document supplied.
@@ -92,8 +101,9 @@ In general you should not be calling add-document directly, you should use persi
 
 cl-naive-store does not have a update-document function, add-document does both and its behaviour can be complex depending on the key parameters supplied. Also the behaviour can differ for different types of collections. Check the appropriate collection documentation for more details."))
 
+;;TODO: Deal with shards
 (defmethod add-document ((collection collection) document
-			    &key (handle-duplicates-p t) (replace-existing-p t) &allow-other-keys)
+			    &key shard (handle-duplicates-p t) (replace-existing-p t) &allow-other-keys)
   "None of the following will have an effect if handle-duplicates = nil. 
 
 If a document with the same keys exists in the collection the supplied the existing document will be replaced with the supplied document.
@@ -102,55 +112,82 @@ If you set replace-existing-p to nil then an existing document wont be replaced 
   (let ((existing-document%)
 	(action-taken))
 
+    (unless shard
+      (setf shard (get-shard collection (document-shard-mac collection document))))
+
+    
     (cond ((not handle-duplicates-p)
-	   (push document
-		  (documents collection))
-	    (setf action-taken :added-possible-duplicate))
+	   (vector-push-extend document (documents shard))
+	   (setf action-taken :added-possible-duplicate))
 	  (t
 	   (if (keys collection)
 	       (multiple-value-bind (existing-document position)
-		   (existing-document collection document)
-                 
+		   (existing-document collection shard document)
 		 (setf existing-document% existing-document)
 		 (if (and position replace-existing-p)
 		     (progn                           
-		       (setf (nth position (documents collection)) document)
+		       (setf (elt (documents shard) position) document)
 		       (setf action-taken :replaced))
 		     (progn
-		       (push document (documents collection))
+		       (vector-push-extend document (documents shard))
 		       (setf action-taken :added))))
 	       (progn
-		 (push document (documents collection))
+		 (vector-push-extend document (documents shard))
 		 (setf action-taken :added)))))
+
     (values
      document
      action-taken
      (if (equalp action-taken :replaced)
 	 existing-document%))))
 
-(defgeneric persist-document (collection document-form &key &allow-other-keys)
+(defgeneric persist-document (collection document-form &key shard &allow-other-keys)
   (:documentation "Traverses the document and composes a list representation that is written to file. If the document is new it is added to the collection."))
 
 
-(defmethod persist-document :before (collection document &key &allow-other-keys)
+(defmethod persist-document :before (collection document &key shard &allow-other-keys)
   ;;Loads collection if not loaded yet.
-  (load-data collection))
 
-(defmethod persist-document ((collection collection) document
-			     &key (handle-duplicates-p t) delete-p &allow-other-keys)
+  (if shard
+      (cl-naive-store::load-shard collection shard nil)      
+      (load-data collection)))
+
+;;TODO: Deal with shards
+(defmethod persist-document ((collection collection) document			     
+			     &key shard (handle-duplicates-p t) delete-p
+			       file-stream &allow-other-keys)
+
+  (unless shard
+    (setf shard (get-shard collection (document-shard-mac collection document))))
+
   (cond ((or delete-p (getx document :deleted-p))
-	 (remove-document collection document)
-	 (naive-impl:write-to-file (ensure-location collection)
-				   (naive-impl::persist-parse collection document nil)))
+	 (remove-document collection document :shard shard)
+	 (if file-stream
+	     (naive-impl::write-to-stream file-stream
+					  (naive-impl::persist-parse collection shard document nil))
+	     (naive-impl:write-to-file (location shard)
+				       (naive-impl::persist-parse collection shard document nil))))
 	(t
-	 (naive-impl:write-to-file
-	  (ensure-location collection)
-	  (naive-impl:persist-parse
-	   collection
-	   (add-document collection document
-			      :handle-duplicates-p handle-duplicates-p)
-	   nil)))
-	)
+
+	 (if file-stream
+	     (naive-impl::write-to-stream
+	      file-stream
+	      (naive-impl:persist-parse
+	       collection
+	       shard
+	       (add-document collection document
+			     :handle-duplicates-p handle-duplicates-p
+			     :shard shard)
+	       nil))
+	     (naive-impl:write-to-file
+	      (location shard)
+	      (naive-impl:persist-parse
+	       collection
+	       shard
+	       (add-document collection document
+			     :handle-duplicates-p handle-duplicates-p
+			     :shard shard)
+	       nil)))))
   document)
 
 

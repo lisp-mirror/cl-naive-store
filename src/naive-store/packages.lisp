@@ -7,6 +7,8 @@
    ;;####common.lisp
    :frmt ;;Exposing naive-impl:frmt
    :empty-p ;;Exposing naive-impl:empty-p
+   :do-sequence ;;Exposing naivie-impl:do-sequence
+   :gethash-safe
    
    :persist
    :persist-document
@@ -17,6 +19,7 @@
    ;;####naive-core.lisp
    
    ;;##classes
+   :shard
    :universe
    :collection
    :store
@@ -25,8 +28,15 @@
    :documents
    :keys
    
+   ;;shard
+   :mac
+   :shards
+   :match-shard
+   :get-shard
+   :document-shard-mac
+   
    ;;:store
-   :universe
+   ;;:universe
    ;;:name
    :collection-class
    :collections
@@ -58,6 +68,10 @@
    :add-store
    :add-collection
    :add-document-type
+
+   ;;Removing
+   :clear-collection
+   :remove-collection
    
    ;;:persist
    :persist-collection-def
@@ -65,7 +79,6 @@
 
    ;;;loading
    :ensure-location
-   :collection-container-loaded-p
    :load-data   
    :data-loaded-p
    

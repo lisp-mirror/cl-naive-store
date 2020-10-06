@@ -4,7 +4,8 @@
   :author "Phil Marneweck"
   :licence "MIT"
   ;;TODO: add feature to conditional depend on UUID and cl-murmurhash...really?
-  :depends-on ("cl-fad" "split-sequence" "uuid" "local-time" "cl-getx" "cl-murmurhash" "ironclad")
+  :depends-on ("cl-fad" "split-sequence" "uuid" "local-time" "cl-getx"
+			"cl-murmurhash" "ironclad" "cl-cpus" "lparallel")
   :components
   ((:module "naive-store"
 	    :pathname "../naive-store/"

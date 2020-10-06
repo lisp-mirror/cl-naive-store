@@ -21,19 +21,23 @@
        index-values))
     index-values))
 
-(defgeneric push-value-index (collection index-values document &key &allow-other-keys)
+(defgeneric push-value-index (collection index-values document &key shard &allow-other-keys)
   (:documentation "Uses lists within the key-value-index hash-table to store/group documents that match a key value combination. 
 
 On updates of documents could end up with duplicate documents returned by the index lookup. The speed more than makes up for the occasional duplicate for now!
 
 TODO: Implement index-lookup-value that strips out duplicates??"))
 
-(defmethod push-value-index (collection index-values document &key &allow-other-keys)
-  (unless (key-value-index collection)
-    (setf (key-value-index collection) (make-hash-table :test 'equalp)))
+(defmethod push-value-index (collection index-values document &key shard &allow-other-keys)
+
+  (unless shard
+    (setf shard (get-shard collection (document-shard-mac collection document))))
+  
+  (unless (key-value-index shard)
+    (setf (key-value-index shard) (make-hash-table :test 'equalp)))
 
   (push document (gethash (cl-murmurhash:murmurhash index-values)
-			      (key-value-index collection))))
+			      (key-value-index shard))))
 
 (defun populate-partial-value-index (collection index-values document)
   (let ((compounded)
@@ -53,29 +57,29 @@ TODO: Implement index-lookup-value that strips out duplicates??"))
 	(populate-partial-value-index collection index-values document)
 	(push-value-index collection index-values document))))
 
-(defun remove-partial-value-index (collection index-values document)
+(defun remove-partial-value-index (collection shard index-values document)
   (let ((compounded)
 	  (compounded-count 1))
     (dolist (pair index-values)      
       (push pair compounded)
       (when (> compounded-count 1)
-	(remove-value-index collection (reverse compounded) document))
-      (remove-value-index collection pair document)
+	(remove-value-index collection shard(reverse compounded) document))
+      (remove-value-index collection shard pair document)
       (incf compounded-count))))
 
-(defun remove-index-values (collection indexes-values document)
+(defun remove-index-values (collection shard indexes-values document)
   (dolist (index-values indexes-values)
     (if *do-partial-indexing*
-	(remove-partial-value-index collection index-values document)
-	(remove-value-index collection index-values document))))
+	(remove-partial-value-index collection shard index-values document)
+	(remove-value-index collection shard index-values document))))
 
-(defgeneric remove-value-index (collection index-values document &key &allow-other-keys)
+(defgeneric remove-value-index (collection shard index-values document &key &allow-other-keys)
   (:documentation "Removes a value index."))
 
-(defmethod remove-value-index (collection index-values document &key &allow-other-keys)
-  (when (key-value-index collection)
+(defmethod remove-value-index (collection shard index-values document &key &allow-other-keys)
+  (when (and shard (key-value-index shard))    
     (remove document (gethash (cl-murmurhash:murmurhash index-values)
-			  (key-value-index collection)))))
+			  (key-value-index shard)))))
 
 
 

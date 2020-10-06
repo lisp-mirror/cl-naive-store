@@ -54,5 +54,90 @@ Source: On Lisp"
   (loop for (a b) on values by #'cddr 
      :collect (list a b)))
 
+(defparameter *mac-key* 5873965167969913164)
 
+(defgeneric make-mac (value &key key)
+  (:documentation "Produces a mac from the value. Mac's should differ for different values.
 
+NOTES:
+
+This is used to create shard filenames. "))
+
+(defmethod make-mac (value &key (key *mac-key*))
+
+  (let* ((mac (ironclad:make-blake2-mac (ironclad:integer-to-octets key)))
+	 (array (babel:string-to-octets
+		 (frmt
+		  "~S" value))))
+    
+    (ironclad:update-mac mac array)
+
+    (ironclad:byte-array-to-hex-string
+     (ironclad:produce-mac
+      mac))))
+
+(setf lparallel:*kernel* (lparallel:make-kernel (cl-cpus:get-number-of-processors)
+						;;:bindings '((*with-open-file-lock* . nil))
+						))
+
+(defvar *lock* (bt:make-lock))
+
+(defgeneric gethash-safe (key hash &key lock)
+  (:documentation "Puts lock around hash access get and set."))
+
+(defmethod gethash-safe (key hash &key (lock *lock*))
+  (bt:with-recursive-lock-held
+   (lock)	 
+   (gethash key hash)))
+
+(defmethod (setf gethash-safe) (value key hash &key (lock *lock*))
+  (bt:with-recursive-lock-held
+   (lock)	 
+   (setf (gethash key hash) value)))
+
+(defun call-do-sequence (thunk with-index-p sequence &key parallel-p )
+  (if parallel-p     
+      (lparallel:pdotimes (index (length sequence))
+			   (let ((element (elt sequence index)))
+			     (if with-index-p
+				 (funcall thunk element index)
+				 (funcall thunk element))))
+      (etypecase sequence
+	(list 
+	 (loop for index from 0
+	    for element in sequence
+	    do (if with-index-p
+		   (funcall thunk element index)
+		   (funcall thunk element))))
+	(vector         
+	 (loop for index from 0
+	    for element across sequence
+	    do (if with-index-p
+		   (funcall thunk element index)
+		   (funcall thunk element)))))))
+
+(defmacro do-sequence ((element-var sequence &key index-var (parallel-p nil) )		       
+		       &body body)
+  "Iterates over the sequence applying body. In the body you can use the element-var and/or the index-var if supplied. 
+
+If you set parallel-p then the body is executed asyncronously. Asyncronous excecution places restraints on how special variables can be used within the body.
+
+From lparallel documentation:
+
+To establish permanent dynamic bindings inside workers (thread-local variables), use the :bindings argument to make-kernel, which is an alist of (var-name . value-form) pairs. Each value-form is evaluated inside each worker when it is created. (So if you have two workers, each value-form will be evaluated twice.)
+
+Notes:
+
+Uses loop or lparallel:pdotimes depending on parallel-p value.
+
+To get the best out of do-sequence use the parallel option if the sequence is large (> 1000) or the body is excecution heavy.
+
+"
+  `(call-do-sequence
+    (lambda (,element-var
+	     ,@(when index-var
+		 (list index-var)))
+      ,@body)
+  ,(when index-var t)
+    ,sequence
+    :parallel-p ,parallel-p ))

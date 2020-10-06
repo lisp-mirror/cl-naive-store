@@ -209,7 +209,6 @@
   (let ((merkle-tree))
     (labels ((traverse-doc (doc parent)
 	       (when (cl-naive-documents:document-p doc)
-	;;	 (break "fuy ~A" doc)
 		 (let* ((node (make-node
 			       (make-document-hash
 				doc)
@@ -221,7 +220,6 @@
 			(traverse-doc value node))))))
       (setf merkle-tree (make-node (make-document-hash document) ))
       (traverse-doc document merkle-tree))
-   ;; (break "~A" merkle-tree)
     merkle-tree))
 
 

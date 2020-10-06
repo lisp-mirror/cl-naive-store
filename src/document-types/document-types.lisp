@@ -149,6 +149,7 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
   
   (:documentation "Collection extention to make collection of a specific document-type."))
 
+;;TODO: Deal with sharding??
 (defmethod add-collection :after ((store store) (collection document-type-collection-mixin))
   (when (or
 	 (not (keys collection))
@@ -193,7 +194,7 @@ IMPL NOTES: To deal with customization of document-type.")
 	       :initform nil
 	       :documentation "List of document-types represented by this store's collections.")))
 
-
+;;TODO: Add sharding
 (defmethod get-collection-from-def ((store document-type-store-mixin) collection-name)
   (let ((filename (cl-fad:merge-pathnames-as-file
 		   (pathname (location store))

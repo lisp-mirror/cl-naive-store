@@ -10,10 +10,16 @@
    :trim-whitespace
    :plist-to-values
    :plist-to-pairs
+   :make-mac
+   :*lock*
+   :gethash-safe
+  
+   :do-sequence
+   
    :*break-on-error-log*
    :write-log
-   :file-to-string
    
+   :file-to-string
    :with-file-lock
    :with-open-file-lock
    :wrap-in-list

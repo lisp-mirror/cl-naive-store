@@ -1,14 +1,82 @@
 (in-package :cl-naive-store)
 
-(defmethod load-data ((collection collection) &key &allow-other-keys)
-  (let ((filename (ensure-location collection)))
-    (with-open-file (in filename :if-does-not-exist :create)
-      (when in
+(defun find-collection-files (collection)
+  (directory
+   (cl-fad:merge-pathnames-as-file (pathname (ensure-location collection))
+				   (make-pathname :directory '(:relative :wild-inferiors)
+						  :name :wild
+						  :type "log"))))
+
+;;TODO: only pass shard and not filename ????
+(defgeneric load-shard (collection shard filename &key &allow-other-keys)
+  (:documentation "Loads documents from file."))
+
+(defvar *load-lock* (bt:make-recursive-lock))
+
+;;TODO: Should we try reload if status is interupted or should we just lock the collection/shard
+;;and have the user deal with it?
+(defmethod load-shard :around ((collection collection) shard filename &key &allow-other-keys)
+  
+  (unless (status shard)
+
+   ;; (setf (status shard) :loading)
+    
+    (bt:with-recursive-lock-held (*load-lock*)                                 
+      (call-next-method))))
+
+;;TODO: Add a catch all error thingy so that the status does not get stuck in :loading
+
+;;Dont try to do compose-document asyncronously because the order in which the documents
+;;are loaded in the underlying container matter, for deleted documents and document history!!!!
+
+;;TODO: add a wait with a time out if .lock file exists?
+(defmethod load-shard ((collection collection) shard filename &key &allow-other-keys)
+
+  (unless (equalp (status shard) :loading)
+    (unless (probe-file (format nil "~a.lock" (location shard)))
+
+      (setf (status shard) :loading)
+
+      (with-open-file (in (or filename (location shard)) :if-does-not-exist :create)
+	(when in
 	  (loop for document-form = (read in nil)
-	     while document-form
-	     do (naive-impl::compose-document
-		 collection document-form))
-	  (close in)))))
+		while document-form
+		do
+		   (progn               
+		     (naive-impl::compose-document
+		      collection shard document-form)))
+	  (close in)))
+      (setf (status shard) :loaded))))
+
+
+(defun load-shards (collection shards)
+  (do-sequence (shard shards)
+    (unless (status shard)
+      (load-shard collection shard nil))))
+
+(defmethod load-data ((collection collection) &key shard-macs &allow-other-keys)
+  
+  (let ((files (find-collection-files collection)))
+    (do-sequence (filename files :parallel-p t)
+      (multiple-value-bind (mac file)
+	  (match-shard filename shard-macs)
+
+	(unless mac
+	  (setf mac (pathname-name filename))
+	  (setf file filename))
+	
+	(when (or (not shard-macs)
+		  file)
+	  
+	  (let ((shard (get-shard collection mac)))
+
+           
+            (unless (or (> (length (documents shard)) 0)
+			(equalp (status shard) :loading)
+			(equalp (status shard) :loaded))
+;;	      (break "?? ~A" shard)
+	      (load-shard collection shard filename))))))
+    ))
 
 (defun find-collection-definitions (store)
   (directory

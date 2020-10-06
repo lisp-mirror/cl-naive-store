@@ -5,26 +5,33 @@
 
 When documents are read from a file the references need to be converted to documents but for that to happen the collection containing the referenced documents need to be loaded first."
   (let* ((store (get-store* universe (getx document-ref :store)))
-	 (collection (get-collection* store (getx document-ref :collection))))
+	 (collection (get-collection* store (getx document-ref :collection)))
+	 (shard-mac (getx document-ref :shard-mac)))
     
     ;;Incase the collection exists but has not been loaded try and load it.
     (when collection
-      (load-data collection))
+      (let ((shard (get-shard collection shard-mac)))
+	(cl-naive-store::load-shard collection shard nil)))
     
     (unless collection
       (add-collection store collection)
-      (load-data collection))
+      (let ((shard (get-shard collection shard-mac)))
+	(cl-naive-store::load-shard collection shard nil)))
     collection))
 
-(defgeneric find-document-by-hash (collection hash)
+(defgeneric find-document-by-hash (collection hash &key shards &allow-other-keys)
   (:documentation "Finds the document that matches the hash."))
 
-(defmethod find-document-by-hash (collection hash)
- (dolist (document (documents collection))    
-    (when (string-equal
-	   (digx document :hash)
-	   hash)
-      (return-from find-document-by-hash document))))
+;;TODO: Deal with shards. 
+(defmethod find-document-by-hash (collection hash &key shards &allow-other-keys)
+
+  (do-sequence (shard (if shards shards
+			  (shards collection)) :parallel-p t)    
+    (do-sequence (document (documents shard))    
+      (when (string-equal
+	     (digx document :hash)
+	     hash)
+	(return-from find-document-by-hash document)))))
 
 ;;TODO: Implment hash-table.
 (defgeneric type-of-sexp (collection sexp)
@@ -47,24 +54,26 @@ When documents are read from a file the references need to be converted to docum
 	
 	(t nil)))
 
-(defgeneric compose-special (collection sexp type)
+(defgeneric compose-special (collection shard sexp type)
   (:documentation "Does special processing to compose a specific type of document or element."))
 
-(defmethod compose-special (collection sexp (type (eql :document)))
+(defmethod compose-special (collection shard sexp (type (eql :document)))
   (if (getx sexp :deleted-p)
-	(remove-document collection sexp)
+	(remove-document collection sexp :shard shard)
 	;;TODO: Where to get handle-duplicates-p ???
-	(add-document collection sexp)))
+	(add-document collection sexp :shard shard)))
 
-(defmethod compose-special (collection sexp (type (eql :blob)))
-  (declare (ignorable collection))
+(defmethod compose-special (collection shard sexp (type (eql :blob)))
+  (declare (ignorable collection) (ignorable shard) (ignorable type))
+  
   (read-blob (cdr sexp)))
 
-(defmethod compose-special (collection sexp (type (eql :hash-table)))
-  (declare (ignorable collection))
+(defmethod compose-special (collection shard sexp (type (eql :hash-table)))
+  (declare (ignorable collection) (ignorable shard) (ignorable sexp) (ignorable type))
   (error "Reading of hash-tables not implmented yet."))
 
-(defmethod compose-special (collection sexp (type (eql :reference)))
+(defmethod compose-special (collection shard sexp (type (eql :reference)))
+  (declare (ignorable shard))
   (let ((ref-document (and collection
 			 (find-document-by-hash 
 			  (load-document-reference-collection
@@ -76,28 +85,29 @@ When documents are read from a file the references need to be converted to docum
     ref-document))
 
 ;;Made this a seperate method so simple units tests can test basic parsing.
-(defgeneric compose-document (collection document-form &key &allow-other-keys)
+(defgeneric compose-document (collection shard document-form &key &allow-other-keys)
   (:documentation "The loading of documents happens in a two step process. First documents are read with (*read-eval* nil). Then the sexp representing a raw document is processed to compose the required in memory representation."))
 
-(defgeneric compose-parse (collection sexp doc)
+(defgeneric compose-parse (collection shard sexp doc)
   (:documentation "Processes document form for compose-document."))
 
-(defmethod compose-parse (collection sexp doc)
+(defmethod compose-parse (collection shard sexp doc)
   (cond ((null sexp)
 	 (nreverse doc))                   
         ((consp (car sexp))                    
-	 (compose-parse collection (cdr sexp)
+	 (compose-parse collection shard (cdr sexp)
 		(if (type-of-sexp collection (car sexp))
                     (cons
-		     (compose-special collection (car sexp)
+		     (compose-special collection shard (car sexp)
 				      (type-of-sexp collection (car sexp)))
 		     doc)
-		    (cons (compose-parse collection (car sexp) nil) doc))))
+		    (cons (compose-parse collection shard (car sexp) nil) doc))))
 	(t
-	 (compose-parse collection (cdr sexp)
+	 (compose-parse collection shard (cdr sexp)
 		(cons (car sexp) doc)))))
 
-(defmethod compose-document (collection document-form &key &allow-other-keys)
-    (compose-special collection
-		     (compose-parse collection document-form nil)
-		     :document))
+(defmethod compose-document (collection shard document-form &key &allow-other-keys)
+  (compose-special collection
+		   shard
+		   (compose-parse collection shard document-form nil)
+		   :document))
