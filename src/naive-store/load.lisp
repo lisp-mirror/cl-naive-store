@@ -20,9 +20,10 @@
   (unless (status shard)
 
    ;; (setf (status shard) :loading)
+
+    (call-next-method)
     
-    (bt:with-recursive-lock-held (*load-lock*)                                 
-      (call-next-method))))
+    ))
 
 ;;TODO: Add a catch all error thingy so that the status does not get stuck in :loading
 
@@ -32,11 +33,12 @@
 ;;TODO: add a wait with a time out if .lock file exists?
 (defmethod load-shard ((collection collection) shard filename &key &allow-other-keys)
 
+  
   (unless (equalp (status shard) :loading)
     (unless (probe-file (format nil "~a.lock" (location shard)))
 
       (setf (status shard) :loading)
-
+      
       (with-open-file (in (or filename (location shard)) :if-does-not-exist :create)
 	(when in
 	  (loop for document-form = (read in nil)
@@ -46,6 +48,7 @@
 		     (naive-impl::compose-document
 		      collection shard document-form)))
 	  (close in)))
+      
       (setf (status shard) :loaded))))
 
 
@@ -54,9 +57,15 @@
     (unless (status shard)
       (load-shard collection shard nil))))
 
+(defparameter *task-pool* (make-instance 'cl-naive-task-pool:task-pool :thread-pool-size 8))
+
+(cl-naive-task-pool:start-task-pool *task-pool*)
+
 (defmethod load-data ((collection collection) &key shard-macs &allow-other-keys)
   
-  (let ((files (find-collection-files collection)))
+  (let ((files (find-collection-files collection))
+	(tasks))
+    #|
     (do-sequence (filename files :parallel-p t)
       (multiple-value-bind (mac file)
 	  (match-shard filename shard-macs)
@@ -76,6 +85,37 @@
 			(equalp (status shard) :loaded))
 ;;	      (break "?? ~A" shard)
 	      (load-shard collection shard filename))))))
+    |#
+
+    (dolist (filename files)
+      (multiple-value-bind (mac file)
+	  (match-shard filename shard-macs)
+
+	(unless mac
+	  (setf mac (pathname-name filename))
+	  (setf file filename))
+	
+	(when (or (not shard-macs)
+		  file)
+	  
+	  (let ((shard (get-shard collection mac)))
+	    (unless (or (> (length (documents shard)) 0)
+			(equalp (status shard) :loading)
+			(equalp (status shard) :loaded))
+                      
+	      (push (cl-naive-task-pool:submit-task *task-pool*
+						    (lambda ()
+						      (load-shard collection shard filename))
+						    :result-p t)
+		    tasks))))))
+
+   ;; (break "~A" *task-pool*)
+    (dolist (task tasks)
+      
+      (cl-naive-task-pool:task-result *task-pool* task))
+
+   ;; (break "fuck")
+    
     ))
 
 (defun find-collection-definitions (store)

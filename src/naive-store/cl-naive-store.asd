@@ -5,25 +5,31 @@
   :licence "MIT"
   ;;TODO: add feature to conditional depend on UUID and cl-murmurhash...really?
   :depends-on ("cl-fad" "split-sequence" "uuid" "local-time" "cl-getx"
-			"cl-murmurhash" "ironclad" "cl-cpus" "lparallel")
+			"cl-murmurhash" "ironclad" "cl-cpus" "lparallel"
+			"bordeaux-threads")
   :components
-  ((:module "naive-store"
-	    :pathname "../naive-store/"
-                        
-            :components ( (:file "packages")
-			  (:file "naive-impl/package")
-			  (:file "naive-impl/common" :depends-on ("naive-impl/package"))
-			  (:file "naive-impl/files" :depends-on ("naive-impl/common"))
-			  (:file "naive-impl/logs" :depends-on ("naive-impl/files"))               
-			  (:file "naive-core" :depends-on ("naive-impl/logs"))
-			  (:file "documents" :depends-on ("naive-core"))
-			  (:file "blob" :depends-on ("documents"))
-			  (:file "naive-impl/naive-core" :depends-on ("naive-impl/common"))
-			  (:file "naive-impl/parse-document" :depends-on ("naive-impl/files"))
-			  (:file "naive-impl/persist-document" :depends-on ("naive-impl/files"))
-			  (:file "load" :depends-on ("naive-impl/parse-document"))
-			  (:file "query" :depends-on ("naive-core"))              
-			  (:file "maintenance" :depends-on ("naive-impl/persist-document"))))
+  (
+   (:module "naive-task-pool"
+	    :pathname "../naive-task-pool/"            
+	    :components ((:file "package")	       
+			 (:file "task-pool" :depends-on ("package"))))
+   (:module "naive-store"
+    :pathname "../naive-store/"
+    :depends-on ("naive-task-pool")
+    :components ( (:file "packages")
+		  (:file "naive-impl/package")
+		  (:file "naive-impl/common" :depends-on ("naive-impl/package"))
+		  (:file "naive-impl/files" :depends-on ("naive-impl/common"))
+		  (:file "naive-impl/logs" :depends-on ("naive-impl/files"))               
+		  (:file "naive-core" :depends-on ("naive-impl/logs"))
+		  (:file "documents" :depends-on ("naive-core"))
+		  (:file "blob" :depends-on ("documents"))
+		  (:file "naive-impl/naive-core" :depends-on ("naive-impl/common"))
+		  (:file "naive-impl/parse-document" :depends-on ("naive-impl/files"))
+		  (:file "naive-impl/persist-document" :depends-on ("naive-impl/files"))
+		  (:file "load" :depends-on ("naive-impl/parse-document"))
+		  (:file "query" :depends-on ("naive-core"))              
+		  (:file "maintenance" :depends-on ("naive-impl/persist-document"))))
 
    
    
