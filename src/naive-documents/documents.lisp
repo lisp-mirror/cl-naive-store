@@ -8,6 +8,7 @@
   document)
 
 (defun check-keys-and-synq (old new allow-key-change-p)
+ 
   (if (equalp (key-values (document-collection new) new)
 	      (key-values (document-collection old) old))
       (progn
@@ -63,7 +64,11 @@
 				    (name (document-type collection)))		
 		      :elements document)))
 
-    
+    (unless (document-collection document)
+      (setf (document-collection document) collection))
+
+    (unless (document-type-def document)
+      (setf (document-type-def document) (document-type collection)))
     
     (let ((file (or file-name (location shard))))
       (cond ((or delete-p (deleted-p document))
