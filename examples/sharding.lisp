@@ -11,7 +11,7 @@
 
 ;;A helper function
 (defun random-from-list (list)
-  (nth (random (length list)) list))
+  (nth (random (- (length list) 1)) list))
 
 
 ;;Create a data definition for an asset. Assets are linked to employees
@@ -147,7 +147,7 @@
   
   ;;Add some documents to the collections
   (let ((emp-country '("Nigeria" "Us" "Canada" "Uk" "Estonia" "Zimbabwe" "Botswanna" "Mosambique"
-		       "Argentina" "Mexico" "Chilly" "China" "Russia" "Germany"))        
+		       "Argentina" "Mexico" "Chilly" "China" "Russia" "Germany" "India"))        
 	(emp-surnames '("Smith"
 			"Johnson"
 			"Williams"
@@ -157,8 +157,11 @@
 			"Miller")))
 
 
-    ;;Try to load the data first, maybe it has been persisted before.    
-    (load-data employee-collection)
+    
+    ;;Try to load the data first, maybe it has been persisted before.
+    (print "Loading Existing Data.")
+    (time
+     (load-data employee-collection))
 
     ;;If the data was peristed before and successfully loaded dont add it again.
     (unless (data-loaded-p employee-collection)
@@ -185,19 +188,21 @@
 				   :name (format nil "Slave No ~A" x)			   
 				   :emp-no x)))
 	 
-	 )))
+	 ))
 
 
-    (break "~A ~A" employee-collection asset-collection)
-    (print "Persisting 100000 assets to collections")
-    (time
-     ;;Bulk Persist assets
-     (persist asset-collection))
+        
+      (print "Persisting 100000 assets to collections")
+      (time
+       ;;Bulk Persist assets
+       (persist asset-collection))
+      
+      (print "Persisting 100000 employees to collections")
+      (time
+       ;;Bulk Persist employees
+       (persist employee-collection)))
 
-    (print "Persisting 100000 employees to collections")
-    (time
-     ;;Bulk Persist employees
-     (persist employee-collection))
+    
 
     (print "Doing a straight up query that touches each record.")
     (time
@@ -217,23 +222,25 @@
 					      (<= (getx document :emp-no) size))))))))
 	   results))
 
-    
+   ;; (break "?")
     (print "Fetching an index set.")
     (time
      (push (list
 	    :how-many-davises?
 	    (length (query-data employee-collection                              
-				:index-values (list :surname "Davis"))))
+				:index-values (list (list :surname "Davis")))))
 	   results))
 
+    
+    
     (print "Doing a query against an index set.")
     (time
      (push (list
-	    :how-many-davises-in-india?
+	    :how-many-davises-in-chilly?
 	    (length (query-data employee-collection
-				:query (lambda (emp)
-					 (string-equal (getx emp :country) "India"))
-				:index-values (list :surname "Davis"))))
+				:query (lambda (emp)                                         
+					 (string-equal (getx emp :country) "Chilly"))
+				:index-values (list (list :surname "Davis")))))
 	   results)))
 
   (print results))

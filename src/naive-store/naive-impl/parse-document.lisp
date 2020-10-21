@@ -1,5 +1,8 @@
 (in-package :naive-impl)
 
+
+(defparameter *task-pool-x* (make-instance 'cl-naive-task-pool:task-pool :thread-pool-size 8))
+
 (defun load-document-reference-collection (universe document-ref)
   "When documents are persisted to file any document values that are referencing an document in a different collection is first sanitized (just enough info to retrieve the document later from where it is stored).
 
@@ -7,16 +10,30 @@ When documents are read from a file the references need to be converted to docum
   (let* ((store (get-store* universe (getx document-ref :store)))
 	 (collection (get-collection* store (getx document-ref :collection)))
 	 (shard-mac (getx document-ref :shard-mac)))
-    
+   ;; (break "fuck")
     ;;Incase the collection exists but has not been loaded try and load it.
     (when collection
       (let ((shard (get-shard collection shard-mac)))
-	(cl-naive-store::load-shard collection shard nil)))
+	(cl-naive-store::load-shard  collection shard nil)
+	;;Another thread could have already started loading the docs
+	;;and and load-shard will just return if that is the case
+	;;but we need to know the docs are loaded successfully
+	;;so we wait while loading.
+	;;TODO: Need some timeout mechanism
+	(loop while (equalp (cl-naive-store::status shard) :loading))))
     
     (unless collection
       (add-collection store collection)
       (let ((shard (get-shard collection shard-mac)))
-	(cl-naive-store::load-shard collection shard nil)))
+	(cl-naive-store::load-shard collection shard nil)
+	;;Another thread could have already started loading the docs
+	;;and and load-shard will just return if that is the case
+	;;but we need to know the docs are loaded successfully
+	;;so we wait while loading.
+	;;TODO: Need some timeout mechanism	
+	(loop while (equalp (cl-naive-store::status shard) :loading))
+	))
+    
     collection))
 
 (defgeneric find-document-by-hash (collection hash &key shards &allow-other-keys)
@@ -74,12 +91,14 @@ When documents are read from a file the references need to be converted to docum
 
 (defmethod compose-special (collection shard sexp (type (eql :reference)))
   (declare (ignorable shard))
+  
   (let ((ref-document (and collection
 			 (find-document-by-hash 
 			  (load-document-reference-collection
 			   (universe (store collection)) sexp)
 			  (digx sexp :hash)))))           
     (unless ref-document
+      (break "shit ~A ~A" shard sexp)
       (write-log (location (universe (store collection)))
 		 :error (list "Could not resolve reference ~S~%" sexp)))
     ref-document))

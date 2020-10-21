@@ -57,7 +57,7 @@
     (unless (status shard)
       (load-shard collection shard nil))))
 
-(defparameter *task-pool* (make-instance 'cl-naive-task-pool:task-pool :thread-pool-size 8))
+
 
 (cl-naive-task-pool:start-task-pool *task-pool*)
 
@@ -85,6 +85,7 @@
 			(equalp (status shard) :loaded))
 ;;	      (break "?? ~A" shard)
 	      (load-shard collection shard filename))))))
+
     |#
 
     (dolist (filename files)
@@ -109,10 +110,12 @@
 						    :result-p t)
 		    tasks))))))
 
+
    ;; (break "~A" *task-pool*)
     (dolist (task tasks)
       
       (cl-naive-task-pool:task-result *task-pool* task))
+
 
    ;; (break "fuck")
     

@@ -101,6 +101,7 @@ In general you should not be calling add-document directly, you should use persi
 
 cl-naive-store does not have a update-document function, add-document does both and its behaviour can be complex depending on the key parameters supplied. Also the behaviour can differ for different types of collections. Check the appropriate collection documentation for more details."))
 
+
 ;;TODO: Deal with shards
 (defmethod add-document ((collection collection) document
 			    &key shard (handle-duplicates-p t) (replace-existing-p t) &allow-other-keys)
@@ -110,14 +111,15 @@ If a document with the same keys exists in the collection the supplied the exist
 
 If you set replace-existing-p to nil then an existing document wont be replaced by the supplied document. Basically nothing will be done."
   (let ((existing-document%)
-	(action-taken))
-
+	(action-taken)
+)
     (unless shard
       (setf shard (get-shard collection (document-shard-mac collection document))))
 
     
     (cond ((not handle-duplicates-p)
-	   (vector-push-extend document (documents shard))
+	   (bt:with-lock-held ((getx (lock shard) :docs))
+	     (vector-push-extend document (documents shard)))
 	   (setf action-taken :added-possible-duplicate))
 	  (t
 	   (if (keys collection)
@@ -125,14 +127,17 @@ If you set replace-existing-p to nil then an existing document wont be replaced 
 		   (existing-document collection shard document)
 		 (setf existing-document% existing-document)
 		 (if (and position replace-existing-p)
-		     (progn                           
-		       (setf (elt (documents shard) position) document)
+		     (progn
+		       (bt:with-lock-held ((getx (lock shard) :docs))
+			 (setf (elt (documents shard) position) document))
 		       (setf action-taken :replaced))
 		     (progn
-		       (vector-push-extend document (documents shard))
+		       (bt:with-lock-held ((getx (lock shard) :docs))
+			 (vector-push-extend document (documents shard)))
 		       (setf action-taken :added))))
 	       (progn
-		 (vector-push-extend document (documents shard))
+		 (bt:with-lock-held ((getx (lock shard) :docs))
+		   (vector-push-extend document (documents shard)))
 		 (setf action-taken :added)))))
 
     (values

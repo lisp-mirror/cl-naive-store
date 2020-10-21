@@ -19,7 +19,7 @@
 
 (defparameter *monster-size* 100000)
 
-(defparameter *use-shards* nil)
+(defparameter *use-shards* t)
 
 (defclass collection-indexed (indexed-collection-mixin collection)
   ())

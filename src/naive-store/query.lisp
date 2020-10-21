@@ -153,11 +153,12 @@ Does lazy loading."))
     (if query
 	(setf results (reduce #'(lambda (result document)		 
 				  (if (apply query (list document))
-				    (push document result)
+				      (push document result)
 				    result))
 			      sequence
 			      :initial-value '()))
-	(coerce sequence 'list))
+	(setf results (coerce sequence 'list)))
+    
      results))
 
 ;;:TODO: This should be target to move to cl-query or something

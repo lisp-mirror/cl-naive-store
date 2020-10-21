@@ -12,12 +12,14 @@
    (documents :initarg :documents
 	      :accessor documents
 	      :initform (make-array 1 :fill-pointer 0 :adjustable t :initial-element nil)
-	      :documentation "Documents belonging to shard.")
-   
+	      :documentation "Documents belonging to shard.")   
    (status :initarg :status
 	     :accessor status
 	     :initform nil
-	     :documentation "TODO"))
+	   :documentation "TODO")
+   (lock :initarg :lock
+	 :accessor lock
+	 :initform (list :docs (bt:make-lock) :hash-index (bt:make-lock) :values-index (bt:make-lock))))
   
   (:documentation "Sharding is when you break the physical file that backs the collection into smaller files based on data elements of a document. An instance of a shard class is used to load the documents belonging to the shard into memory."))
 
@@ -110,13 +112,13 @@ files are loaded. (see store notes for more about this.).")
    (shards-cache% :initarg :shards-cache%
 		  :accessor shards-cache%
 		  :initform
-		  #+(or sbcl ecl) (make-hash-table :test 'equalp :synchronized t)
+		  #+(or sbcl ecl) (make-hash-table :test 'equalp :synchronized nil)
 		  #+(not (or sbcl ecl)) (make-hash-table :test 'equalp )                  
 		  :documentation "This was introduced to speedup finding a shard. It is only for internal use!")
    (shards-macs-cache% :initarg :shards-macs-cache%
 		  :accessor shards-macs-cache%
 		  :initform
-		  #+(or sbcl ecl) (make-hash-table :test 'equalp :synchronized t)
+		  #+(or sbcl ecl) (make-hash-table :test 'equalp :synchronized nil)
 		  #+(not (or sbcl ecl)) (make-hash-table :test 'equalp )
 		  :documentation "This was introduced to speedup finding a shard. Calulating macs is expensive. It is only for internal use!")
    )
@@ -496,8 +498,9 @@ If you change the underlying container for (shards collection) or the container 
 	    (if shard-found
 		(push shard-found all-shards-p)
 		(push nil all-shards-p)))))
- 
-    (every (lambda (x) x) all-shards-p)))
+;;    (break "? ~A" (every (lambda (x) x) all-shards-p))
+    (if all-shards-p
+	(every (lambda (x) x) all-shards-p))))
 
 (defmethod data-loaded-p ((store store) &key &allow-other-keys)
   (let ((loaded-p t))

@@ -80,20 +80,41 @@ This is used to create shard filenames. "))
 						;;:bindings '((*with-open-file-lock* . nil))
 						))
 
+(defparameter *task-pool* (make-instance 'cl-naive-task-pool:task-pool :thread-pool-size 8))
+
 (defvar *lock* (bt:make-lock))
 
-(defgeneric gethash-safe (key hash &key lock)
+(defgeneric gethash-safe (key hash &key lock recursive-p)
   (:documentation "Puts lock around hash access get and set."))
 
-(defmethod gethash-safe (key hash &key (lock *lock*))
-  (bt:with-recursive-lock-held
-   (lock)	 
-   (gethash key hash)))
+(defmethod gethash-safe (key hash &key (lock *lock*) (recursive-p nil))
+  (if recursive-p
+      (progn
+	;;(format t "Getting recursive lock ~A ~A~%" lock (get-universal-time))
+	(bt:with-recursive-lock-held
+	    (lock)
+	 ;; (format t "Aquired recursive lock ~A ~A~%" lock (get-universal-time))
+	  (gethash key hash))
+	;;(format t "Released recursive lock ~A ~A~%" lock (get-universal-time))
+	)
+      (progn
+	;;(format t "Getting lock ~A ~A~%" lock (get-universal-time))
+	(bt:with-lock-held
+	    (lock)
+	  
+	  ;;(format t "Aquired recursive lock ~A ~A~%" lock (get-universal-time))
+	  (gethash key hash))
+	;;(format t "Released lock ~A ~A~%" lock (get-universal-time))
+	)))
 
-(defmethod (setf gethash-safe) (value key hash &key (lock *lock*))
-  (bt:with-recursive-lock-held
-   (lock)	 
-   (setf (gethash key hash) value)))
+(defmethod (setf gethash-safe) (value key hash &key (lock *lock*) (recursive-p nil))
+  (if recursive-p 
+      (bt:with-recursive-lock-held
+	  (lock)	 
+	(setf (gethash key hash) value))
+      (bt:with-lock-held
+	  (lock)	 
+	(setf (gethash key hash) value))))
 
 (defun call-do-sequence (thunk with-index-p sequence &key parallel-p )
   (if parallel-p     

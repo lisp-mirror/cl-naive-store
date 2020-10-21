@@ -74,7 +74,7 @@
 		      (bt:with-recursive-lock-held
 			  (*tasks-lock*)
 
-			(break "huh")
+			;;(break "huh")
 			
 			(setf (status task) :completed)
 			
@@ -95,7 +95,7 @@
 	   (sleep 0.001)
 	   (dolist (task (thread-pool task-pool))
 	     (when (equalp (status task) :completed)
-	       ;;	(break "fuck")
+	       	;;(break "fuck")
 	       (bt:with-lock-held (*task-pool-lock*)
 		 (setf (thread-pool task-pool)
 		       (remove task (thread-pool task-pool))))))))))

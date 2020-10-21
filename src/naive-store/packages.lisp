@@ -7,9 +7,10 @@
    ;;####common.lisp
    :frmt ;;Exposing naive-impl:frmt
    :empty-p ;;Exposing naive-impl:empty-p
-   :do-sequence ;;Exposing naivie-impl:do-sequence
+   :do-sequence ;;Exposing naive-impl:do-sequence
+   :*task-pool* ;;Exposing naive-impl:*task-pool*
    :gethash-safe
-   
+
    :persist
    :persist-document
    
@@ -34,6 +35,7 @@
    :match-shard
    :get-shard
    :document-shard-mac
+   :lock
    
    ;;:store
    ;;:universe

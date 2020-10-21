@@ -44,10 +44,10 @@
 				   :name (or shard-mac (name collection))
 				   :type "log"))
 				 :key-value-index
-				 #+(or sbcl ecl) (make-hash-table :test 'equalp :synchronized t)
+				 #+(or sbcl ecl) (make-hash-table :test 'equalp :synchronized nil)
 				 #+(not (or sbcl ecl)) (make-hash-table :test 'equalp )
 				 :hash-index
-				 #+(or sbcl ecl) (make-hash-table :test 'equalp :synchronized t)
+				 #+(or sbcl ecl) (make-hash-table :test 'equalp :synchronized nil)
 				 #+(not (or sbcl ecl)) (make-hash-table :test 'equalp )))
       
       (vector-push-extend shard (shards collection)))
@@ -77,19 +77,20 @@
   (declare (ignorable shards))
   (warn "Not implemented!"))
 
+;;TODO: Do parallel processing... this gets call an lot so trying to do parallel
+;;slows loading down to a crawl
 (defmethod index-lookup-values ((collection indexed-collection-mixin)
 				values &key shards &allow-other-keys)
+  (let ((final-docs))
+    (do-sequence (shard (or shards
+		       (shards collection)) :parallel-p nil)
+      (let* ((index (key-value-index shard))
+	     (docs (gethash-safe (cl-murmurhash:murmurhash values) index
+				 :lock (getx (lock shard) :values-index))))
+	(when docs
+	  (setf final-docs (append final-docs docs)))))
 
-  (let ((shard (lparallel:pfind (cl-murmurhash:murmurhash values)
-				(or shards
-				    (shards collection))
-				:test (lambda (key index)					
-					(gethash key index))
-				:key #'key-value-index)))
-    (when shard
-      (remove-duplicates
-	      (gethash (cl-murmurhash:murmurhash values)
-		       (key-value-index shard))))))
+    (remove-duplicates final-docs)))
 
 (defgeneric index-lookup-hash (collection hash &key shards &allow-other-keys)
   (:documentation "Looks up document in UUID hash index. If sharsd is not supplied all loaded shards will be searched."))
@@ -104,12 +105,16 @@
   (when hash
     (let ((shard (lparallel:pfind hash (or shards
 					   (shards collection))
-				:test (lambda (key index)
-					(gethash key index))
-				:key #'hash-index)))
+				:test (lambda (key shard)
+					(let ((index (hash-index shard)))
+					  (gethash-safe key index
+							:lock (getx (lock shard) :hash-index))))
+				;;:key #'hash-index
+				)))
       (when shard
-	(gethash (frmt "~A" hash)
-		 (hash-index shard)))
+	(gethash-safe (frmt "~A" hash)
+			(hash-index shard)
+			:lock (getx (lock shard) :hash-index)))
     )
     #|
     (do-sequence (shard (or shards                            
@@ -135,7 +140,9 @@ The second is a key value hash index to be used when looking for duplicate docum
   (let* ((index-values (indexed-impl:index-values collection document))
 	 (key-values (or key-values (key-values collection document))))
 
-    (setf (gethash (hash document) (hash-index shard) ) document)
+    (setf (gethash-safe (hash document) (hash-index shard)
+			  :lock (getx (lock shard) :hash-index))
+	    document)
     
     ;;TODO: Check if this is still true???
     ;;Used to do document value comparisons to find index-document
@@ -227,7 +234,12 @@ Indexes will be updated by default, if you want to stop index updates set update
 	     (setf (hash document) (uuid:make-v4-uuid)))
 	   (setf action-taken :added)
 	   (add-index collection shard document :key-values key-values)
-	   (vector-push-extend document (documents shard))))
+	   ;;(format t "Aquiring lock docs ~A ~A ~%" (getx (lock shard) :docs) (get-universal-time))
+	   (bt:with-lock-held ((getx (lock shard) :docs))
+	     ;;(format t "Aquired lock docs ~A ~A ~%" (getx (lock shard) :docs) (get-universal-time))
+	     (vector-push-extend document (documents shard)))
+	   ;;(format t "Released lock docs ~A ~A ~%" (getx (lock shard) :docs) (get-universal-time))
+	   ))
     
     ;;Add document to the collection
     (values
