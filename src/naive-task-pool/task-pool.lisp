@@ -54,35 +54,38 @@
 	   (when
 	       (< (length (thread-pool task-pool))
 		  (thread-pool-size task-pool))
+
 	     
 	     (dolist (task (tasks task-pool))
 	       
 	       (when  (not (status task))
 
 		 
-		 
-		 (bt:with-lock-held (*task-pool-lock*)
-		   (push task (thread-pool task-pool)))
 
-		 (bt:make-thread
-		  (lambda ()
-		    (bt:with-recursive-lock-held (*tasks-lock*)
-		      (setf (status task) :started))
-		    
-		    
-		    (let ((result (list (name task) (funcall (thunk task)))))
-		      (bt:with-recursive-lock-held
-			  (*tasks-lock*)
+		 (when (< (length (thread-pool task-pool))
+			  (thread-pool-size task-pool))
+		   (bt:with-lock-held (*task-pool-lock*)
+		     (push task (thread-pool task-pool)))
 
-			;;(break "huh")
-			
-			(setf (status task) :completed)
-			
-			(if (equalp (task-type task) :result)
-			    (progn
-			      (setf (result task) result))	      
-			    (setf (tasks task-pool)  (remove task (tasks task-pool)))))))
-		  :name (format nil "~A" (name task))))
+		   (bt:make-thread
+		    (lambda ()
+		      (bt:with-recursive-lock-held (*tasks-lock*)
+			(setf (status task) :started))
+		      
+		      ;;(format nil "~A Task ~A started~%" (bt:current-thread) task)
+		      (let ((result (list (name task) (funcall (thunk task)))))
+			(bt:with-recursive-lock-held
+			    (*tasks-lock*)
+
+			  ;;(break "huh")
+			  
+			  (setf (status task) :completed)
+			  ;;(format nil "~A Task ~A completed~%" (bt:current-thread) task)
+			  (if (equalp (task-type task) :result)
+			      (progn
+				(setf (result task) result))	      
+			      (setf (tasks task-pool)  (remove task (tasks task-pool)))))))
+		    :name (format nil "~A" (name task)))))
 	       return))))))
 
 
@@ -126,10 +129,13 @@
 			      :status nil)))
 
     (bt:with-lock-held (*tasks-lock*)
-      (push task (tasks task-pool)))
+      (when (or (not name)
+		(not (find name (tasks task-pool) :key 'name :test 'equalp )))
+	(push task (tasks task-pool)))
+      (when result-p
+	    task))
     
-    (when result-p
-	    task)))
+    ))
 
 (defun get-task-result (task-pool task tries wait)
   (loop
@@ -142,11 +148,12 @@
 
 (defun task-result (task-pool task &optional (tries 100) (wait 0.001))
   "This function checks for a task result if the task is not completed it will block execution unitl such time as the task is complete or tries have been exhausted."
-  (if (stringp task)
-      (progn	
-	(dolist (task-x (tasks task-pool))
-	  (when (equal task
-		       task-x)            
-	    (return-from task-result (get-task-result task-pool task-x tries wait))))
-	(error "Task not found!"))
-	(get-task-result task-pool task tries wait)))
+  (when task
+    (if (stringp task)
+	(progn	
+	  (dolist (task-x (tasks task-pool))
+	    (when (equal task
+			 task-x)            
+	      (return-from task-result (get-task-result task-pool task-x tries wait))))
+	  (error "Task not found!"))
+	(get-task-result task-pool task tries wait))))

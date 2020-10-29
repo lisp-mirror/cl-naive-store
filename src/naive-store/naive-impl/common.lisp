@@ -90,22 +90,13 @@ This is used to create shard filenames. "))
 (defmethod gethash-safe (key hash &key (lock *lock*) (recursive-p nil))
   (if recursive-p
       (progn
-	;;(format t "Getting recursive lock ~A ~A~%" lock (get-universal-time))
 	(bt:with-recursive-lock-held
 	    (lock)
-	 ;; (format t "Aquired recursive lock ~A ~A~%" lock (get-universal-time))
-	  (gethash key hash))
-	;;(format t "Released recursive lock ~A ~A~%" lock (get-universal-time))
-	)
+	  (gethash key hash)))
       (progn
-	;;(format t "Getting lock ~A ~A~%" lock (get-universal-time))
 	(bt:with-lock-held
 	    (lock)
-	  
-	  ;;(format t "Aquired recursive lock ~A ~A~%" lock (get-universal-time))
-	  (gethash key hash))
-	;;(format t "Released lock ~A ~A~%" lock (get-universal-time))
-	)))
+	  (gethash key hash)))))
 
 (defmethod (setf gethash-safe) (value key hash &key (lock *lock*) (recursive-p nil))
   (if recursive-p 

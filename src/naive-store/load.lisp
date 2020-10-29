@@ -1,11 +1,28 @@
 (in-package :cl-naive-store)
 
 (defun find-collection-files (collection)
-  (directory
-   (cl-fad:merge-pathnames-as-file (pathname (ensure-location collection))
+  
+  (let ((path (cl-fad:merge-pathnames-as-file (pathname (ensure-location collection))
 				   (make-pathname :directory '(:relative :wild-inferiors)
 						  :name :wild
-						  :type "log"))))
+						  :type "log")))
+	(files (directory
+		(cl-fad:merge-pathnames-as-file (pathname (ensure-location collection))
+						(make-pathname :directory '(:relative :wild-inferiors)
+							       :name :wild
+							       :type "log")))))
+
+    (unless files
+      (naive-impl::debug-log (frmt "no files on path" ) :file-p t :args path)
+      
+      
+      )
+    files
+    
+    )
+
+  
+  )
 
 ;;TODO: only pass shard and not filename ????
 (defgeneric load-shard (collection shard filename &key &allow-other-keys)
@@ -38,17 +55,17 @@
     (unless (probe-file (format nil "~a.lock" (location shard)))
 
       (setf (status shard) :loading)
-      
+
+      (naive-impl::debug-log (frmt "load-shard begin " ) :file-p t :args (list shard filename))
       (with-open-file (in (or filename (location shard)) :if-does-not-exist :create)
 	(when in
 	  (loop for document-form = (read in nil)
 		while document-form
 		do
-		   (progn               
-		     (naive-impl::compose-document
-		      collection shard document-form)))
+		   (naive-impl::compose-document
+		    collection shard document-form))
 	  (close in)))
-      
+      (naive-impl::debug-log (frmt "load-shard end " ) :file-p t :args (list shard filename))
       (setf (status shard) :loaded))))
 
 
@@ -65,8 +82,12 @@
   
   (let ((files (find-collection-files collection))
 	(tasks))
-    #|
-    (do-sequence (filename files :parallel-p t)
+
+    ;;(break "files ~A~%~A" collection files)
+
+    
+    #|  
+    (do-sequence (filename files :parallel-p nil)
       (multiple-value-bind (mac file)
 	  (match-shard filename shard-macs)
 
@@ -86,38 +107,43 @@
 ;;	      (break "?? ~A" shard)
 	      (load-shard collection shard filename))))))
 
-    |#
+ |#
+    (naive-impl::debug-log (frmt "load-data" ) :file-p t :args files)
+    
+    (when files
+      (dolist (filename files)
+	(multiple-value-bind (mac file)
+	    (match-shard filename shard-macs)
 
-    (dolist (filename files)
-      (multiple-value-bind (mac file)
-	  (match-shard filename shard-macs)
-
-	(unless mac
-	  (setf mac (pathname-name filename))
-	  (setf file filename))
-	
-	(when (or (not shard-macs)
-		  file)
+	  (unless mac
+	    (setf mac (pathname-name filename))
+	    (setf file filename))
 	  
-	  (let ((shard (get-shard collection mac)))
-	    (unless (or (> (length (documents shard)) 0)
-			(equalp (status shard) :loading)
-			(equalp (status shard) :loaded))
-                      
-	      (push (cl-naive-task-pool:submit-task *task-pool*
-						    (lambda ()
-						      (load-shard collection shard filename))
-						    :result-p t)
-		    tasks))))))
+	  (when (or (not shard-macs)
+		    file)
+	    
+	    (let ((shard (get-shard collection mac)))
+	      ;;(break "pffft ~A" shard)
+	      (unless (or (> (length (documents shard)) 0)
+			  (equalp (status shard) :loading)
+			  (equalp (status shard) :loaded))
+		(naive-impl::debug-log (frmt "submitting load-shard" ) :file-p t :args (list shard filename))        
+		(push (cl-naive-task-pool:submit-task *task-pool*
+						      (lambda ()
+							(load-shard collection shard filename))
+						      :name mac
+						      :result-p t)
+		      tasks))))))
 
 
-   ;; (break "~A" *task-pool*)
-    (dolist (task tasks)
+      (naive-impl::debug-log (frmt "load-data checking tasks" ) :file-p t :args tasks)
       
-      (cl-naive-task-pool:task-result *task-pool* task))
+      (dolist (task tasks)
+	;;(break "~A" *task-pool*)
+	(cl-naive-task-pool:task-result *task-pool* task)))
 
-
-   ;; (break "fuck")
+ 
+    ;;(break "fuck")
     
     ))
 

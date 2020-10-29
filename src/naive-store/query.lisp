@@ -91,8 +91,12 @@ Does lazy loading."))
 (defmethod query-data :before ((collection collection) &key shards &allow-other-keys)
   "Lazy loading data."  
   (if shards
-      (cl-naive-store::load-shards collection shards)
-      (load-data collection)))
+      (progn
+	(naive-impl::debug-log "query-data -shards" :file-p t)
+	(cl-naive-store::load-shards collection shards))
+      (progn
+	(naive-impl::debug-log "query-data -collection" :file-p t)
+	(load-data collection))))
 
 
 

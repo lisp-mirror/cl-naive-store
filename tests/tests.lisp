@@ -246,11 +246,17 @@ which contain the actual data. Each collection will have its own directory and f
 		(add-document collection document)))))))
 
 (defun query-simple-data ()  
-  (let ((collection (get-collection (get-store *universe* "simple-store")
-				    "simple-collection")))
-;;    (break "~A" collection)
-    (query-data collection :query (lambda (document)				    
+  (let* ((collection (get-collection (get-store *universe* "simple-store")
+				    "simple-collection"))
+	(result (query-data collection :query (lambda (document)				    
 				    (<= (getx document :emp-no) 50)))))
+    (unless result
+     ;; (break "query-simple-data before ~A" collection)
+      (query-data collection :query (lambda (document)				    
+				      (<= (getx document :emp-no) 50)))
+      ;;(break "query-simple-data after ~A" collection))
+    
+    ))
 
 (defun query-ref-doc ()  
   (let* ((collection (get-collection (get-store *universe* "simple-store")

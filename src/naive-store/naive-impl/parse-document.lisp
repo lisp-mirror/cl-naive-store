@@ -9,7 +9,8 @@
 When documents are read from a file the references need to be converted to documents but for that to happen the collection containing the referenced documents need to be loaded first."
   (let* ((store (get-store* universe (getx document-ref :store)))
 	 (collection (get-collection* store (getx document-ref :collection)))
-	 (shard-mac (getx document-ref :shard-mac)))
+	 (shard-mac (getx document-ref :shard-mac))
+	 (timeout 0))
    ;; (break "fuck")
     ;;Incase the collection exists but has not been loaded try and load it.
     (when collection
@@ -20,7 +21,13 @@ When documents are read from a file the references need to be converted to docum
 	;;but we need to know the docs are loaded successfully
 	;;so we wait while loading.
 	;;TODO: Need some timeout mechanism
-	(loop while (equalp (cl-naive-store::status shard) :loading))))
+	(loop while (and (equalp (cl-naive-store::status shard) :loading)
+			 (< timeout 1000000)
+			 )
+	      :do (progn (incf timeout)
+			 (when (> timeout 900000)
+			   ;; (break "poes ~A" shard)
+			   )))))
     
     (unless collection
       (add-collection store collection)
@@ -31,7 +38,13 @@ When documents are read from a file the references need to be converted to docum
 	;;but we need to know the docs are loaded successfully
 	;;so we wait while loading.
 	;;TODO: Need some timeout mechanism	
-	(loop while (equalp (cl-naive-store::status shard) :loading))
+	(loop while (and (equalp (cl-naive-store::status shard) :loading)
+			 (< timeout 1000000)
+			 )
+	      :do (progn (incf timeout)
+			 (when (> timeout 900000)
+			   ;; (break "poes ~A" shard)
+			   )))
 	))
     
     collection))
@@ -43,11 +56,13 @@ When documents are read from a file the references need to be converted to docum
 (defmethod find-document-by-hash (collection hash &key shards &allow-other-keys)
 
   (do-sequence (shard (if shards shards
-			  (shards collection)) :parallel-p t)    
+			  (shards collection)) :parallel-p nil)
+    
     (do-sequence (document (documents shard))    
       (when (string-equal
 	     (digx document :hash)
 	     hash)
+	
 	(return-from find-document-by-hash document)))))
 
 ;;TODO: Implment hash-table.
@@ -75,6 +90,7 @@ When documents are read from a file the references need to be converted to docum
   (:documentation "Does special processing to compose a specific type of document or element."))
 
 (defmethod compose-special (collection shard sexp (type (eql :document)))
+  (naive-impl::debug-log (format nil "core:Compose-special :document ~A~%" (name collection)))
   (if (getx sexp :deleted-p)
 	(remove-document collection sexp :shard shard)
 	;;TODO: Where to get handle-duplicates-p ???
@@ -91,6 +107,8 @@ When documents are read from a file the references need to be converted to docum
 
 (defmethod compose-special (collection shard sexp (type (eql :reference)))
   (declare (ignorable shard))
+
+  (naive-impl::debug-log (format nil "core:Compose-special :reference ~A~%" (name collection)))
   
   (let ((ref-document (and collection
 			 (find-document-by-hash 
@@ -98,9 +116,12 @@ When documents are read from a file the references need to be converted to docum
 			   (universe (store collection)) sexp)
 			  (digx sexp :hash)))))           
     (unless ref-document
-      (break "shit ~A ~A" shard sexp)
+   ;;   (break "shit ~A ~A" shard sexp)
       (write-log (location (universe (store collection)))
 		 :error (list "Could not resolve reference ~S~%" sexp)))
+
+    (naive-impl::debug-log (format nil "END core:Compose-special :reference ~A~%" (name collection)))
+    
     ref-document))
 
 ;;Made this a seperate method so simple units tests can test basic parsing.
@@ -126,7 +147,9 @@ When documents are read from a file the references need to be converted to docum
 		(cons (car sexp) doc)))))
 
 (defmethod compose-document (collection shard document-form &key &allow-other-keys)
+  (naive-impl::debug-log (format nil "core:Compose-document ~A~%" (name collection)))
   (compose-special collection
 		   shard
 		   (compose-parse collection shard document-form nil)
-		   :document))
+		   :document)
+  (naive-impl::debug-log (format nil  "END core:Compose-document ~A~%" (name collection))))

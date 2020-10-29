@@ -29,29 +29,34 @@
 	    :documentation "List of index combinations. Also indexes members partially if *partial-indexing* is t, for example '((:emp-no :surname gender)) is indexed as (:emp-no :surname :gender), (:emp-no :surname), :emp-no, :surname and :gender"))
   (:documentation "Collection extension to add very basic indexes."))
 
-(defmethod get-shard ((collection indexed-collection-mixin) shard-mac &key &allow-other-keys)
-  (let ((shard (lparallel:pfind (or shard-mac (name collection)) (shards collection)
-				:test 'equal :key 'mac)))
+(defparameter *shards-lock* (bt:make-lock "Shards Lock"))
 
-    (unless shard
-      
-      (setf shard (make-instance 'indexed-shard
-				 :mac (or shard-mac (name collection))
-				 :location
-				 (cl-fad:merge-pathnames-as-file
-				  (pathname (ensure-location collection))
-				  (make-pathname ;;:directory (list :relative (name collection))
-				   :name (or shard-mac (name collection))
-				   :type "log"))
-				 :key-value-index
-				 #+(or sbcl ecl) (make-hash-table :test 'equalp :synchronized nil)
-				 #+(not (or sbcl ecl)) (make-hash-table :test 'equalp )
-				 :hash-index
-				 #+(or sbcl ecl) (make-hash-table :test 'equalp :synchronized nil)
-				 #+(not (or sbcl ecl)) (make-hash-table :test 'equalp )))
-      
-      (vector-push-extend shard (shards collection)))
-    shard))
+(defmethod get-shard ((collection indexed-collection-mixin) shard-mac &key &allow-other-keys)
+  (bt:with-lock-held (*shards-lock*)
+    (let ((shard (lparallel:pfind (or shard-mac (name collection)) (shards collection)
+				  :test 'equal :key 'mac)))
+
+      (unless shard
+	(naive-impl::debug-log (format nil "New shard ~A~%" (or shard-mac (name collection))))
+        
+;;	(break "get-shard ~A" collection)
+	(setf shard (make-instance 'indexed-shard
+				   :mac (or shard-mac (name collection))
+				   :location
+				   (cl-fad:merge-pathnames-as-file
+				    (pathname (ensure-location collection))
+				    (make-pathname ;;:directory (list :relative (name collection))
+				     :name (or shard-mac (name collection))
+				     :type "log"))
+				   :key-value-index
+				   #+(or sbcl ecl) (make-hash-table :test 'equalp :synchronized nil)
+				   #+(not (or sbcl ecl)) (make-hash-table :test 'equalp )
+				   :hash-index
+				   #+(or sbcl ecl) (make-hash-table :test 'equalp :synchronized nil)
+				   #+(not (or sbcl ecl)) (make-hash-table :test 'equalp )))
+	
+	(vector-push-extend shard (shards collection)))
+      shard)))
 
 (defgeneric hash (document)
   (:documentation "Returns the hash identifier for a data document. Data documents need a hash identifier to work with naive-store-indexed. naive-store-indexed will edit the document to add a hash identifier when adding documents to a collection. naive-store-indexed uses a UUID in its default implementation."))
@@ -103,18 +108,22 @@
 ;;TODO: Deal with shards. Loop through shard indexes.
 (defmethod index-lookup-hash ((collection indexed-collection-mixin) hash &key shards &allow-other-keys)
   (when hash
+
+    (naive-impl::debug-log (format nil "-? index:index-lookup-hash ~A~%" (name collection)))
     (let ((shard (lparallel:pfind hash (or shards
-					   (shards collection))
+					   (bt:with-lock-held (*shards-lock*)
+					       (shards collection)))
 				:test (lambda (key shard)
 					(let ((index (hash-index shard)))
 					  (gethash-safe key index
 							:lock (getx (lock shard) :hash-index))))
 				;;:key #'hash-index
 				)))
+      (naive-impl::debug-log (format nil "-?? index:index-lookup-hash ~A~%" (name collection)))
       (when shard
 	(gethash-safe (frmt "~A" hash)
-			(hash-index shard)
-			:lock (getx (lock shard) :hash-index)))
+		      (hash-index shard)
+		      :lock (getx (lock shard) :hash-index)))
     )
     #|
     (do-sequence (shard (or shards                            
@@ -234,12 +243,9 @@ Indexes will be updated by default, if you want to stop index updates set update
 	     (setf (hash document) (uuid:make-v4-uuid)))
 	   (setf action-taken :added)
 	   (add-index collection shard document :key-values key-values)
-	   ;;(format t "Aquiring lock docs ~A ~A ~%" (getx (lock shard) :docs) (get-universal-time))
+           
 	   (bt:with-lock-held ((getx (lock shard) :docs))
-	     ;;(format t "Aquired lock docs ~A ~A ~%" (getx (lock shard) :docs) (get-universal-time))
-	     (vector-push-extend document (documents shard)))
-	   ;;(format t "Released lock docs ~A ~A ~%" (getx (lock shard) :docs) (get-universal-time))
-	   ))
+	     (vector-push-extend document (documents shard)))))
     
     ;;Add document to the collection
     (values
