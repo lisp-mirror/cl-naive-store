@@ -145,11 +145,19 @@ files are loaded. (see store notes for more about this.).")
 (defvar *shards-cache-lock* (bt:make-lock))
 
 (defun get-shard-cache-safe% (collection shard-mac)
-  (gethash-safe shard-mac (shards-cache% (universe (store collection)))
+  (gethash-safe (frmt "~A-~A-~A"
+		      (name (store collection))
+		      (name collection)
+		      (or shard-mac (name collection)))
+		(shards-cache% (universe (store collection)))
 			      :lock *shards-cache-lock*))
 
 (defun set-shard-cache-safe% (collection shard-mac shard)
-  (setf (gethash-safe shard-mac (shards-cache% (universe (store collection)))
+  (setf (gethash-safe (frmt "~A-~A-~A"
+			    (name (store collection))
+			    (name collection)
+			    (or shard-mac (name collection)))
+		      (shards-cache% (universe (store collection)))
 		      :lock *shards-cache-lock*)
 	shard))
 

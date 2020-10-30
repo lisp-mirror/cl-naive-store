@@ -31,6 +31,7 @@
 
 (defparameter *shards-lock* (bt:make-lock "Shards Lock"))
 
+
 (defmethod get-shard ((collection indexed-collection-mixin) shard-mac &key &allow-other-keys)
   (bt:with-lock-held (*shards-lock*)
     (let ((shard (lparallel:pfind (or shard-mac (name collection)) (shards collection)
@@ -107,6 +108,12 @@
 
 ;;TODO: Deal with shards. Loop through shard indexes.
 (defmethod index-lookup-hash ((collection indexed-collection-mixin) hash &key shards &allow-other-keys)
+
+  ;;(break "fuck nut hash ~A" hash)
+
+  ;;TODO: Remove this load once sharding load is fixed
+  (load-data collection :parallel-p nil)
+  
   (when hash
 
     (naive-impl::debug-log (format nil "-? index:index-lookup-hash ~A~%" (name collection)))
@@ -120,10 +127,19 @@
 				;;:key #'hash-index
 				)))
       (naive-impl::debug-log (format nil "-?? index:index-lookup-hash ~A~%" (name collection)))
+
+      (unless shard
+;;	(break "fuck ??? ~A ~A" collection shards)
+	)
+      
       (when shard
-	(gethash-safe (frmt "~A" hash)
-		      (hash-index shard)
-		      :lock (getx (lock shard) :hash-index)))
+	(let ((doc
+		(gethash-safe (frmt "~A" hash)
+			      (hash-index shard)
+			      :lock (getx (lock shard) :hash-index))))
+;;	  (if doc    (break "pussy ~A" doc)	      (break "mtf ~A" (hash-index shard)))
+
+	  doc))
     )
     #|
     (do-sequence (shard (or shards                            

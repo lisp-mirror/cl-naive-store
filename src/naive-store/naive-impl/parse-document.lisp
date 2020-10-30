@@ -11,41 +11,50 @@ When documents are read from a file the references need to be converted to docum
 	 (collection (get-collection* store (getx document-ref :collection)))
 	 (shard-mac (getx document-ref :shard-mac))
 	 (timeout 0))
-   ;; (break "fuck")
-    ;;Incase the collection exists but has not been loaded try and load it.
-    (when collection
-      (let ((shard (get-shard collection shard-mac)))
-	(cl-naive-store::load-shard  collection shard nil)
-	;;Another thread could have already started loading the docs
-	;;and and load-shard will just return if that is the case
-	;;but we need to know the docs are loaded successfully
-	;;so we wait while loading.
-	;;TODO: Need some timeout mechanism
-	(loop while (and (equalp (cl-naive-store::status shard) :loading)
-			 (< timeout 1000000)
-			 )
-	      :do (progn (incf timeout)
-			 (when (> timeout 900000)
-			   ;; (break "poes ~A" shard)
-			   )))))
-    
-    (unless collection
-      (add-collection store collection)
-      (let ((shard (get-shard collection shard-mac)))
-	(cl-naive-store::load-shard collection shard nil)
-	;;Another thread could have already started loading the docs
-	;;and and load-shard will just return if that is the case
-	;;but we need to know the docs are loaded successfully
-	;;so we wait while loading.
-	;;TODO: Need some timeout mechanism	
-	(loop while (and (equalp (cl-naive-store::status shard) :loading)
-			 (< timeout 1000000)
-			 )
-	      :do (progn (incf timeout)
-			 (when (> timeout 900000)
-			   ;; (break "poes ~A" shard)
-			   )))
-	))
+    ;; (break "fuck")
+
+
+    (unless shard-mac
+      (unless collection
+	(setf collection (add-collection store (getx document-ref :collection))))
+      (when collection
+	(load-data collection :parallel-p nil)))
+
+    (when shard-mac
+      ;;Incase the collection exists but has not been loaded try and load it.
+      (when collection
+	(let ((shard (get-shard collection shard-mac)))
+	  (cl-naive-store::load-shard  collection shard nil)
+	  ;;Another thread could have already started loading the docs
+	  ;;and and load-shard will just return if that is the case
+	  ;;but we need to know the docs are loaded successfully
+	  ;;so we wait while loading.
+	  ;;TODO: Need some timeout mechanism
+	  (loop while (and (equalp (cl-naive-store::status shard) :loading)
+			   (< timeout 1000000)
+			   )
+		:do (progn (incf timeout)
+			   (when (> timeout 900000)
+			     ;; (break "poes ~A" shard)
+			     )))))
+      
+      (unless collection
+	(add-collection store (getx document-ref :collection))
+	(let ((shard (get-shard collection shard-mac)))
+	  (cl-naive-store::load-shard collection shard nil)
+	  ;;Another thread could have already started loading the docs
+	  ;;and and load-shard will just return if that is the case
+	  ;;but we need to know the docs are loaded successfully
+	  ;;so we wait while loading.
+	  ;;TODO: Need some timeout mechanism	
+	  (loop while (and (equalp (cl-naive-store::status shard) :loading)
+			   (< timeout 1000000)
+			   )
+		:do (progn (incf timeout)
+			   (when (> timeout 900000)
+			     ;; (break "poes ~A" shard)
+			     )))
+	  )))
     
     collection))
 
@@ -110,13 +119,22 @@ When documents are read from a file the references need to be converted to docum
 
   (naive-impl::debug-log (format nil "core:Compose-special :reference ~A~%" (name collection)))
   
-  (let ((ref-document (and collection
+  (let* ((ref-collection (load-document-reference-collection
+			   (universe (store collection)) sexp))
+	(ref-document (and collection
 			 (find-document-by-hash 
-			  (load-document-reference-collection
-			   (universe (store collection)) sexp)
+			  ref-collection
 			  (digx sexp :hash)))))           
     (unless ref-document
-   ;;   (break "shit ~A ~A" shard sexp)
+
+      ;;(break "grrr")
+      
+      #|
+      (break "shit ~A~%~A~%~A" ref-collection (digx sexp :hash)
+	     (find-document-by-hash 
+			  ref-collection
+			  (digx sexp :hash)))
+      |#
       (write-log (location (universe (store collection)))
 		 :error (list "Could not resolve reference ~S~%" sexp)))
 
@@ -148,8 +166,12 @@ When documents are read from a file the references need to be converted to docum
 
 (defmethod compose-document (collection shard document-form &key &allow-other-keys)
   (naive-impl::debug-log (format nil "core:Compose-document ~A~%" (name collection)))
-  (compose-special collection
-		   shard
-		   (compose-parse collection shard document-form nil)
-		   :document)
-  (naive-impl::debug-log (format nil  "END core:Compose-document ~A~%" (name collection))))
+  (let ((doc
+	  (compose-special collection
+			   shard
+			   (compose-parse collection shard document-form nil)
+			   :document)))
+    (naive-impl::debug-log (format nil  "END core:Compose-document ~A~%" (name collection)))
+    doc)
+
+  )

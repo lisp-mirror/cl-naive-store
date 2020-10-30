@@ -68,7 +68,7 @@
 		  message
 		  args)))))
 
-(defparameter *break-on-error-log* nil
+(defparameter *break-on-error-log* t
   "Causes a break when logging errors of type :error and :warning.")
 
 ;;TODO: Write unit test
