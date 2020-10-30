@@ -53,14 +53,16 @@
 	 (cl-fad:merge-pathnames-as-file
 	  (or path (get-temp))
 	  (make-pathname :name "naive-store-debug"
-			 :type "log"))      
+			 :type "log"))
 	 (format nil
 		 "~A:~% Thread: ~A:~% Message: ~A~%Args: ~S~%Caller: ~A~%"
 		 (format-universal-date-time (get-universal-time))
 		 (bt:current-thread)
 		 message
 		 args
-		 (second (sb-debug:list-backtrace))))
+		 (second #+sbcl (sb-debug:list-backtrace)
+                 #+ccl (ccl::backtrace-as-list)
+                 #-(or sbcl ccl) nil)))
 	(bt:with-lock-held (*std-lock*)
 	  (format t
 		  "~A:~% ~A~%~S~%"
@@ -73,7 +75,7 @@
 
 ;;TODO: Write unit test
 (defun write-log (location type message)
-  "Writes errors to location. 
+  "Writes errors to location.
 
 Different Types are written to different files,
 :error => error.err
@@ -87,25 +89,25 @@ Not writing stuf to .log files because that is what persist uses!!!.
 "
   (when *break-on-error-log*
     (when (or (equal type :error)
-	       (equal type :warning))     
+	       (equal type :warning))
       (break "~A: ~A" type message)))
-  
+
   (write-to-file
        (cl-fad:merge-pathnames-as-file
 	(pathname location)
-	
-	(cond ((equal type :error)	       
+
+	(cond ((equal type :error)
 	       (make-pathname :name "error"
 			      :type "err"))
-	      
-	      ((equal type :warning)	       
+
+	      ((equal type :warning)
 	       (make-pathname :name "warning"
 			      :type "wrn"))
-	      ((equal type :debug)       
+	      ((equal type :debug)
 	       (make-pathname :name "debug"
 			      :type "dbl"))
 	      (t
 	       (make-pathname :name "log"
-			      :type "lg"))))      
+			      :type "lg"))))
        message))
 
