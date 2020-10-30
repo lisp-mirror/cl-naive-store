@@ -55,7 +55,7 @@
 				   :hash-index
 				   #+(or sbcl ecl) (make-hash-table :test 'equalp :synchronized nil)
 				   #+(not (or sbcl ecl)) (make-hash-table :test 'equalp )))
-	
+	;;(break "get-shard ~A" shard)
 	(vector-push-extend shard (shards collection)))
       shard)))
 
@@ -201,7 +201,12 @@ The second is a key value hash index to be used when looking for duplicate docum
     (setf shard (get-shard collection (document-shard-mac collection document))))
   
   (remove-index collection shard document)
-  (setf (documents shard) (remove document (documents shard))))
+ ;; (break "remove-doc ~A" shard)
+  (let ((documents (delete document (documents shard))))
+  ;; (break "remove-doc x ~a ~A" documents shard)
+    (setf (documents shard) documents)
+					; (break "remove-doc xx ~a" shard)
+    ))
 
 ;;NOTE: Doing this because murmurhash is creating duplicates when you go beyond 10 million index values
 (defun try-better-value-match (collection list key-values)
@@ -261,7 +266,10 @@ Indexes will be updated by default, if you want to stop index updates set update
 	   (add-index collection shard document :key-values key-values)
            
 	   (bt:with-lock-held ((getx (lock shard) :docs))
-	     (vector-push-extend document (documents shard)))))
+	    ;; (break "add-document ~A" shard)
+	     (vector-push-extend document (documents shard))
+	   ;;  (break "add-document x ~A" shard)
+	     )))
     
     ;;Add document to the collection
     (values

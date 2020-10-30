@@ -18,6 +18,7 @@ When documents are read from a file the references need to be converted to docum
       (unless collection
 	(setf collection (add-collection store (getx document-ref :collection))))
       (when collection
+;;	(break "ref load ~A" collection)
 	(load-data collection :parallel-p nil)))
 
     (when shard-mac
