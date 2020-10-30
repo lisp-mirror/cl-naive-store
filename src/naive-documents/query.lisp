@@ -152,7 +152,11 @@ store and universe using getx."
 (defun find-equalp-document (document document-list)
   (let ((exists nil))
     (dolist (list-document document-list)
-      (when (equalp (document-values list-document) (document-values document))	
+      (when (equalp (or (document-changes list-document)
+			(document-values list-document))
+		    (or (document-changes document)
+			(document-values document)))
+        
 	(setf exists document-list)))
     exists))
 

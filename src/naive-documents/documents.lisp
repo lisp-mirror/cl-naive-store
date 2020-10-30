@@ -61,6 +61,7 @@
   (let ((*persisting-p* nil))
     (declare (special *persisting-p*))
 
+   ;; (break "~A" document)
     (unless (document-p document)
       (setf document (make-document 
 		      :store (store collection)
