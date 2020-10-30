@@ -8,7 +8,7 @@ cl-naive-store is a simple lazy loading in memory, persistable document store.
 
 **Documentation** can be found on the [wiki](https://gitlab.com/Harag/cl-naive-store/wikis/home)
 
-**Examples** are also on the [wiki](https://gitlab.com/Harag/cl-naive-store/wikis/examples) 
+**Examples** are also on the [wiki](https://gitlab.com/Harag/cl-naive-store/wikis/examples)
 or have a look at the /tests/tests.lisp it has a lot of comments.
 
 **Dependencies**
