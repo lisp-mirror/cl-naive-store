@@ -31,7 +31,7 @@
 (defparameter *break-on-debug-log* nil
   "Causes a break when logging errors of type :error and :warning.")
 
-(defparameter *debug-log-p* t
+(defparameter *debug-log-p* nil
   "Switches debug logging or off for debug-log")
 
 
