@@ -113,8 +113,8 @@
 		      |#
 		      )  
 		    (progn
-		      (break "?? ~A" shard)
-			(load-shard collection shard filename)))))))))
+		      ;;(break "?? ~A" shard)
+		      (load-shard collection shard filename)))))))))
     
     (when parallel-p
       (when files
