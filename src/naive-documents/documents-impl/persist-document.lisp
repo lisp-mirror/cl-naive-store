@@ -103,7 +103,9 @@
 	 (nreverse doc))                   
         ((consp (car element))
 	 (naive-impl:persist-parse
-	  collection (cdr element)
+	  collection
+	  shard
+	  (cdr element)
 	  (cons (naive-impl:persist-parse collection
 					  shard
 					  (car element)

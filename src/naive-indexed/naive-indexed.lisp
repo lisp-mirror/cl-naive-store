@@ -31,6 +31,7 @@
 
 (defparameter *shards-lock* (bt:make-lock "Shards Lock"))
 
+
 (defmethod get-shard ((collection indexed-collection-mixin) shard-mac &key &allow-other-keys)
   (bt:with-lock-held (*shards-lock*)
     (let ((shard (lparallel:pfind (or shard-mac (name collection)) (shards collection)
@@ -54,7 +55,7 @@
 				   :hash-index
 				   #+(or sbcl ecl) (make-hash-table :test 'equalp :synchronized nil)
 				   #+(not (or sbcl ecl)) (make-hash-table :test 'equalp )))
-	
+	;;(break "get-shard ~A" shard)
 	(vector-push-extend shard (shards collection)))
       shard)))
 
@@ -107,6 +108,12 @@
 
 ;;TODO: Deal with shards. Loop through shard indexes.
 (defmethod index-lookup-hash ((collection indexed-collection-mixin) hash &key shards &allow-other-keys)
+
+  ;;(break "fuck nut hash ~A" hash)
+
+  ;;TODO: Remove this load once sharding load is fixed
+  (load-data collection :parallel-p nil)
+  
   (when hash
 
     (naive-impl::debug-log (format nil "-? index:index-lookup-hash ~A~%" (name collection)))
@@ -120,10 +127,19 @@
 				;;:key #'hash-index
 				)))
       (naive-impl::debug-log (format nil "-?? index:index-lookup-hash ~A~%" (name collection)))
+
+      (unless shard
+;;	(break "fuck ??? ~A ~A" collection shards)
+	)
+      
       (when shard
-	(gethash-safe (frmt "~A" hash)
-		      (hash-index shard)
-		      :lock (getx (lock shard) :hash-index)))
+	(let ((doc
+		(gethash-safe (frmt "~A" hash)
+			      (hash-index shard)
+			      :lock (getx (lock shard) :hash-index))))
+;;	  (if doc    (break "pussy ~A" doc)	      (break "mtf ~A" (hash-index shard)))
+
+	  doc))
     )
     #|
     (do-sequence (shard (or shards                            
@@ -185,7 +201,12 @@ The second is a key value hash index to be used when looking for duplicate docum
     (setf shard (get-shard collection (document-shard-mac collection document))))
   
   (remove-index collection shard document)
-  (setf (documents shard) (remove document (documents shard))))
+ ;; (break "remove-doc ~A" shard)
+  (let ((documents (delete document (documents shard))))
+  ;; (break "remove-doc x ~a ~A" documents shard)
+    (setf (documents shard) documents)
+					; (break "remove-doc xx ~a" shard)
+    ))
 
 ;;NOTE: Doing this because murmurhash is creating duplicates when you go beyond 10 million index values
 (defun try-better-value-match (collection list key-values)
@@ -245,7 +266,10 @@ Indexes will be updated by default, if you want to stop index updates set update
 	   (add-index collection shard document :key-values key-values)
            
 	   (bt:with-lock-held ((getx (lock shard) :docs))
-	     (vector-push-extend document (documents shard)))))
+	    ;; (break "add-document ~A" shard)
+	     (vector-push-extend document (documents shard))
+	   ;;  (break "add-document x ~A" shard)
+	     )))
     
     ;;Add document to the collection
     (values

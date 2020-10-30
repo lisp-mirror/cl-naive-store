@@ -254,7 +254,8 @@ which contain the actual data. Each collection will have its own directory and f
      ;; (break "query-simple-data before ~A" collection)
       (query-data collection :query (lambda (document)				    
 				      (<= (getx document :emp-no) 50)))
-      ;;(break "query-simple-data after ~A" collection))
+      ;;(break "query-simple-data after ~A" collection)
+      )
     
     ))
 

@@ -96,8 +96,8 @@
     
     final-document))
 
-(defmethod naive-impl:compose-special ((collection document-collection) sexp
-				       shard (type (eql :child-document)))
+(defmethod naive-impl:compose-special ((collection document-collection) shard
+				        sexp (type (eql :child-document)))
   (make-document
    ;;TODO: For backwards compatibility
    :type-def (or

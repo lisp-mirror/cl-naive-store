@@ -2,12 +2,16 @@
 
 (defmethod naive-impl:find-document-by-hash ((collection indexed-collection-mixin) hash
 					     &key shards &allow-other-keys)
-  (naive-impl::debug-log (format nil "indexed:find-document-by-hash :document ~A~%" (name collection))) 
- (index-lookup-hash
-  collection
-  hash :shards shards)
+  (naive-impl::debug-log
+   (format nil "indexed:find-document-by-hash :document ~A~%" (name collection)))
+  (let ((doc 
+	  (index-lookup-hash
+	   collection
+	   hash :shards shards)))
 
-  (naive-impl::debug-log (format nil "END find-document-by-hash :document ~A~%" (name collection))))
+    (naive-impl::debug-log (format nil "END find-document-by-hash :document ~A~%" (name collection)))
+
+    doc))
 
 (defmethod naive-impl:compose-special ((collection indexed-collection-mixin)
 				       shard
