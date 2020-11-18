@@ -30,7 +30,7 @@
   (persist-document collection (list :name "Koos" :surname "Van" :id 999))
   
   ;;Clear the collection, ie unload documents from memory so we can show that it has been persisted.
-  (setf (documents collection) nil)
+  (clear-collection collection)
 
   ;;Query the collection, query-data will load the data from file if the collection is empty
   (query-data collection :query (lambda (document)				    

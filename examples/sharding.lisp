@@ -202,7 +202,7 @@
 		       "Equatorial Guinea"
 		       "Eritrea"
 		       "Estonia"
-		       "Eswatini (fmr. "Swaziland")"
+		       "Eswatini (fmr. \"Swaziland\")"
 		       "Ethiopia"
 		       "Fiji"
 		       "Finland"
