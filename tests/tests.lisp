@@ -248,16 +248,11 @@ which contain the actual data. Each collection will have its own directory and f
 (defun query-simple-data ()  
   (let* ((collection (get-collection (get-store *universe* "simple-store")
 				    "simple-collection"))
-	(result (query-data collection :query (lambda (document)				    
-				    (<= (getx document :emp-no) 50)))))
-    (unless result
-     ;; (break "query-simple-data before ~A" collection)
-      (query-data collection :query (lambda (document)				    
-				      (<= (getx document :emp-no) 50)))
-      ;;(break "query-simple-data after ~A" collection)
-      )
+	 (result ))
     
-    ))
+    (setf result (query-data collection :query (lambda (document)				    
+						 (<= (getx document :emp-no) 50))))
+    result))
 
 (defun query-ref-doc ()  
   (let* ((collection (get-collection (get-store *universe* "simple-store")
@@ -324,6 +319,8 @@ Only peristed if persist-p is t."
 
        test-results))
 
+    ;;(break "~A ~% ~A" query-results (length query-results))
+    
     (push (list :query-result-count-51 (= (length query-results) 51))
 	  test-results)
     
@@ -348,9 +345,18 @@ Only peristed if persist-p is t."
 
     
     (when (data-loaded-p collection)
-      (clear-collection collection)))
-   ;;Query the data in the universe
-  (query-simple-data))
+      (clear-collection collection))
+
+    
+
+    ;;(break "lazy ~A" collection)
+    
+    ;;Query the data in the universe
+    (query-simple-data)
+
+    ;; (break "lazy 2 ~A" collection)
+    )
+  )
 
 (defun test-lazy-loading ()
   (let ((test-results)
@@ -628,7 +634,7 @@ Only peristed if persist-p is t."
 	(clear-collection collection)
 	)))
 
-  
+;;  (break "collection lazy ~A")
   ;;Query the data in the universe
   (query-simple-data))
 

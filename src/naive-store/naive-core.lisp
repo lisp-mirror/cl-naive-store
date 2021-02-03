@@ -168,7 +168,8 @@ files are loaded. (see store notes for more about this.).")
 	shard)))
 
 (defmethod get-shard (collection shard-mac &key &allow-other-keys)  
-  (let ((shard (lparallel:pfind (or shard-mac (name collection)) (shards collection)
+  (let ((shard (lparallel:pfind (or shard-mac (name collection))
+				(shards collection)
 				:test 'equal :key 'mac)))
     (unless shard
       (setf shard (make-instance 'shard
@@ -347,7 +348,6 @@ files are loaded. (see store notes for more about this.).")
 (defgeneric add-collection (store collection)
   (:documentation "Adds a collection to a store."))
 
-
 ;;TODO: Deal with sharding
 (defmethod add-collection ((store store) (collection collection))
   (unless (get-collection store (name collection))    
@@ -376,8 +376,13 @@ files are loaded. (see store notes for more about this.).")
   (:documentation "Clears documents indexes etc from collection."))
 
 (defmethod clear-collection (collection)
-  (do-sequence (shard (shards collection))
-    (remhash (mac shard) (shards-cache% (universe (store collection)))))
+  (do-sequence (shard (shards collection))    
+    (remhash (frmt "~A-~A-~A"
+		      (name (store collection))
+		      (name collection)
+		      (or (mac shard) (name collection)))
+	     (shards-cache% (universe (store collection))))
+    (setf shard nil))  
   (setf (shards collection) (make-array 1 :fill-pointer 0 :adjustable t :initial-element nil)))
 
 (defgeneric remove-collection (store collection)

@@ -71,83 +71,86 @@
 
 (defmethod load-data ((collection collection) &key shard-macs (parallel-p t) &allow-other-keys)
   
-  (let ((files (find-collection-files collection))
-	(tasks))
-
-    ;;(break "files ~A~%~A" collection files)
-
-    (naive-impl::debug-log (frmt "load-data" ) :file-p t :args files)
+  (let ((tasks))
 
     (unless parallel-p
 
-      (unless (> (length (documents collection)) 0)
+      (unless (> (length (shards collection)) 0)
 	;;(break "hoer ~A" files)
-	
-	(do-sequence (filename files :parallel-p nil)
-	  (multiple-value-bind (mac file)
-	      (match-shard filename shard-macs)
 
-	    (unless mac
-	      (setf mac (pathname-name filename))
-	      (setf file filename))
-	    
-	    (when (or (not shard-macs)
-		      file)
+	(let ((files (find-collection-files collection))) 
+
+	  (naive-impl::debug-log (frmt "load-data" ) :file-p t :args files)
+	  
+	  (do-sequence (filename files :parallel-p nil)
+	    (multiple-value-bind (mac file)
+		(match-shard filename shard-macs)
+
+	      (unless mac
+		(setf mac (pathname-name filename))
+		(setf file filename))
 	      
-	      (let ((shard (get-shard collection mac)))
-
-		(unless shard
-		  (break "mother fucker no shard"))
+	      (when (or (not shard-macs)
+			file)
 		
-		(if (or (> (length (documents shard)) 0)
-			    (equalp (status shard) :loading)
-			    (equalp (status shard) :loaded))
-		    (progn
-		      #|
-		      (break "eish ~A ~A ~A ~A ~A"
-			     collection
-			     shard
-			     (> (length (documents shard)) 0)
-			    (equalp (status shard) :loading)
-			    (equalp (status shard) :loaded))
-		      |#
-		      )  
-		    (progn
-		      ;;(break "?? ~A" shard)
+		(let ((shard (get-shard collection mac)))
+
+		  (unless shard
+		    (break "mother fucker no shard"))
+		  
+		  (if (or (> (length (documents shard)) 0)
+			  (equalp (status shard) :loading)
+			  (equalp (status shard) :loaded))                      
 		      (load-shard collection shard filename)))))))))
     
     (when parallel-p
-      (when files
-	(dolist (filename files)
-	  (multiple-value-bind (mac file)
-	      (match-shard filename shard-macs)
-
-	    (unless mac
-	      (setf mac (pathname-name filename))
-	      (setf file filename))
-	  
-	    (when (or (not shard-macs)
-		      file)
-	    
-	      (let ((shard (get-shard collection mac)))
-		;;(break "pffft ~A" shard)
-		(unless (or (> (length (documents shard)) 0)
-			    (equalp (status shard) :loading)
-			    (equalp (status shard) :loaded))
-		  (naive-impl::debug-log (frmt "submitting load-shard" ) :file-p t :args (list shard filename))        
-		  (push (cl-naive-task-pool:submit-task *task-pool*
-							(lambda ()
-							  (load-shard collection shard filename))
-							:name mac
-							:result-p t)
-			tasks))))))
-
-
-	(naive-impl::debug-log (frmt "load-data checking tasks" ) :file-p t :args tasks)
       
-	(dolist (task tasks)
-	  ;;(break "~A" *task-pool*)
-	  (cl-naive-task-pool:task-result *task-pool* task)))
+      (unless (> (length (shards collection)) 0)
+	(let ((files (find-collection-files collection)))
+	  (when files
+            
+	    (dolist (filename files)
+	      (multiple-value-bind (mac file)
+		  (match-shard filename shard-macs)
+
+		(unless mac
+		  (setf mac (pathname-name filename))
+		  (setf file filename))
+		
+		(when (or (not shard-macs)
+			  file)
+
+		 ;; (break "??? ~A" collection)
+		  (let ((shard (get-shard collection mac)))
+
+		    ;;(break "pffft ~A~%~A~%~A~%~A" collection shard (length (documents shard)) (status shard))
+		    
+		    (unless (or (> (length (documents shard)) 0)
+				(equalp (status shard) :loading)
+				(equalp (status shard) :loaded))
+
+		      ;;(break "pffft ~A" shard)
+		      
+		      (naive-impl::debug-log (frmt "submitting load-shard" )
+					     :file-p t
+					     :args (list shard filename))
+		      
+		      (push (cl-naive-task-pool:submit-task
+			     *task-pool*
+			     (lambda ()
+			       (load-shard collection shard filename))
+			     :name mac
+			     :result-p t)
+			    tasks))))))
+
+
+	    (naive-impl::debug-log (frmt "load-data checking tasks" )
+				   :file-p t
+				   :args tasks)
+	    
+	    (dolist (task tasks)
+	      ;;(break "~A" *task-pool*)
+	      (cl-naive-task-pool:task-result *task-pool* task)))))
       )
     #|  
     

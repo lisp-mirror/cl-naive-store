@@ -55,7 +55,7 @@
 				   :hash-index
 				   #+(or sbcl ecl) (make-hash-table :test 'equalp :synchronized nil)
 				   #+(not (or sbcl ecl)) (make-hash-table :test 'equalp )))
-	;;(break "get-shard ~A" shard)
+        
 	(vector-push-extend shard (shards collection)))
       shard)))
 
@@ -118,18 +118,21 @@
 
     (naive-impl::debug-log (format nil "-? index:index-lookup-hash ~A~%" (name collection)))
     (let ((shard (lparallel:pfind hash (or shards
-					   (bt:with-lock-held (*shards-lock*)
-					       (shards collection)))
-				:test (lambda (key shard)
-					(let ((index (hash-index shard)))
-					  (gethash-safe key index
-							:lock (getx (lock shard) :hash-index))))
-				;;:key #'hash-index
-				)))
+					   
+					   ;;(bt:with-lock-held (*shards-lock*)
+					   ;;  (shards collection))
+					   (shards collection)
+					   )
+				  :test (lambda (key shard)
+					  (let ((index (hash-index shard)))
+					    (gethash-safe key index
+							  :lock (getx (lock shard) :hash-index))))
+				  ;;:key #'hash-index
+				  )))
       (naive-impl::debug-log (format nil "-?? index:index-lookup-hash ~A~%" (name collection)))
 
       (unless shard
-;;	(break "fuck ??? ~A ~A" collection shards)
+	;;	(break "fuck ??? ~A ~A" collection shards)
 	)
       
       (when shard
@@ -137,21 +140,21 @@
 		(gethash-safe (frmt "~A" hash)
 			      (hash-index shard)
 			      :lock (getx (lock shard) :hash-index))))
-;;	  (if doc    (break "pussy ~A" doc)	      (break "mtf ~A" (hash-index shard)))
+	  ;;	  (if doc    (break "pussy ~A" doc)	      (break "mtf ~A" (hash-index shard)))
 
 	  doc))
-    )
+      )
     #|
-    (do-sequence (shard (or shards                            
-			    (shards collection)))
-
-      
-	(let ((doc (gethash (frmt "~A" hash)
-			    (hash-index shard))))
-	  (when doc
-	    (return-from index-lookup-hash doc))))
-    
-    
+    (do-sequence (shard (or shards	;
+    (shards collection)))		;
+					;
+      					;
+    (let ((doc (gethash (frmt "~A" hash) ;
+    (hash-index shard))))		;
+    (when doc				;
+    (return-from index-lookup-hash doc)))) ;
+    					;
+    					;
     |#
     ))
 
