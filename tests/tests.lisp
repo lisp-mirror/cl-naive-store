@@ -442,7 +442,7 @@ Only peristed if persist-p is t."
        
        ;;Unload the collection (contains the data) if it is already loaded.
        (when (data-loaded-p collection)
-	 (setf (shards collection) nil)
+	 (clear-collection collection)
 	 ))
      
     ;;Query the data in the universe

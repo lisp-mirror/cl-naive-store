@@ -86,6 +86,7 @@
 	    (multiple-value-bind (mac file)
 		(match-shard filename shard-macs)
 
+	      (break "??????")
 	      (unless mac
 		(setf mac (pathname-name filename))
 		(setf file filename))
@@ -150,7 +151,12 @@
 	    
 	    (dolist (task tasks)
 	      ;;(break "~A" *task-pool*)
-	      (cl-naive-task-pool:task-result *task-pool* task)))))
+	      (cl-naive-task-pool:task-result *task-pool* task))
+
+            
+	    )))
+
+      
       )
     #|  
     

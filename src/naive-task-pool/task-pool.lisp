@@ -144,7 +144,7 @@
         (bt:with-recursive-lock-held (*tasks-lock*)
 	    (setf (tasks task-pool) (remove task (tasks task-pool))))
 	(return-from get-task-result (list (result task) :task-completed))))
-     (if wait (sleep wait))))
+    (if wait (sleep wait))))
 
 (defun task-result (task-pool task &optional (tries 100) (wait 0.001))
   "This function checks for a task result if the task is not completed it will block execution unitl such time as the task is complete or tries have been exhausted."
