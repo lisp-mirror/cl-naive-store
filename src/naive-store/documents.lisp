@@ -33,10 +33,9 @@ IMPL NOTES:
 This is an essential part of loading and persisting documents, take care when implementing."))
 
 (defmethod existing-document (collection shard document &key &allow-other-keys)
-  (let ((position (position document (documents shard)
-			   :test (lambda (x y)
-				   (equalp (key-values collection x)
-					   (key-values collection y))))))
+  (let ((position (position (key-values collection document) (documents shard)
+			    :test (function equalp)
+			    :key (lambda (document) (key-values collection document)))))
     (values (and position (elt (documents shard) position))
 	    position)))
 

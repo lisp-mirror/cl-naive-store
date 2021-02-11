@@ -170,7 +170,7 @@ which contain the actual data. Each collection will have its own directory and f
 					     :shard-elements (if *use-shards*
 							     (list :race))))))))
 
-(defun tare-down-universe ()
+(defun tear-down-universe ()
   "Deletes any peristed data from exmaples."
 ;;  (break "?")
   (unless *universe*
@@ -272,7 +272,7 @@ which contain the actual data. Each collection will have its own directory and f
 the collection to retrieve the the 50 documents that have a :emp-no >= 50.
 Only peristed if persist-p is t."
   ;;Clear any risidual 
-  (tare-down-universe)
+  (tear-down-universe)
   ;;Setup the data universe aka the documents that will contain the data
   (setup-universe)
   ;;Generate some data and put it in the universe documents
@@ -324,14 +324,14 @@ Only peristed if persist-p is t."
     (push (list :query-result-count-51 (= (length query-results) 51))
 	  test-results)
     
-    ;;(tare-down-universe)
+    ;;(tear-down-universe)
 
     test-results))
 
 (defun simple-example-lazy-loading ()
   "naive-store does lazy loading of data from disk when doing queries."
   ;;Clear any risidual 
-  (tare-down-universe)
+  (tear-down-universe)
   
   ;;Setup the data universe aka the documents that will contain the data
   (setup-universe)
@@ -372,7 +372,7 @@ Only peristed if persist-p is t."
 (defun simple-example-delete ()
   "naive-store does lazy loading of data from disk when doing queries."
   ;;Clear any risidual 
-  (tare-down-universe)
+  (tear-down-universe)
   ;;Setup the data universe aka the documents that will contain the data
   (setup-universe)
   ;;Generate some data and put it in the universe documents
@@ -415,7 +415,7 @@ Only peristed if persist-p is t."
   (let ((test-results)
 	(data))
     ;;Clear any risidual 
-    (tare-down-universe)
+    (tear-down-universe)
     ;;Setup the data universe aka the documents that will contain the data
     (setup-universe)
     ;;Generate some data and put it in the universe documents
@@ -568,7 +568,7 @@ Only peristed if persist-p is t."
 the collection to retrieve the the 50 documents that have a :emp-no >= 50.
 Only peristed if persist-p is t."
   ;;Clear any risidual 
-  (tare-down-universe)
+  (tear-down-universe)
   ;;Setup the data universe aka the documents that will contain the data
   (setup-universe)
   ;;Generate some data and put it in the universe documents
@@ -614,7 +614,7 @@ Only peristed if persist-p is t."
     (push (list :query-result-count-202 (= query-length 202) query-length)
 	  test-results)
     
-    ;;(tare-down-universe)
+    ;;(tear-down-universe)
 
     test-results))
 
@@ -624,7 +624,7 @@ Only peristed if persist-p is t."
   "naive-store does lazy loading of data from disk when doing queries."
 
    ;;Clear any risidual 
-  (tare-down-universe)
+  (tear-down-universe)
   ;;Setup the data universe aka the documents that will contain the data
   (setup-universe)
 
@@ -659,7 +659,7 @@ Only peristed if persist-p is t."
     (let ((results))
       (setf results (append results (test-monster-size)))
       (setf results (append results (test-monster-lazy-loading)))
-     ;; (tare-down-universe)
+     ;; (tear-down-universe)
       results)))
 
 (defun test-all-monster-indexed ()
@@ -667,7 +667,7 @@ Only peristed if persist-p is t."
       (let ((results))
 	(setf results (append results (test-monster-size)))
 	(setf results (append results (test-monster-lazy-loading)))
-	;;(tare-down-universe)
+	;;(tear-down-universe)
 	results)))
 
 (defun test-all-monster-documents ()
@@ -675,7 +675,7 @@ Only peristed if persist-p is t."
     (let ((results))
 	(setf results (append results (test-monster-size)))
 	(setf results (append results (test-monster-lazy-loading)))
-	;;(tare-down-universe)
+	;;(tear-down-universe)
 	results)))
 
 
@@ -843,7 +843,7 @@ Only peristed if persist-p is t."
 
 (defun test-all (&optional (*monster-size* 100000))
   
-  (tare-down-universe)
+  (tear-down-universe)
   (and
     (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-simple))
     (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-simple-indexed))
@@ -905,3 +905,39 @@ Only peristed if persist-p is t."
 |#
 
 
+(require :sb-sprof)
+
+(defun profile-monster-load-data ()
+  (tear-down-universe)
+  ;;Setup the data universe aka the documents that will contain the data
+  (setup-universe)
+  ;;Generate some data and put it in the universe documents
+  (populate-monster-data t :size *monster-size*)
+  (let ((collection (get-collection (get-store *universe* "simple-store")
+				    "simple-collection")))
+    (when (data-loaded-p collection)
+      (clear-collection collection))  
+    (sb-sprof:reset)
+    (sb-sprof:start-profiling)
+    (time (load-data collection))
+    (sb-sprof:stop-profiling)
+    (sb-sprof:report :type :flat)
+    ))
+
+(defun profile-monster-index-load-data ()
+  (let ((*collection-class* 'collection-indexed))
+    (tear-down-universe)
+    ;;Setup the data universe aka the documents that will contain the data
+    (setup-universe)
+    ;;Generate some data and put it in the universe documents
+    (populate-monster-data t :size *monster-size*)
+    (let ((collection (get-collection (get-store *universe* "simple-store")
+				      "simple-collection")))
+      (when (data-loaded-p collection)
+	(clear-collection collection))  
+      (sb-sprof:reset)
+      (sb-sprof:start-profiling)
+      (time (load-data collection))
+      (sb-sprof:stop-profiling)
+      (sb-sprof:report :type :flat)
+      )))
