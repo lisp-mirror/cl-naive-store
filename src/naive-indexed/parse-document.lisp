@@ -18,7 +18,12 @@
 				       sexp (type (eql :document)))
   (naive-impl::debug-log (format nil "Indexed:Compose-special :document ~A~%" (name collection)))
   (if (getx sexp :deleted-p)
+      (progn
+	;;(break "poesisie")
 	(remove-document collection sexp :shard shard)
+	;;(break "hoer ~A~%~A" shard sexp)
+	)
+      
 	;;TODO: Where to get handle-duplicates-p ???
 	(add-document collection sexp :shard shard)))
 

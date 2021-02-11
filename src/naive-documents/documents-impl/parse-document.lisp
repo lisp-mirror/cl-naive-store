@@ -73,7 +73,10 @@
     
     (if (getx sexp :deleted-p)
 	(if existing-document
-	    (remove-document collection existing-document))        
+	    (progn
+	     ;; (break "poes ~A" sexp )
+	      (remove-document collection existing-document)))
+	
 	(cond (existing-document
 	       (unless (equalp (document-elements existing-document) resolved-values)
 		 (push (document-elements existing-document)

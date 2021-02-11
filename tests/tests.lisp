@@ -392,14 +392,20 @@ Only peristed if persist-p is t."
     ;;Unload the collection (contains the data) if it is already loaded
     ;;to make sure the delete was persisted.
     (when (data-loaded-p collection)      
-      (clear-collection collection)))
+      (clear-collection collection))
+
+   ;; (break "delete ? ~A" collection)
+    ;;Query the data in the universe for the top 51 that has been deleted.
+    (query-simple-data)
+  ;;  (break "delete ?? ~A" collection)
+    )
   
-  ;;Query the data in the universe for the top 51 that has been deleted.
-  (query-simple-data))
+  )
 
 (defun test-delete ()
   (let ((test-results)
 	(query-results (simple-example-delete)))
+   ;; (break "~A" query-results)
     (push (list :query-result-nil (not query-results))
 	  test-results)
     

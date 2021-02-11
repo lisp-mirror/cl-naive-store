@@ -137,16 +137,22 @@
     
     ))
 
+
+;;How to best protect against a task never finishing??? tries need to be above 10 million
+;;bub that seems a bit excesive.
+
+;;Maybe rather do a time out instead of tries?
 (defun get-task-result (task-pool task tries wait)
   (loop
-    (dotimes (i tries)
-      (when (equalp (status task) :completed)
+  ;;  (dotimes (i tries)            )
+    (when (equalp (status task) :completed)
         (bt:with-recursive-lock-held (*tasks-lock*)
-	    (setf (tasks task-pool) (remove task (tasks task-pool))))
-	(return-from get-task-result (list (result task) :task-completed))))
-    (if wait (sleep wait))))
+	  (setf (tasks task-pool) (remove task (tasks task-pool))))
+	(return-from get-task-result (list (result task) :task-completed)))
+;;    (if wait (sleep wait))
+    ))
 
-(defun task-result (task-pool task &optional (tries 100) (wait 0.001))
+(defun task-result (task-pool task &optional (tries 100000000) (wait 0.01))
   "This function checks for a task result if the task is not completed it will block execution unitl such time as the task is complete or tries have been exhausted."
   (when task
     (if (stringp task)

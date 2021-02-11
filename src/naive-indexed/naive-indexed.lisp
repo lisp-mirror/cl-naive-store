@@ -204,12 +204,15 @@ The second is a key value hash index to be used when looking for duplicate docum
     (setf shard (get-shard collection (document-shard-mac collection document))))
   
   (remove-index collection shard document)
- ;; (break "remove-doc ~A" shard)
-  (let ((documents (delete document (documents shard))))
-  ;; (break "remove-doc x ~a ~A" documents shard)
-    (setf (documents shard) documents)
-					; (break "remove-doc xx ~a" shard)
-    ))
+
+;;  (break "remove-doc ~A" shard)
+  
+  (bt:with-lock-held ((getx (lock shard) :docs))
+    (let ((documents (delete (hash document) (documents shard) :test 'equalp :key #'hash)))
+   ;;   (break "remove-doc x ~a ~A" documents shard)
+      (setf (documents shard) documents)
+ ;;(break "remove-doc xx ~A ~%~A~% ~a" documents document shard)
+      )))
 
 ;;NOTE: Doing this because murmurhash is creating duplicates when you go beyond 10 million index values
 (defun try-better-value-match (collection list key-values)

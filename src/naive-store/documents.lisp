@@ -61,7 +61,13 @@ naive-store writes data to file sequentially and when deleting data documents it
 (defmethod remove-document ((collection collection) document &key shard &allow-other-keys)
   (unless shard
     (setf shard (get-shard collection (document-shard-mac collection document))))
-  
+
+  #|
+  (break "~A~%~A" (if (keys collection)
+			  (key-values collection document)
+			  document)
+	 shard)
+|#
   (setf (documents shard)
 	(remove (if (keys collection)
 		    (key-values collection document)

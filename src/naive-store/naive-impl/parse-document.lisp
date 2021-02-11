@@ -102,7 +102,10 @@ When documents are read from a file the references need to be converted to docum
 (defmethod compose-special (collection shard sexp (type (eql :document)))
   (naive-impl::debug-log (format nil "core:Compose-special :document ~A~%" (name collection)))
   (if (getx sexp :deleted-p)
+      (progn
 	(remove-document collection sexp :shard shard)
+	;;(break "yeepus ~A" sexp)
+	)
 	;;TODO: Where to get handle-duplicates-p ???
 	(add-document collection sexp :shard shard)))
 
