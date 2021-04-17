@@ -49,53 +49,43 @@
 (defmethod naive-impl:compose-special ((collection document-collection) shard sexp
 				       (type (eql :document)))
 
-  (naive-impl::debug-log (format nil "docs:Compose-special :document ~A~%" (name collection)))
-  (let* ((resolved-values
-	   (naive-impl:compose-parse collection
-				     shard
-				     ;;TODO: For backwards compatibility 
-				     (or (digx sexp :elements)
-					 (digx sexp :values))
-				     nil))
+  (naive-impl::debug-log "docs:Compose-special :document ~A" (name collection))
+  (let* ((resolved-values  (naive-impl:compose-parse
+			    collection
+			    shard
+			    ;;TODO: For backwards compatibility 
+			    (or (digx sexp :elements)
+				(digx sexp :values))
+			    nil))
 	   
-	 (existing-document )
-	 (final-document))
-
-    (naive-impl::debug-log (format nil "? docs:Compose-special :document ~A~%" (name collection)))
-      
-    (setf existing-document (index-lookup-hash 
+	 (existing-document (index-lookup-hash 
 			     collection
 			     (digx sexp :hash)
-			     :shards (if shard (list shard)))
-	  )
+			     :shards (if shard (list shard))))
+	 (final-document))
 
-    (naive-impl::debug-log (format nil "?? docs:Compose-special :document ~A~%" (name collection)))
-    
+    (naive-impl::debug-log "? docs:Compose-special :document ~A" (name collection))
+
+   
     (if (getx sexp :deleted-p)
+	(when existing-document
+	  (remove-document collection existing-document))        
 	(if existing-document
 	    (progn
-	     ;; (break "poes ~A" sexp )
-	      (remove-document collection existing-document)))
-	
-	(cond (existing-document
-	       (unless (equalp (document-elements existing-document) resolved-values)
-		 (push (document-elements existing-document)
-		       (document-versions existing-document))
-		 (setf (document-elements existing-document) resolved-values))
-	       (setf final-document existing-document))
-	      (t
+	      (unless (equalp (document-elements existing-document) resolved-values)
+		(push (document-elements existing-document) (document-versions existing-document))
+		(setf (document-elements existing-document) resolved-values))
+	      (setf final-document existing-document))
+	    (progn
+	      (setf final-document (make-document
+				    :store (store collection)
+				    :collection collection
+				    :type-def (cl-naive-document-types:document-type collection)
+				    :hash (frmt "~A" (digx sexp :hash))
+				    :elements resolved-values))
+	      (add-document collection final-document))))
 
-	       (setf final-document
-		     (make-document
-		      :store (store collection)
-		      :collection collection
-		      :type-def (cl-naive-document-types:document-type collection)
-		      :hash (frmt "~A" (digx sexp :hash))
-		      :elements resolved-values))
-	       
-	       (add-document collection final-document))))
-
-    (naive-impl::debug-log (format nil "END docs:Compose-special :document ~A~%" (name collection)))
+    (naive-impl::debug-log "END docs:Compose-special :document ~A" (name collection))
     
     final-document))
 

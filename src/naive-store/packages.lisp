@@ -10,15 +10,16 @@
    :do-sequence ;;Exposing naive-impl:do-sequence
    :*task-pool* ;;Exposing naive-impl:*task-pool*
    :gethash-safe
+   :remhash-safe
 
    :persist
    :persist-document
-   
+
    ;;####persist.lisp
    :persist
-   
+
    ;;####naive-core.lisp
-   
+
    ;;##classes
    :shard
    :universe
@@ -28,22 +29,25 @@
    :location
    :documents
    :keys
-   
+
    ;;shard
    :mac
+   :short-mac
+   :status
    :shards
    :match-shard
    :get-shard
+   :make-shard
    :document-shard-mac
    :lock
-   
+
    ;;:store
    ;;:universe
    ;;:name
    :collection-class
    :collections
    ;;:location
-   
+
    ;;:universe
    :stores
    ;;:location
@@ -64,8 +68,8 @@
    :find-collection-definitions
    :get-store-from-def
    :get-collection-from-def
-   
-   
+
+
    ;;adding
    :add-store
    :add-collection
@@ -74,6 +78,7 @@
    ;;Removing
    :clear-collection
    :remove-collection
+   :clear-documents
    
    ;;:persist
    :persist-collection-def
@@ -81,9 +86,9 @@
 
    ;;;loading
    :ensure-location
-   :load-data   
+   :load-data
    :data-loaded-p
-   
+
    ;;####blob.lisp
    :blob
    :make-blob
@@ -94,9 +99,9 @@
    :blob-parent-hash
    :blob-parent-key
    :blob-string-value
-   
+
    :blob-p
-   
+
    :blob-ref-p
    ;;:blob-ref-values
    :read-blob
@@ -112,6 +117,4 @@
    :query-data
    :query-document
 
-   
-  
    ))

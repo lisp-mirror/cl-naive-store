@@ -214,10 +214,9 @@
 				doc)
 			       :parent parent)))
 		   
-		   (loop for (key value) on (cl-naive-documents:document-elements doc) by #'cddr
-		      when (cl-naive-documents:document-p value)
-			do
-			(traverse-doc value node))))))
+		   (loop :for (nil value) :on (cl-naive-documents:document-elements doc) :by #'cddr
+			 :when (cl-naive-documents:document-p value)
+			   :do (traverse-doc value node))))))
       (setf merkle-tree (make-node (make-document-hash document) ))
       (traverse-doc document merkle-tree))
     merkle-tree))

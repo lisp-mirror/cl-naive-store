@@ -32,24 +32,20 @@
 (defmethod query-data ((collection indexed-collection-mixin)
 		       &key index-values query shards &allow-other-keys)
   "Extends query-data to be able to take advantage of indexing. Query is done on values retrieved by the supplied index."
-
   (let ((indexed-values (indexed-values collection index-values shards)))
-
     (if indexed-values
-	(query-data indexed-values
-		    :query query)
+	(progn
+	  (query-data indexed-values
+		      :query query))
 	(let ((%result% nil))
 	  (do-sequence (shard (if shards
 				  shards
 				  (shards collection))
-			      :parallel-p t)
+			:parallel-p t)
 	    (let ((result (query-data (documents shard)
 				      :query query)))
-	      
 	      (bt:with-recursive-lock-held (*index-query-lock*)
-					   (setf %result%
-						 (concatenate 'list %result%
-							      result)))))
+		(setf %result% (append result %result%)))))
 	  %result%))))
 
 

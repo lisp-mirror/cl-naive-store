@@ -91,29 +91,19 @@ Does lazy loading."))
 (defmethod query-data :before ((collection collection) &key shards &allow-other-keys)
   "Lazy loading data."  
   (if shards
-      (progn
+      (progn ; only load the specified shards.
 	(naive-impl::debug-log "query-data -shards" :file-p t)
 	(cl-naive-store::load-shards collection shards))
       (progn
 	(naive-impl::debug-log "query-data -collection" :file-p t)
 	(load-data collection))))
 
-
-
 (defmethod query-data ((collection collection) &key query shards &allow-other-keys)
-  (let ((%result% nil))    
-    (do-sequence (shard (if shards
-			    shards
-			    (shards collection))
-			:parallel-p t)
-      
-      (let ((result (query-data (documents shard)
-				:query query)))
+  (let ((%result% nil))
+    (do-sequence (shard (or shards (shards collection)) :parallel-p t)
+      (let ((result (query-data (documents shard) :query query)))
 	(bt:with-recursive-lock-held (*query-lock*)
-				     
-				     (setf %result%
-					   (concatenate 'list %result%
-							result)))))    
+	  (setf %result% (append result %result%)))))
     %result%))
 
 (defmethod query-data ((store store) &key collection-name query shards &allow-other-keys)
@@ -151,19 +141,18 @@ Does lazy loading."))
   (let ((documents (query-data store :collection-name collection-name :query query)))
     (values (first documents) (rest documents))))
 
-;;Dont use map-append, it falls apart at 10 mil records.
+;; Don't use map-append, it falls apart at 10 mil records.
+;; Note: we use reduce to build explicitely a list only of the queried documents.
+;; With remove-if-not, we'd have to coerce the whole sequence to a list first.
 (defmethod query-data ((sequence sequence) &key query &allow-other-keys)
-  (let ((results))
-    (if query
-	(setf results (reduce #'(lambda (result document)		 
-				  (if (apply query (list document))
-				      (push document result)
-				    result))
-			      sequence
-			      :initial-value '()))
-	(setf results (coerce sequence 'list)))
-    
-     results))
+  (if query
+      (reduce (lambda (results document)
+		(cond
+		  ((deleted-p document)     results)
+		  ((funcall query document) (cons document results))
+		  (t                        results)))
+	      sequence :initial-value '())
+      (coerce sequence 'list)))
 
 ;;:TODO: This should be target to move to cl-query or something
 (defmethod query-data ((hash-table hash-table) &key query &allow-other-keys)
@@ -171,10 +160,11 @@ Does lazy loading."))
     (maphash
      (lambda (key document)
        (declare (ignore key))
-       (if query
-	   (when (funcall query document)
-	     (push document documents))
-	   (push document documents)))
+       (unless (deleted-p document)
+	 (if query
+	     (when (funcall query document)
+	       (push document documents))
+	     (push document documents))))
      hash-table)
     documents))
 

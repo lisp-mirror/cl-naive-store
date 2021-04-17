@@ -13,11 +13,13 @@
    :make-mac
    :*lock*
    :gethash-safe
-  
-   :do-sequence
+   :remhash-safe
    
+   :do-sequence
+
    :*break-on-error-log*
    :write-log
+   :debug-log
    
    :file-to-string
    :with-file-lock
@@ -27,9 +29,10 @@
 
    :write-to-file
    :write-list-to-file
+   :sexp-from-file
 
    ;;PARSING
-   :load-document-reference-collection   
+   :load-document-reference-collection
    :find-document-by-hash
    :type-of-sexp
    :compose-special
@@ -39,9 +42,8 @@
    ;;PERSISTING
    :type-of-doc-element
    :persist-form
-   :persist-parse   
+   :persist-parse
    :persist-document
    :persist-delete-document
-   
-   
+
 ))

@@ -43,16 +43,15 @@ Source: On Lisp"
 	     (string-equal stripped-value "NULL")
 	     (equal stripped-value ""))))))
 
-;;TODO: There must be a lisp function that already does this
 (defun plist-to-values (values)
   "Returns the values of a plist."
-  (loop for (a b) on values by #'cddr 
-     :collect b))
+  (loop :for (nil b) :on values :by #'cddr 
+	:collect b))
 
 (defun plist-to-pairs (values)
   "Returns a list of key value pairs of a plist."
-  (loop for (a b) on values by #'cddr 
-     :collect (list a b)))
+  (loop :for (a b) :on values :by #'cddr 
+	:collect (list a b)))
 
 (defparameter *mac-key* 5873965167969913164)
 
@@ -80,34 +79,55 @@ This is used to create shard filenames. "))
 						;;:bindings '((*with-open-file-lock* . nil))
 						))
 
-(defparameter *task-pool* (make-instance 'cl-naive-task-pool:task-pool :thread-pool-size 8))
+
+;;(defparameter *task-pool* (make-instance 'cl-naive-task-pool:task-pool :thread-pool-size 8))
 
 (defvar *lock* (bt:make-lock))
 
 (defgeneric gethash-safe (key hash &key lock recursive-p)
-  (:documentation "Puts lock around hash access get and set."))
+  (:documentation "Puts lock around hash get access."))
+
+(defgeneric (setf gethash-safe) (new-value key hash &key lock recursive-p)
+  (:documentation "Puts lock around hash set access."))
+
+(defgeneric remhash-safe (key hash &key lock recursive-p)
+  (:documentation "Puts lock around hash remove access."))
 
 (defmethod gethash-safe (key hash &key (lock *lock*) (recursive-p nil))
+  #|
   (if recursive-p
-      (progn
-	(bt:with-recursive-lock-held
-	    (lock)
-	  (gethash key hash)))
-      (progn
-	(bt:with-lock-held
-	    (lock)
-	  (gethash key hash)))))
+      (bt:with-recursive-lock-held (lock)
+	(gethash key hash))
+      (bt:with-lock-held (lock)
+	(gethash key hash)))
+  |#
+  (gethash key hash)
+)
 
 (defmethod (setf gethash-safe) (value key hash &key (lock *lock*) (recursive-p nil))
-  (if recursive-p 
-      (bt:with-recursive-lock-held
-	  (lock)	 
+  #|
+(if recursive-p 
+      (bt:with-recursive-lock-held (lock)	 
 	(setf (gethash key hash) value))
-      (bt:with-lock-held
-	  (lock)	 
-	(setf (gethash key hash) value))))
+      (bt:with-lock-held (lock)	 
+	(setf (gethash key hash) value)))
+|#
+  (setf (gethash key hash) value))
+
+(defmethod remhash-safe (key hash &key (lock *lock*) (recursive-p nil))
+  #|
+  (if recursive-p 
+      (bt:with-recursive-lock-held (lock)
+	(remhash key hash))
+      (bt:with-lock-held (lock)
+	(remhash key hash)))
+  |#
+  (remhash key hash)
+  )
+
 
 (defun call-do-sequence (thunk with-index-p sequence &key parallel-p )
+  (setf parallel-p nil)
   (if parallel-p     
       (lparallel:pdotimes (index (length sequence))
 			   (let ((element (elt sequence index)))
@@ -150,6 +170,7 @@ To get the best out of do-sequence use the parallel option if the sequence is la
 	     ,@(when index-var
 		 (list index-var)))
       ,@body)
-  ,(when index-var t)
+    ,(when index-var t)
     ,sequence
     :parallel-p ,parallel-p ))
+

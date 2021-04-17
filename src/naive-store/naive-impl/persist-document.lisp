@@ -4,6 +4,7 @@
   (:documentation "Reports if the sexp represents a special form."))
 
 (defmethod type-of-doc-element (collection element)
+  (declare (ignorable collection))
   (cond ((blob-p element)
 	 :blob)
 	((hash-table-p element)
@@ -27,12 +28,15 @@ to supply your own implementation of type-of-doc-element as well."))
 
 (defmethod persist-form (collection shard document (element-type (eql :document))
 			 &key &allow-other-keys)
+  (declare (ignorable collection shard))
+  ;;TODO: WTF???????????????
   (break "persist-form :document")
   document)
 
 ;;TODO: Sort out blob paths once and for all!!!!
 (defmethod persist-form (collection shard blob (element-type (eql :blob))
 			 &key &allow-other-keys)
+  (declare (ignorable collection shard))
   (write-blob (getx blob :location) (blob-raw blob))
   (list :blob%
 	(list :file-type (getx blob :file-type)
@@ -42,6 +46,7 @@ to supply your own implementation of type-of-doc-element as well."))
 
 (defmethod persist-form (collection shard reference (element-type (eql :reference))
 			 &key &allow-other-keys)
+  (declare (ignorable collection shard))
   ;;TODO: to get references to work we need to add collection info to the document
   ;;when peristing. But not persist those for top level documents only refernces.
   ;;still desiding if it would be useful and if naive-documents should not be the only
@@ -52,7 +57,7 @@ to supply your own implementation of type-of-doc-element as well."))
 ;;TODO: Deal with tests that is not just the funciton name
 (defmethod persist-form (collection shard hash-table (element-type (eql :hash-table))
 			 &key &allow-other-keys)
-  
+  (declare (ignorable collection shard))
   (list :|hash-table|
 	:|hash-table-test| (hash-table-test hash-table)
 	(maphash-collect

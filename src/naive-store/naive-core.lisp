@@ -124,6 +124,29 @@ files are loaded. (see store notes for more about this.).")
    )
   (:documentation "Stores are held by a universe to make up a database." ))
 
+
+
+(defgeneric short-mac (shard)
+  (:documentation "Return a short string containing a prefix of the MAC"))
+
+(defmethod short-mac ((shard shard))
+  (let ((mac (cl-naive-store::mac shard)))
+    (subseq mac 0 (min 8 (length mac)))))
+
+(defgeneric (setf status) (new-status shard))
+(defgeneric status (shard))
+
+
+(defmethod (setf status) (new-status (shard shard))
+  (setf (slot-value shard 'status) new-status))
+
+
+(defmethod status ((shard shard))
+  (let ((status (slot-value shard 'status)))
+    (etypecase status
+      (symbol status)
+      (cons   (car status)))))
+
 ;;TODO: add parameter to select vector or list
 (defmethod documents ((collection collection))
   (let ((documents))
@@ -140,7 +163,7 @@ files are loaded. (see store notes for more about this.).")
       (return-from match-shard (values mac filename)))))
 
 (defgeneric get-shard (collection shard-mac &key &allow-other-keys)
-  (:documentation "Get the shard object by its mac and creates a new shard if not found. Shard lookups are done so much that there is no choice but to cache them in a hashtable, but that hashtable needs to be thread safe so using safe functions to get and set."))
+  (:documentation "Get the shard object by its mac. Shard lookups are done so much that there is no choice but to cache them in a hashtable, but that hashtable needs to be thread safe so using safe functions to get and set."))
 
 (defvar *shards-cache-lock* (bt:make-lock))
 
@@ -164,25 +187,32 @@ files are loaded. (see store notes for more about this.).")
 (defmethod get-shard :around (collection shard-mac &key &allow-other-keys)
   (let ((shard (get-shard-cache-safe% collection shard-mac)))
     (if (not shard)
-	(set-shard-cache-safe% collection shard-mac (call-next-method))
+	(call-next-method)
 	shard)))
 
+(defgeneric make-shard (collection shard-mac))
+
+(defmethod make-shard (collection shard-mac)
+  (make-instance 'shard
+		 :mac shard-mac
+		 :location
+		 (cl-fad:merge-pathnames-as-file
+		  (pathname (ensure-location collection))
+		  (make-pathname
+		   ;;:directory (list :relative (name collection))
+		   :name shard-mac
+		   :type "log"))
+		 :status :new))
+
+
 (defmethod get-shard (collection shard-mac &key &allow-other-keys)  
-  (let ((shard (lparallel:pfind (or shard-mac (name collection))
+  (cl-naive-store::get-shard-cache-safe% collection shard-mac)
+#|
+  (find (or shard-mac (name collection))
 				(shards collection)
-				:test 'equal :key 'mac)))
-    (unless shard
-      (setf shard (make-instance 'shard
-				 :mac shard-mac
-				 :location
-				 (cl-fad:merge-pathnames-as-file
-				  (pathname (ensure-location collection))
-				  (make-pathname
-				   ;;:directory (list :relative (name collection))
-				   :name shard-mac
-				   :type "log")) ))
-      (vector-push-extend shard (shards collection)))
-    shard))
+				:test 'equal :key 'mac)
+|#
+  )
 
 (defvar *shards-macs-cache-lock* (bt:make-lock))
 
@@ -260,18 +290,27 @@ files are loaded. (see store notes for more about this.).")
 (defun persist-collection (collection)
   "Persists the documents in a collection in the order that they where added."
 
-  (do-sequence (shard (shards collection) :parallel-p t)
-    (naive-impl::with-open-file-lock
-       (stream (location shard))
+  (let ((channel (lparallel:make-channel)))
+    (do-sequence (shard (shards collection) :parallel-p t)
+      (lparallel:submit-task
+       channel
+       (lambda ()
+	 (naive-impl::with-open-file-lock
+	     (stream (location shard))
 
-       (if (hash-table-p (documents shard))
-	     
-	     (maphash (lambda (key doc)
-			(declare (ignore key))
-			(persist-document collection doc :shard shard :file-stream stream))
-		      (documents shard))
-	     (do-sequence (doc (documents shard))
-	       (persist-document collection doc :shard shard :file-stream stream))))))
+	   (if (hash-table-p (documents shard))
+	       
+	       (maphash (lambda (key doc)
+			  (declare (ignore key))
+			  (persist-document collection doc :shard shard :file-stream stream))
+			(documents shard))
+	       (do-sequence (doc (documents shard))
+		 (persist-document collection doc :shard shard :file-stream stream)))))))
+    (dotimes (i (length (shards collection)))
+      i
+      (lparallel:receive-result channel))
+    
+    ))
 
 (defmethod persist ((collection collection) &key &allow-other-keys)
   "Persists a collection definition and the documents in a collection. Path to file for data is this general format /universe/store-name/collection-name/collection-name.log."
@@ -441,44 +480,6 @@ load-data could have been used to load universe or store as well but those have 
 				    :name (name object)
 				    :type "log")))))))
 
-#|
-;;TODO: Deal with shards
-(defmethod load-data :around ((collection collection) &key force-reload-p shard-macs &allow-other-keys)
-  "Explicitly stops execution of main methods if already loaded, unless forced."
-
-  (if force-reload-p
-      (call-next-method)
-      (if (not shard-macs)
-	  (unless (and collection
-		   (shards collection) 
-		   (elt (shards collection) 0)
-		   (elt (elt (shards collection) 0) 0))
-	    
-	    (let ((*busy-loading* *busy-loading*))	  
-		      (unless (string-equal *busy-loading* (name collection))	      
-			(setf *busy-loading* (name collection))
-			(call-next-method))
-		      (setf *busy-loading* nil)))
-	  
-	
-	  (let ((all-shards-p nil))
-	    (do-sequence (mac shard-macs)
-	      (let ((shard-found))	  
-		(do-sequence (shard (shards collection))
-		  (when (equalp (mac shard) mac)
-		    (setf shard-found t)))
-	  
-		(if shard-found
-		    (setf all-shards-p shard-found)
-		    (let ((*busy-loading* *busy-loading*))	  
-		      (unless (string-equal *busy-loading* (name collection))	      
-			(setf *busy-loading* (name collection))
-			(call-next-method))
-		      (setf *busy-loading* nil)))))
-	    all-shards-p))))
-
-|#
-
 
 ;;TODO: data-loaded-p is not used internally any more since it is a waisted iteration to check and then load. Load data checks and loads at the same time if necessary. So should be remove data-loaded-p? Tests use it heavily so maybe not.
 
@@ -507,11 +508,14 @@ If you change the underlying container for (shards collection) or the container 
 		  (push nil all-shards-p))))
         
 	(do-sequence (mac shard-macs)
-	  (let ((shard-found (lparallel:pfind mac (shards collection) :test 'equal :key 'mac)))	  
+	  (let ((shard-found (cl-naive-store::get-shard-cache-safe% collection mac)
+		  ;;(find mac (shards collection) :test 'equal :key 'mac)
+
+		  ))	  
 	    (if shard-found
 		(push shard-found all-shards-p)
 		(push nil all-shards-p)))))
-;;    (break "? ~A" (every (lambda (x) x) all-shards-p))
+
     (if all-shards-p
 	(every (lambda (x) x) all-shards-p))))
 

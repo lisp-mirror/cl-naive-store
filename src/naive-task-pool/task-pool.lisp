@@ -73,14 +73,16 @@
 			(setf (status task) :started))
 		      
 		      ;;(format nil "~A Task ~A started~%" (bt:current-thread) task)
-		      (let ((result (list (name task) (funcall (thunk task)))))
+		      (let ((result (list (name task)
+					  (funcall (thunk task)))))
 			(bt:with-recursive-lock-held
 			    (*tasks-lock*)
 
-			  ;;(break "huh")
 			  
 			  (setf (status task) :completed)
-			  ;;(format nil "~A Task ~A completed~%" (bt:current-thread) task)
+
+			  ;;(naive-impl:debug-log "~A Task ~A completed" task)
+		
 			  (if (equalp (task-type task) :result)
 			      (progn
 				(setf (result task) result))	      
@@ -98,7 +100,6 @@
 	   (sleep 0.001)
 	   (dolist (task (thread-pool task-pool))
 	     (when (equalp (status task) :completed)
-	       	;;(break "fuck")
 	       (bt:with-lock-held (*task-pool-lock*)
 		 (setf (thread-pool task-pool)
 		       (remove task (thread-pool task-pool))))))))))

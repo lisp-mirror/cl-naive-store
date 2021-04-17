@@ -172,17 +172,23 @@ which contain the actual data. Each collection will have its own directory and f
 
 (defun tear-down-universe ()
   "Deletes any peristed data from exmaples."
-;;  (break "?")
-  (unless *universe*
-    (cl-fad:delete-directory-and-files *location* :if-does-not-exist :ignore)
-    )
+  (naive-impl:debug-log "Tearing down universe")
+  (unless *universe*    
+    (cl-fad:delete-directory-and-files *location* :if-does-not-exist :ignore))
+  
   (when *universe*
     (cl-fad:delete-directory-and-files (location *universe*) :if-does-not-exist :ignore)    
-    (setf *universe* nil)
-    ))
+    (setf *universe* nil)))
 
 (defun random-from-list (list)
   (nth (random (length list)) list))
+
+
+(defun load-data-x (collection)
+  (unless (data-loaded-p collection)
+    (format t "Loading documents from file")
+    (time
+     (load-data collection))))
 
 (defun populate-simple-data (persist-p &key (size 100))
   (let ((collection (get-collection (get-store *universe* "simple-store")
@@ -200,8 +206,7 @@ which contain the actual data. Each collection will have its own directory and f
 			"Miller")))
 
     ;;Make sure that any previously persisted documents are already loaded from disk.
-    (unless (data-loaded-p collection)
-      (load-data collection))
+    (load-data-x collection)
     
     ;;Add data documents in the form of plists to the collection. naive-store expects plists
     ;;by default. 
@@ -250,7 +255,7 @@ which contain the actual data. Each collection will have its own directory and f
 				    "simple-collection"))
 	 (result ))
     
-    (setf result (query-data collection :query (lambda (document)				    
+    (setf result (query-data collection :query (lambda (document)
 						 (<= (getx document :emp-no) 50))))
     result))
 
@@ -346,17 +351,9 @@ Only peristed if persist-p is t."
     
     (when (data-loaded-p collection)
       (clear-collection collection))
-
-    
-
-    ;;(break "lazy ~A" collection)
     
     ;;Query the data in the universe
-    (query-simple-data)
-
-    ;; (break "lazy 2 ~A" collection)
-    )
-  )
+    (query-simple-data)))
 
 (defun test-lazy-loading ()
   (let ((test-results)
@@ -394,18 +391,13 @@ Only peristed if persist-p is t."
     (when (data-loaded-p collection)      
       (clear-collection collection))
 
-   ;; (break "delete ? ~A" collection)
     ;;Query the data in the universe for the top 51 that has been deleted.
-    (query-simple-data)
-  ;;  (break "delete ?? ~A" collection)
-    )
-  
-  )
+    (query-simple-data)))
 
 (defun test-delete ()
   (let ((test-results)
 	(query-results (simple-example-delete)))
-   ;; (break "~A" query-results)
+   
     (push (list :query-result-nil (not query-results))
 	  test-results)
     
@@ -448,8 +440,7 @@ Only peristed if persist-p is t."
        
        ;;Unload the collection (contains the data) if it is already loaded.
        (when (data-loaded-p collection)
-	 (clear-collection collection)
-	 ))
+	 (clear-collection collection)))
      
     ;;Query the data in the universe
     (setf test-results (query-simple-data) )
@@ -464,8 +455,7 @@ Only peristed if persist-p is t."
     (setf results (append results (test-simple)))
     (setf results (append results (test-simple-duplicates)))
     (setf results (append results (test-lazy-loading)))
-    (setf results (append results (test-delete)))
-    ))
+    (setf results (append results (test-delete)))))
 
 (defun test-all-simple-indexed ()
   (let ((*collection-class* 'collection-indexed))
@@ -516,12 +506,9 @@ Only peristed if persist-p is t."
       ;;     (setf (gethash "Coloured" shards) (get-shard collection (naive-impl:make-mac (list "Coloured"))))
       )
 
-   ;; (break "? ~A" collection)
     ;;Make sure that any previously persisted documents are already loaded from disk.
-    (unless (data-loaded-p collection)
-        (load-data collection))
+    (load-data-x collection)
 
-   ;; (break "??~A" collection)
     ;;Add data documents in the form of plists to the collection. naive-store expects plists
     ;;by default.
     (format t "Add ~A documents to collection" size)
@@ -637,12 +624,12 @@ Only peristed if persist-p is t."
 				      "simple-collection")))
       ;;Clear the collection
       (when (data-loaded-p collection)
-	(clear-collection collection)
-	)))
-
-;;  (break "collection lazy ~A")
+	(clear-collection collection))))
+  
   ;;Query the data in the universe
-  (query-simple-data))
+  (format t "Lazy Load...+query")
+  (time
+   (query-simple-data)))
 
 (defun test-monster-lazy-loading ()
   (let ((test-results)
@@ -686,8 +673,7 @@ Only peristed if persist-p is t."
 
   (let ((collection (get-collection (get-store *universe* "simple-store")
 				    "simple-collection")))
-    (unless (documents collection)     
-      (load-data collection))
+    (load-data-x collection)
 
     ;;Get documents from index values
     (index-lookup-values collection values)))
@@ -699,8 +685,7 @@ Only peristed if persist-p is t."
 
   (let ((collection (get-collection (get-store *universe* "simple-store")
 				    "simple-collection")))
-    (unless (documents collection)     
-      (load-data collection))
+    (load-data-x collection)
 
     (query-data collection
 		:query query
@@ -713,8 +698,7 @@ Only peristed if persist-p is t."
 
   (let ((collection (get-collection (get-store *universe* "simple-store")
 				    "simple-collection")))
-    (unless (documents collection)     
-      (load-data collection))
+    (load-data-x collection)
 
     (naive-reduce collection
 		  :index-values index-values
@@ -904,8 +888,8 @@ Only peristed if persist-p is t."
 
 |#
 
-
-(require :sb-sprof)
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (require :sb-sprof))
 
 (defun profile-monster-load-data ()
   (tear-down-universe)
@@ -916,7 +900,7 @@ Only peristed if persist-p is t."
   (let ((collection (get-collection (get-store *universe* "simple-store")
 				    "simple-collection")))
     (when (data-loaded-p collection)
-      (clear-collection collection))  
+      (clear-collection collection)) 
     (sb-sprof:reset)
     (sb-sprof:start-profiling)
     (time (load-data collection))

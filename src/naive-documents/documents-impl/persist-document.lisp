@@ -12,7 +12,7 @@
 ;;TODO: Sort out blob paths once and for all!!!!
 (defmethod naive-impl:persist-form ((collection document-collection) shard blob (element-type (eql :blob))
 			 &key root parent &allow-other-keys)
-  (declare  (ignorable root) (ignorable parent))
+  (declare  (ignorable shard root parent))
   (let ((file (or (and (not (empty-p (blob-location blob)))
 		       (getx blob :location))
 
@@ -36,11 +36,9 @@
 	   :parent-accessor (getx blob :parent-accessor)))))
 
 (defmethod naive-impl:persist-form ((collection document-collection) shard document
-			 (element-type (eql :reference))
-			 &key root parent &allow-other-keys)
-  (declare  (ignorable root) (ignorable parent))
-
-  
+				    (element-type (eql :reference))
+				    &key root parent &allow-other-keys)
+  (declare  (ignorable shard root parent))
   (list
    :store (if (and (not (document-store document))
 		   (document-collection document))

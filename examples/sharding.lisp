@@ -416,7 +416,7 @@
 					      (<= (getx document :emp-no) size))))))))
 	   results))
 
-   ;; (break "?")
+    
     (print "Fetching an index set.")
     (time
      (push (list

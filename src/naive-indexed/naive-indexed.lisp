@@ -16,10 +16,16 @@
 	  :initform nil
 	  :documentation "Hash table keyed on document key values for quick retrieval of an document.
  Used when doing key value equality comparisons."))
-  
+
   (:documentation "Extends shards with indexes."))
 
 
+(defmethod clear-documents ((shard indexed-shard))
+  (call-next-method)
+  (when (hash-index shard)
+    (clrhash (hash-index shard)))
+  (when (key-value-index shard)
+    (clrhash (key-value-index shard))))
 
 
 (defclass indexed-collection-mixin ()
@@ -29,35 +35,35 @@
 	    :documentation "List of index combinations. Also indexes members partially if *partial-indexing* is t, for example '((:emp-no :surname gender)) is indexed as (:emp-no :surname :gender), (:emp-no :surname), :emp-no, :surname and :gender"))
   (:documentation "Collection extension to add very basic indexes."))
 
-(defparameter *shards-lock* (bt:make-lock "Shards Lock"))
 
+(defmethod make-shard (collection shard-mac)
+  (make-instance 'indexed-shard
+		 :mac (or shard-mac (name collection))
+		 :location (cl-fad:merge-pathnames-as-file
+			    (pathname (ensure-location collection))
+			    (make-pathname ;;:directory (list :relative (name collection))
+			     :name (or shard-mac (name collection))
+			     :type "log"))
+		 :key-value-index (make-hash-table
+				   :test 'equalp
+				   #+(or sbcl ecl) :synchronized
+				   #+(or sbcl ecl) nil)
+		 :hash-index (make-hash-table
+			      :test 'equalp
+			      #+(or sbcl ecl) :synchronized
+			      #+(or sbcl ecl) nil)
+		 :status :new))
 
+;; Locking is moved to the :around method.
 (defmethod get-shard ((collection indexed-collection-mixin) shard-mac &key &allow-other-keys)
-  (bt:with-lock-held (*shards-lock*)
-    (let ((shard (lparallel:pfind (or shard-mac (name collection)) (shards collection)
-				  :test 'equal :key 'mac)))
 
-      (unless shard
-	(naive-impl::debug-log (format nil "New shard ~A~%" (or shard-mac (name collection))))
-        
-;;	(break "get-shard ~A" collection)
-	(setf shard (make-instance 'indexed-shard
-				   :mac (or shard-mac (name collection))
-				   :location
-				   (cl-fad:merge-pathnames-as-file
-				    (pathname (ensure-location collection))
-				    (make-pathname ;;:directory (list :relative (name collection))
-				     :name (or shard-mac (name collection))
-				     :type "log"))
-				   :key-value-index
-				   #+(or sbcl ecl) (make-hash-table :test 'equalp :synchronized nil)
-				   #+(not (or sbcl ecl)) (make-hash-table :test 'equalp )
-				   :hash-index
-				   #+(or sbcl ecl) (make-hash-table :test 'equalp :synchronized nil)
-				   #+(not (or sbcl ecl)) (make-hash-table :test 'equalp )))
-        
-	(vector-push-extend shard (shards collection)))
-      shard)))
+  (cl-naive-store::get-shard-cache-safe% collection shard-mac)
+  #|
+  (find (or shard-mac (name collection))
+		       (shards collection)
+		       :test 'equal :key 'mac)
+|#
+  )
 
 (defgeneric hash (document)
   (:documentation "Returns the hash identifier for a data document. Data documents need a hash identifier to work with naive-store-indexed. naive-store-indexed will edit the document to add a hash identifier when adding documents to a collection. naive-store-indexed uses a UUID in its default implementation."))
@@ -74,22 +80,34 @@
 (defgeneric index-lookup-values (collection values &key shards &allow-other-keys)
   (:documentation "Looks up document in key value hash index. If you are not using document-types then the order of values matter."))
 
-(defmethod index-lookup-values :before (collection values &key shards &allow-other-keys)  
-  (if shards
-      (cl-naive-store::load-shards collection shards)
-      (load-data collection)))
-
 (defmethod index-lookup-values ((collection collection) values &key shards &allow-other-keys)
-  (declare (ignorable shards))
+  (declare (ignorable collection values shards))
   (warn "Not implemented!"))
 
-;;TODO: Do parallel processing... this gets call an lot so trying to do parallel
+;;TODO: Do parallel processing... this gets called an lot so trying to do parallel
 ;;slows loading down to a crawl
 (defmethod index-lookup-values ((collection indexed-collection-mixin)
-				values &key shards &allow-other-keys)
+				values &key (shards (list cl-naive-store::%loading-shard%))
+				&allow-other-keys)
   (let ((final-docs))
-    (do-sequence (shard (or shards
-		       (shards collection)) :parallel-p nil)
+    (do-sequence (shard (or (and cl-naive-store::%loading-shard%
+				 (list cl-naive-store::%loading-shard%))
+			    (shards collection)
+			    shards
+			    )
+		  :parallel-p nil)
+
+      (unless shard
+	;;TODO: The following sequence produces (NIL) think there is a problem
+	;;with the do-sequence macro taking a litteral NIL .. when parsing
+	;;cl-naive-store::%loading-shard%
+	
+	(break "??? ~A" (or (and cl-naive-store::%loading-shard%
+				 (list cl-naive-store::%loading-shard%))
+			    shards
+			    (shards collection))))
+
+      
       (let* ((index (key-value-index shard))
 	     (docs (gethash-safe (cl-murmurhash:murmurhash values) index
 				 :lock (getx (lock shard) :values-index))))
@@ -98,68 +116,32 @@
 
     (remove-duplicates final-docs)))
 
-(defgeneric index-lookup-hash (collection hash &key shards &allow-other-keys)
+(defgeneric index-lookup-hash (collection hash &key shards
+			       &allow-other-keys)
   (:documentation "Looks up document in UUID hash index. If sharsd is not supplied all loaded shards will be searched."))
 
-(defmethod index-lookup-hash :before (collection hash &key shards &allow-other-keys)
-  (if shards
-      (cl-naive-store::load-shards collection shards)
-      (load-data collection)))
-
-;;TODO: Deal with shards. Loop through shard indexes.
-(defmethod index-lookup-hash ((collection indexed-collection-mixin) hash &key shards &allow-other-keys)
-
-  ;;(break "fuck nut hash ~A" hash)
-
-  ;;TODO: Remove this load once sharding load is fixed
-  (load-data collection :parallel-p nil)
-  
+(defmethod index-lookup-hash ((collection indexed-collection-mixin) hash
+			      &key (shards (list cl-naive-store::%loading-shard%)) &allow-other-keys)
   (when hash
+    (naive-impl::debug-log "index:index-lookup-hash ~A hash ~S"
+			   (name collection) hash)
 
-    (naive-impl::debug-log (format nil "-? index:index-lookup-hash ~A~%" (name collection)))
-    (let ((shard (lparallel:pfind hash (or shards
-					   
-					   ;;(bt:with-lock-held (*shards-lock*)
-					   ;;  (shards collection))
-					   (shards collection)
-					   )
-				  :test (lambda (key shard)
-					  (let ((index (hash-index shard)))
-					    (gethash-safe key index
-							  :lock (getx (lock shard) :hash-index))))
-				  ;;:key #'hash-index
-				  )))
-      (naive-impl::debug-log (format nil "-?? index:index-lookup-hash ~A~%" (name collection)))
-
-      (unless shard
-	;;	(break "fuck ??? ~A ~A" collection shards)
-	)
-      
-      (when shard
-	(let ((doc
-		(gethash-safe (frmt "~A" hash)
-			      (hash-index shard)
-			      :lock (getx (lock shard) :hash-index))))
-	  ;;	  (if doc    (break "pussy ~A" doc)	      (break "mtf ~A" (hash-index shard)))
-
-	  doc))
-      )
-    #|
-    (do-sequence (shard (or shards	;
-    (shards collection)))		;
-					;
-      					;
-    (let ((doc (gethash (frmt "~A" hash) ;
-    (hash-index shard))))		;
-    (when doc				;
-    (return-from index-lookup-hash doc)))) ;
-    					;
-    					;
-    |#
+    (when (or shards (shards collection))
+      ;;TODO: Parallel?????????
+      (loop for shard being the elements of (or shards (shards collection))
+	    :do
+	       (naive-impl::debug-log "index:index-lookup-hash ~A shard ~S"
+				      (name collection) (and shard (short-mac shard)))
+	       (when shard
+		 (naive-impl::debug-log "index:index-lookup-hash ~A shard ~S -> ~S"
+					(name collection) (and shard (short-mac shard))
+					(gethash hash (hash-index shard)))
+		 (gethash hash (hash-index shard)))))
+    
     ))
 
 (defgeneric add-index (collection shard document &key &allow-other-keys)
-  (:documentation "Adds a document to two indexes. The first uses a UUID that will stay with the document for its life time. The UUID is used when persisting the document and is never changed once created. This allows us to change key values without loosing the identify of the original document. 
+  (:documentation "Adds a document to two indexes. The first uses a UUID that will stay with the document for its life time. The UUID is used when persisting the document and is never changed once created. This allows us to change key values without loosing the identify of the original document.
 
 The second is a key value hash index to be used when looking for duplicate documents during persist. If you are not using document-types the order of the keys in the plist matter. To make sure that you dont muck with the order of values/keys in your plists initialize all the possible value pairs with nil so that way the order is set."))
 
@@ -168,19 +150,27 @@ The second is a key value hash index to be used when looking for duplicate docum
   (let* ((index-values (indexed-impl:index-values collection document))
 	 (key-values (or key-values (key-values collection document))))
 
-    (setf (gethash-safe (hash document) (hash-index shard)
-			  :lock (getx (lock shard) :hash-index))
-	    document)
+
+    (unless shard
+      (setf shard cl-naive-store::%loading-shard%))
+
+    
+    
+    (setf (gethash-safe (hash document)
+			(hash-index shard)
+			:lock (getx (lock shard) :hash-index))
+	  document)
+
     
     ;;TODO: Check if this is still true???
     ;;Used to do document value comparisons to find index-document
     ;; (setf (gethash (frmt "~S" key-values) (key-value-index collection)) (list document))
-    (indexed-impl::push-value-index collection key-values document)
+    (indexed-impl::push-value-index collection key-values document :shard shard)
 
     ;;key-values are in effect their own value index and because it could be completely
     ;;different from index-values it is added to value indexes as well.
-    (indexed-impl::populate-value-index collection (list key-values) document)
-    (indexed-impl::populate-value-index collection index-values document)))
+    (indexed-impl::populate-value-index collection (list key-values) document :shard shard)
+    (indexed-impl::populate-value-index collection index-values document :shard shard)))
 
 (defgeneric remove-index (collection shard document &key &allow-other-keys)
   (:documentation "Removes a data document from the UUID and key value indexes."))
@@ -200,42 +190,35 @@ The second is a key value hash index to be used when looking for duplicate docum
 
 (defmethod remove-document ((collection indexed-collection-mixin)
 			    document &key shard &allow-other-keys)
-  (unless shard
-    (setf shard (get-shard collection (document-shard-mac collection document))))
-  
-  (remove-index collection shard document)
+  (call-next-method)
+  (remove-index collection shard document))
 
-;;  (break "remove-doc ~A" shard)
-  
-  (bt:with-lock-held ((getx (lock shard) :docs))
-    (let ((documents (delete (hash document) (documents shard) :test 'equalp :key #'hash)))
-   ;;   (break "remove-doc x ~a ~A" documents shard)
-      (setf (documents shard) documents)
- ;;(break "remove-doc xx ~A ~%~A~% ~a" documents document shard)
-      )))
 
 ;;NOTE: Doing this because murmurhash is creating duplicates when you go beyond 10 million index values
 (defun try-better-value-match (collection list key-values)
   (dolist (document list)
-    (when (equalp key-values (key-values collection document))      
+    (when (equalp key-values (key-values collection document))
       (return document))))
 
 
-(defmethod existing-document ((collection indexed-collection-mixin) shard document
-			      &key key-values &allow-other-keys)
-  (or
-   (and (hash document)
-	(index-lookup-hash collection (hash document) :shards (and shard (list shard))))
-   (let ((key-values
-	  (or key-values (key-values collection document))))
-     
-       (try-better-value-match
+(defmethod existing-document ((collection indexed-collection-mixin)
+			       document
+			      &key (shard cl-naive-store::%loading-shard%)
+				key-values &allow-other-keys)
+  
+  
+  (or (and (hash document)
+	   (index-lookup-hash collection (hash document) :shards (and shard (list shard))))
+      (let ((key-values
+	      (or key-values (key-values collection document))))
+
+	(try-better-value-match
 	 collection
 	 (index-lookup-values collection key-values :shards (and shard (list shard)))
 	 key-values))))
 
 (defmethod add-document ((collection indexed-collection-mixin) document
-			      &key shard (replace-existing-p t) (update-index-p t) &allow-other-keys)
+			 &key (shard cl-naive-store::%loading-shard%) (replace-existing-p t) (update-index-p t) &allow-other-keys)
   "Duplicates are not allowed for indexed collections!
 
 If the document has no hash and a document with the same keys exists in the collection the supplied document's hash will be set to that of the existing document. The existing document will then be replaced with the supplied document. This is done to maintain hash consistancy of the store.
@@ -243,46 +226,82 @@ If the document has no hash and a document with the same keys exists in the coll
 If you set replace-existing-p to nil then an existing document wont be replaced by the supplied document. Basically nothing will be done.
 
 Indexes will be updated by default, if you want to stop index updates set update-index-p to nil. Just remember that if the document is really \"new\" to the collection the indexes will be updated in any case."
-  (unless shard
-    (setf shard (get-shard collection (document-shard-mac collection document))))
 
-  (let* ((key-values (if (not (naive-impl:empty-p (hash document)))
-			 (key-values collection document)))
-	 (existing-document (existing-document collection shard document
-					       :key-values key-values))
-	 (action-taken))
+  (let ((mac (document-shard-mac collection document)))
+    (unless shard
+      (setf shard (get-shard collection mac)))
 
+    (unless shard
+      (let ((shardx 
+	      (make-shard collection mac)))
+
+	;;Make sure there is nothing to load.
+	(cl-naive-store::load-shard collection shardx (location shardx))
+	
+	(cl-naive-store::set-shard-cache-safe% collection mac shardx)
+	(vector-push-extend shardx (shards collection))
+
+	(setf shard shardx)
+	(naive-impl::debug-log "created new shard in add-document" :file-p t :args mac))))
+  
+  (let (existing-document
+	action-taken)
+    (naive-impl:debug-log "shard ~S lock shard ~S before lock"
+			  (short-mac shard) (getx (lock shard) :docs))
+
+    ;;abandoned locking here in favour of without-interupts because the odds of adding the same
+    ;;document is very low even in a highly contested environment... guess we will find out    
+    ;;TODO: Need to find out if doing a without-interupts on such a large piece of code is ok?
+    (progn
+#|
+     #+allegro mp:without-scheduling
+      #+(and cmu mp) mp:without-scheduling
+      #+digitool-mcl ccl:without-interrupts
+      #+(and ecl threads) mp:without-interrupts
+      #+(or lispworks3 lispworks4 lispworks5) mp:without-preemption
+      #+scl mp:without-scheduling
+      #+sbcl sb-sys:without-interrupts
+  |#    
+      ;;bt:with-lock-held ((getx (lock shard) :docs))
+      (naive-impl:debug-log "shard ~S lock shard ~S with lock held" (short-mac shard) (getx (lock shard) :docs))
+      (let ((key-values (if (not (naive-impl:empty-p (hash document)))
+			    (key-values collection document))))
+
+	(naive-impl:debug-log "shard ~S lock shard ~S key-values ~S"
+			      (short-mac shard) (getx (lock shard) :docs) key-values)
+	(setf existing-document (existing-document collection  document :shard shard
+						   :key-values key-values))
+	(naive-impl:debug-log "shard ~S lock shard ~S existing-document ~S"
+			      (short-mac shard) (getx (lock shard) :docs) existing-document)
+	
+	(if existing-document
+	    (progn
+	      (naive-impl:debug-log "shard ~S existing-document" (short-mac shard))
+	      (when (and (not (empty-p (hash document)))
+			 (not (equalp (hash document) (hash existing-document))))
+		(naive-impl:debug-log "shard ~S before write-log" (short-mac shard))
+		(naive-impl:write-log (location (universe (store collection)))
+				      :error (list "A document with a different hash but a document with the same key values already exists.~% You are not allowed to clobber an existing object with a new hash because you are ~%violating hash consistency of the store. ~%~%~S~%~S" document existing-document))
+		(naive-impl:debug-log "shard ~S after write-log" (short-mac shard)))
+	      
+	      (when replace-existing-p
+		(setf (hash document) (hash existing-document))
+		(when update-index-p
+		  (add-index collection shard document) :key-values key-values)
+		(setf action-taken :replaced)))
+
+	    (progn
+	      (naive-impl:debug-log "shard ~S new document" (short-mac shard))
+	      (when (naive-impl:empty-p (hash document))
+		(setf (hash document) (uuid:make-v4-uuid)))
+	      (add-index collection shard document :key-values key-values)
+	      (vector-push-extend document (documents shard))
+	      (setf action-taken :added)))))
     
-    (cond (existing-document
-	   (when (and (not (empty-p (hash document)))
-		      (not (equalp (hash document) (hash existing-document))))
-
-	     (naive-impl:write-log (location (universe (store collection)))
-				   :error (list "A document with a different hash but a document with the same key values already exists.~% You are not allowed to clobber an existing object with a new hash because you are ~%violating hash consistency of the store. ~%~%~S~%~S" document existing-document)))
-	   (when replace-existing-p
-	     (setf (hash document) (hash existing-document))
-	     (when update-index-p               
-	       (add-index collection shard document) :key-values key-values)
-             
-	     (setf action-taken :replaced)))
-	  ((not existing-document)           
-	   (when (naive-impl:empty-p (hash document))
-	     (setf (hash document) (uuid:make-v4-uuid)))
-	   (setf action-taken :added)
-	   (add-index collection shard document :key-values key-values)
-           
-	   (bt:with-lock-held ((getx (lock shard) :docs))
-	    ;; (break "add-document ~A" shard)
-	     (vector-push-extend document (documents shard))
-	   ;;  (break "add-document x ~A" shard)
-	     )))
-    
-    ;;Add document to the collection
+    (naive-impl:debug-log "shard ~S lock shard ~S after lock held"
+			  (short-mac shard) (getx (lock shard) :docs))
     (values
      document
      action-taken
      (if (equalp action-taken :replaced)
 	 existing-document))))
-
-
-

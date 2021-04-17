@@ -246,6 +246,7 @@ cl-document-types requirements are minimal and its up to you to load your type-d
 (defgeneric getxe (document element type &key &allow-other-keys))
 
 (defmethod getxe (document element type &key &allow-other-keys)
+  (declare (ignorable type))
   (getxe* document element))
 
 (defun element-type-val (element key)
@@ -277,7 +278,8 @@ cl-document-types requirements are minimal and its up to you to load your type-d
 
 (defgeneric validate-xe (document element type value &key &allow-other-keys))
 
-(defmethod validate-xe (document element type value &key &allow-other-keys)  
+(defmethod validate-xe (document element type value &key &allow-other-keys)
+  (declare (ignorable document type))
   (if (digx element :attributes :setf-validate)
       (funcall (digx element :attributes :setf-validate) value)
       (values t nil)))
@@ -286,6 +288,7 @@ cl-document-types requirements are minimal and its up to you to load your type-d
 ;;when and how to pass
 (defmethod (setf getxe) :around (value document element type     
 				 &key &allow-other-keys)
+  (declare (ignorable value document element type))
   ;;TODO: Figure out what to do in validate-xe
   ;;it is no longer clear if it is needed or what it
   ;;it is trying to do
@@ -295,6 +298,7 @@ cl-document-types requirements are minimal and its up to you to load your type-d
 
 (defmethod (setf getxe) (value document element type 
 			  &key &allow-other-keys)
+  (declare (ignorable type))
   (setf (getx document (getx element :name)) (frmt "~A" value)))
 
 

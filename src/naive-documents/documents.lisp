@@ -54,6 +54,21 @@
 
     (unless shard
       (setf shard (get-shard collection (document-shard-mac collection document))))
+
+    (unless shard
+      (let* ((mac (document-shard-mac collection document))
+	     (shardx 
+	       (make-shard collection mac)))
+
+	;;Make sure there is nothing to load.
+	(cl-naive-store::load-shard collection shardx (location shardx))
+
+	
+	(cl-naive-store::set-shard-cache-safe% collection mac shardx)
+	(vector-push-extend shardx (shards collection))
+
+	(setf shard shardx)
+	(naive-impl::debug-log "created new shard in add-document" :file-p t :args mac)))
     
     (unless (document-p document)
       (setf document (make-document 
@@ -75,7 +90,7 @@
 	     (naive-impl:persist-delete-document collection shard document file :shard shard))
 	    (t	   
 	     (let* ((existing-document
-		     (existing-document collection shard document))
+		     (existing-document collection document :shard shard))
 		    (original-document-parsed
 		     (naive-impl:persist-form
                       collection

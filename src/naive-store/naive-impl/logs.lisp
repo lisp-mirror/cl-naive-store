@@ -24,6 +24,17 @@
              *time-zone*)
           (format-date-time year month day hour min sec))))
 
+(defvar *now* (cons 0 "00000000T000000Z"))
+(defun iso-timestamp-now ()
+  (let ((now (get-universal-time)))
+    (if (= now (car *now*))
+        (cdr *now*)
+        (setf (car *now*) now
+              (cdr *now*)
+              (multiple-value-bind (se mi ho da mo ye) (decode-universal-time now 0)
+                (format nil "~4,0D~2,'0D~2,'0DT~2,'0D~2,'0D~2,'0DZ"
+                        ye mo da ho mi se))))))
+
 (defparameter *std-lock* (bt:make-lock)
   "Used to lod STD to log debug messages safely between threads.")
 
@@ -42,33 +53,46 @@
       (declare (ignore c))
       (make-pathname :directory '(:absolute "tmp")))))
 
-(defun debug-log (message &key file-p path args)
+(defun debug-log (format-control-string &rest arguments-and-keys)
+  ;; arguments-and-keys may end with [:file-p f] [:path p].
+  (let ((file-p    nil)
+	(path      nil)
+	(arguments nil)
+	(k         (reverse arguments-and-keys)))
+    (loop
+      :do (case (second k)
+	    (:file-p (setf file-p (pop k)) (pop k))
+	    (:path   (setf path   (pop k)) (pop k))
+	    (otherwise (loop-finish))))
+    (setf arguments (reverse k))
 
-  (when *debug-log-p*
-    (when *break-on-debug-log*
-      (break "~A~%~S" message args))
+    (when *debug-log-p*
+      (when *break-on-debug-log*
+	(break "~?" format-control-string arguments))
 
-    (if file-p
-	(write-to-file
-	 (cl-fad:merge-pathnames-as-file
-	  (or path (get-temp))
-	  (make-pathname :name "naive-store-debug"
-			 :type "log"))
-	 (format nil
-		 "~A:~% Thread: ~A:~% Message: ~A~%Args: ~S~%Caller: ~A~%"
-		 (format-universal-date-time (get-universal-time))
-		 (bt:current-thread)
-		 message
-		 args
-		 (second #+sbcl (sb-debug:list-backtrace)
-                 #+ccl (ccl::backtrace-as-list)
-                 #-(or sbcl ccl) nil)))
-	(bt:with-lock-held (*std-lock*)
-	  (format t
-		  "~A:~% ~A~%~S~%"
-		  (bt:current-thread)
-		  message
-		  args)))))
+      (if file-p
+
+	  (write-to-file
+	   (cl-fad:merge-pathnames-as-file
+	    (or path (get-temp))
+	    (make-pathname :name "naive-store-debug"
+			   :type "log"))
+	   (format nil
+		   "~A:~% Thread: ~A:~% Message: ~?~% Caller: ~A~%"
+		   (iso-timestamp-now) ; (format-universal-date-time (get-universal-time))
+		   (bt:thread-name (bt:current-thread))
+		   format-control-string arguments
+		   (second #+sbcl (sb-debug:list-backtrace)
+			   #+ccl (ccl::backtrace-as-list)
+			   #-(or sbcl ccl) nil)))
+	  
+	  (bt:with-lock-held (*std-lock*)
+	    (format *trace-output*
+		    "~&~A:~A:~?~%"
+		    (iso-timestamp-now)
+		    (bt:thread-name (bt:current-thread))
+		    format-control-string arguments)
+	    (force-output *trace-output*))))))
 
 (defparameter *break-on-error-log* nil
   "Causes a break when logging errors of type :error and :warning.")
@@ -89,25 +113,31 @@ Not writing stuf to .log files because that is what persist uses!!!.
 "
   (when *break-on-error-log*
     (when (or (equal type :error)
-	       (equal type :warning))
+	      (equal type :warning))
       (break "~A: ~A" type message)))
 
   (write-to-file
-       (cl-fad:merge-pathnames-as-file
-	(pathname location)
+   (cl-fad:merge-pathnames-as-file
+    (pathname location)
+    (cond ((equal type :error)
+	   (make-pathname :name "error"
+			  :type "err"))
 
-	(cond ((equal type :error)
-	       (make-pathname :name "error"
-			      :type "err"))
+	  ((equal type :warning)
+	   (make-pathname :name "warning"
+			  :type "wrn"))
+	  ((equal type :debug)
+	   (make-pathname :name "debug"
+			  :type "dbl"))
+	  (t
+	   (make-pathname :name "log"
+			  :type "lg"))))
+   message))
 
-	      ((equal type :warning)
-	       (make-pathname :name "warning"
-			      :type "wrn"))
-	      ((equal type :debug)
-	       (make-pathname :name "debug"
-			      :type "dbl"))
-	      (t
-	       (make-pathname :name "log"
-			      :type "lg"))))
-       message))
+
+
+
+
+
+
 

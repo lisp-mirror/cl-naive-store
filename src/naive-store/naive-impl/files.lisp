@@ -11,16 +11,17 @@ Source: Giovanni Gigante https://sourceforge.net/p/cl-cookbook/patches/8/|#"
        (unwind-protect
 	    (progn
 	      (loop 
-		 :for ,lock-file = (open ,lock-path :direction :output
-					 :if-exists nil
-					 :if-does-not-exist :create)
-		 :until ,lock-file
-		 :do (sleep ,(or interval 0.1))
-		 :finally (close ,lock-file))
+		:for ,lock-file = (open ,lock-path :direction :output
+						   :if-exists nil
+						   :if-does-not-exist :create)
+		:until ,lock-file
+		:do (sleep ,(or interval 0.001))
+		:finally (close ,lock-file))
 	      ,@body)
-	 (ignore-errors
-	   ;;TODO: Add logging of errors here!!!!
-	   (delete-file ,lock-path))))))
+	 (handler-case
+	     (delete-file ,lock-path)
+	   (error (err)
+	     (naive-impl:write-log nil :error '("While deleting file ~S: ~A" ,lock-path err))))))))
 
 
 (defun file-to-string (file)
@@ -84,3 +85,19 @@ NOTES: You could achieve the same with with-output-to-string, but now you dont h
       (fresh-line stream)
       (write object :stream stream)
       (fresh-line stream))))
+
+
+(defun sexp-from-file (pathname)
+  (with-open-file-lock (in pathname :if-does-not-exist :create)
+    (with-standard-io-syntax
+      (read in nil))))
+
+(defun (setf sexp-from-file) (new-sexp pathname)
+  (with-open-file-lock (out pathname
+			:direction :output
+			:if-does-not-exist :create
+			:if-exists :supersede)
+    (with-standard-io-syntax
+      (let ((*PRINT-CIRCLE* t))
+	(prin1 new-sexp out)
+	(terpri out)))))

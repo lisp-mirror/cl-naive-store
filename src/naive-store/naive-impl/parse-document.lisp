@@ -7,55 +7,19 @@
   "When documents are persisted to file any document values that are referencing an document in a different collection is first sanitized (just enough info to retrieve the document later from where it is stored).
 
 When documents are read from a file the references need to be converted to documents but for that to happen the collection containing the referenced documents need to be loaded first."
-  (let* ((store (get-store* universe (getx document-ref :store)))
+  (let* ((store      (get-store* universe (getx document-ref :store)))
 	 (collection (get-collection* store (getx document-ref :collection)))
-	 (shard-mac (getx document-ref :shard-mac))
+	 (shard-mac  (getx document-ref :shard-mac))
 	 (timeout 0))
-    ;; (break "fuck")
 
+    (unless collection
+      (setf collection (add-collection store (getx document-ref :collection))))
 
-    (unless shard-mac
-      (unless collection
-	(setf collection (add-collection store (getx document-ref :collection))))
-      (when collection
-;;	(break "ref load ~A" collection)
-	(load-data collection :parallel-p nil)))
-
-    (when shard-mac
-      ;;Incase the collection exists but has not been loaded try and load it.
-      (when collection
+    (if shard-mac
 	(let ((shard (get-shard collection shard-mac)))
-	  (cl-naive-store::load-shard  collection shard nil)
-	  ;;Another thread could have already started loading the docs
-	  ;;and and load-shard will just return if that is the case
-	  ;;but we need to know the docs are loaded successfully
-	  ;;so we wait while loading.
-	  ;;TODO: Need some timeout mechanism
-	  (loop while (and (equalp (cl-naive-store::status shard) :loading)
-			   (< timeout 1000000)
-			   )
-		:do (progn (incf timeout)
-			   (when (> timeout 900000)
-			     ;; (break "poes ~A" shard)
-			     )))))
-      
-      (unless collection
-	(add-collection store (getx document-ref :collection))
-	(let ((shard (get-shard collection shard-mac)))
-	  (cl-naive-store::load-shard collection shard nil)
-	  ;;Another thread could have already started loading the docs
-	  ;;and and load-shard will just return if that is the case
-	  ;;but we need to know the docs are loaded successfully
-	  ;;so we wait while loading.
-	  ;;TODO: Need some timeout mechanism	
-	  (loop while (and (equalp (cl-naive-store::status shard) :loading)
-			   (< timeout 1000000)
-			   )
-		:do (progn (incf timeout)
-			   (when (> timeout 900000)
-			     ;; (break "poes ~A" shard)
-			     )))
-	  )))
+	  (cl-naive-store::load-shard collection shard nil))
+
+	(load-data collection :parallel-p nil))
     
     collection))
 
@@ -100,14 +64,11 @@ When documents are read from a file the references need to be converted to docum
   (:documentation "Does special processing to compose a specific type of document or element."))
 
 (defmethod compose-special (collection shard sexp (type (eql :document)))
-  (naive-impl::debug-log (format nil "core:Compose-special :document ~A~%" (name collection)))
+  (naive-impl::debug-log "core:Compose-special :document ~A" (name collection))
   (if (getx sexp :deleted-p)
-      (progn
-	(remove-document collection sexp :shard shard)
-	;;(break "yeepus ~A" sexp)
-	)
-	;;TODO: Where to get handle-duplicates-p ???
-	(add-document collection sexp :shard shard)))
+      (remove-document collection sexp :shard shard)
+      ;;TODO: Where to get handle-duplicates-p ???
+      (add-document collection sexp :shard shard)))
 
 (defmethod compose-special (collection shard sexp (type (eql :blob)))
   (declare (ignorable collection) (ignorable shard) (ignorable type))
@@ -121,28 +82,33 @@ When documents are read from a file the references need to be converted to docum
 (defmethod compose-special (collection shard sexp (type (eql :reference)))
   (declare (ignorable shard))
 
-  (naive-impl::debug-log (format nil "core:Compose-special :reference ~A~%" (name collection)))
+  (naive-impl::debug-log "core:Compose-special :reference ~A" (name collection))
   
   (let* ((ref-collection (load-document-reference-collection
-			   (universe (store collection)) sexp))
-	(ref-document (and collection
-			 (find-document-by-hash 
-			  ref-collection
-			  (digx sexp :hash)))))           
-    (unless ref-document
+			  (universe (store collection))
 
-      ;;(break "grrr")
-      
-      #|
-      (break "shit ~A~%~A~%~A" ref-collection (digx sexp :hash)
-	     (find-document-by-hash 
-			  ref-collection
-			  (digx sexp :hash)))
-      |#
+			  ;; Assuming that the referenced collections
+			  ;; are loaded before the referencing
+			  ;; collection, if the reference already
+			  ;; contains :collection  and :store, don't
+			  ;; override it to the current one (which is
+			  ;; BEING loaded).
+			  
+			  (if (and (digx sexp :collection)
+				   (digx sexp :store))
+			      sexp
+			      (list* :collection (name collection)
+				     :store (name (store collection))
+				     sexp))))
+	 (ref-document (and collection
+			    (find-document-by-hash 
+			     ref-collection
+			     (digx sexp :hash)))))
+    (unless ref-document
       (write-log (location (universe (store collection)))
 		 :error (list "Could not resolve reference ~S~%" sexp)))
 
-    (naive-impl::debug-log (format nil "END core:Compose-special :reference ~A~%" (name collection)))
+    (naive-impl::debug-log "END core:Compose-special :reference ~A" (name collection))
     
     ref-document))
 
@@ -169,13 +135,11 @@ When documents are read from a file the references need to be converted to docum
 		(cons (car sexp) doc)))))
 
 (defmethod compose-document (collection shard document-form &key &allow-other-keys)
-  (naive-impl::debug-log (format nil "core:Compose-document ~A~%" (name collection)))
+  (naive-impl::debug-log "core:Compose-document ~A" (name collection))
   (let ((doc
 	  (compose-special collection
 			   shard
 			   (compose-parse collection shard document-form nil)
 			   :document)))
-    (naive-impl::debug-log (format nil  "END core:Compose-document ~A~%" (name collection)))
-    doc)
-
-  )
+    (naive-impl::debug-log "END core:Compose-document ~A" (name collection))
+    doc))
