@@ -21,8 +21,7 @@
 			 sexp
 			 (subseq (cl-naive-store::mac shard) 0 8))
   (if (getx sexp :deleted-p)
-      (progn (break "compose-special delete ~A~$~A" shard sexp)
-	     (remove-document collection sexp :shard shard))
+      (remove-document collection sexp :shard shard)
       ;;TODO: Where to get handle-duplicates-p ???
       (add-document collection sexp :shard shard)))
 

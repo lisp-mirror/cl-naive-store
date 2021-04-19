@@ -261,16 +261,22 @@ which contain the actual data. Each collection will have its own directory and f
 
 (defun query-ref-doc ()  
   (let* ((collection (get-collection (get-store *universe* "simple-store")
-				    "simple-collection"))
-	(reference-doc
+				     "simple-collection"))
+	 (reference-collection (get-collection (get-store *universe* "simple-store")
+						 "asset-collection"))
+	(referencing-doc
 	 (query-document collection :query (lambda (document)				    
 					     (= (getx document :emp-no) 1)))))
-    (if (document-p reference-doc)
-	(if (index-lookup-hash (get-collection (get-store *universe* "simple-store")
-						 "asset-collection")
-				 (hash (getx reference-doc :asset)))
-	      reference-doc)
-	reference-doc)))
+    (load-data reference-collection)
+    
+    
+    (if (document-p referencing-doc)
+	(index-lookup-hash reference-collection
+			   (hash (getx referencing-doc :asset)))
+	(query-document reference-collection
+			:query (lambda (document)                                 
+				 (= (getx document :asset-no)
+				    (getx (getx referencing-doc :asset) :asset-no)))))))
 
 (defun simple-example (persist-p)
   "This example sets up a store and populates a collection with a 100 data documents and then queries 
@@ -319,7 +325,7 @@ Only peristed if persist-p is t."
 	    test-results)
 
       (push (list :reference-document-found
-		  (getx (query-ref-doc) :asset)
+		  (getx (query-ref-doc) :asset-no)
 		  (query-ref-doc))
 
        test-results))

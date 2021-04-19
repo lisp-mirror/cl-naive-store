@@ -87,21 +87,15 @@
 ;;TODO: Do parallel processing... this gets called an lot so trying to do parallel
 ;;slows loading down to a crawl
 (defmethod index-lookup-values ((collection indexed-collection-mixin)
-				values &key (shards (list cl-naive-store::%loading-shard%))
+				values &key (shards (and cl-naive-store::%loading-shard%
+							 (list cl-naive-store::%loading-shard%)))
 				&allow-other-keys)
   (let ((final-docs))
-    (do-sequence (shard (or (and cl-naive-store::%loading-shard%
-				 (list cl-naive-store::%loading-shard%))
-			    (shards collection)
-			    shards
-			    )
+    (do-sequence (shard (or shards
+			    (shards collection))
 		  :parallel-p nil)
 
       (unless shard
-	;;TODO: The following sequence produces (NIL) think there is a problem
-	;;with the do-sequence macro taking a litteral NIL .. when parsing
-	;;cl-naive-store::%loading-shard%
-	
 	(break "??? ~A" (or (and cl-naive-store::%loading-shard%
 				 (list cl-naive-store::%loading-shard%))
 			    shards
@@ -121,7 +115,9 @@
   (:documentation "Looks up document in UUID hash index. If sharsd is not supplied all loaded shards will be searched."))
 
 (defmethod index-lookup-hash ((collection indexed-collection-mixin) hash
-			      &key (shards (list cl-naive-store::%loading-shard%)) &allow-other-keys)
+			      &key (shards (and cl-naive-store::%loading-shard%
+						(list cl-naive-store::%loading-shard%)))
+			      &allow-other-keys)
   (when hash
     (naive-impl::debug-log "index:index-lookup-hash ~A hash ~S"
 			   (name collection) hash)
