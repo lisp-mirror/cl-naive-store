@@ -172,10 +172,9 @@ which contain the actual data. Each collection will have its own directory and f
 
 (defun tear-down-universe ()
   "Deletes any peristed data from exmaples."
-  (naive-impl:debug-log "Tearing down universe")
-  (unless *universe*    
+  ;;  (break "?")
+  (unless *universe*
     (cl-fad:delete-directory-and-files *location* :if-does-not-exist :ignore))
-  
   (when *universe*
     (cl-fad:delete-directory-and-files (location *universe*) :if-does-not-exist :ignore)    
     (setf *universe* nil)))
@@ -253,10 +252,9 @@ which contain the actual data. Each collection will have its own directory and f
 (defun query-simple-data ()  
   (let* ((collection (get-collection (get-store *universe* "simple-store")
 				    "simple-collection"))
-	 (result ))
+	 (result (query-data collection :query (lambda (document)
+						 (<= (getx document :emp-no) 50)))))
     
-    (setf result (query-data collection :query (lambda (document)
-						 (<= (getx document :emp-no) 50))))
     result))
 
 (defun query-ref-doc ()  
@@ -282,7 +280,7 @@ which contain the actual data. Each collection will have its own directory and f
   "This example sets up a store and populates a collection with a 100 data documents and then queries 
 the collection to retrieve the the 50 documents that have a :emp-no >= 50.
 Only peristed if persist-p is t."
-  ;;Clear any risidual 
+  ;;Clear any residual 
   (tear-down-universe)
   ;;Setup the data universe aka the documents that will contain the data
   (setup-universe)
@@ -292,27 +290,40 @@ Only peristed if persist-p is t."
   ;;Query the data in the universe
   (query-simple-data))
 
-(defun test-simple ()
+(defmacro define-test (name (&rest lambda-list) &body body)
+  (multiple-value-bind (body declarations docstring)
+      (alexandria:parse-body body :documentation t)
+    `(defun ,name (,@lambda-list)
+       ,@(when docstring (list docstring))
+       ,@declarations
+       (format t "~&Started   Test ~S~%" ',name)
+       (prog1 (with-simple-restart (skip "Skip test ~A" ',name)
+		,@body)
+	 (format t "~&Completed Test ~S~%" ',name)))))
+
+(define-test test-simple ()
   (let ((test-results)
-	(query-results (simple-example t)))
+	(query-results (simple-example t))
+	(universe-store  (cl-fad:merge-pathnames-as-directory
+			   (get-temp)
+			   (make-pathname :directory '(:relative "data-universe" "simple-store")))))
     
     (push (list :universe-directory-exists
-		(probe-file
-		 (cl-fad:merge-pathnames-as-directory
-		  (get-temp)
-		  (make-pathname :directory '(:relative "data-universe" "simple-store")))))
+		(probe-file universe-store)
+		universe-store)
 	  test-results)
 
     (unless *use-shards*
-      (push (list :collection-log-exists
-		  (probe-file
-		   (cl-fad:merge-pathnames-as-file
-		    (get-temp)
-		    (make-pathname :directory
-				   '(:relative "data-universe" "simple-store" "simple-collection")
-				   :name "simple-collection"
-				   :type "log"))))
-	    test-results))
+      (let ((collection-log (cl-fad:merge-pathnames-as-file
+			     (get-temp)
+			     (make-pathname :directory
+					    '(:relative "data-universe" "simple-store" "simple-collection")
+					    :name "simple-collection"
+					    :type "log"))))
+	(push (list :collection-log-exists
+		    (probe-file collection-log)
+		    collection-log)
+	      test-results)))
     
     (let ((documents (documents
 		      (get-collection (get-store *universe* "simple-store")
@@ -328,91 +339,78 @@ Only peristed if persist-p is t."
 		  (getx (query-ref-doc) :asset-no)
 		  (query-ref-doc))
 
-       test-results))
-
-    ;;(break "~A ~% ~A" query-results (length query-results))
+	    test-results))
     
-    (push (list :query-result-count-51 (= (length query-results) 51))
+    (push (list :simple-query-result-count-51 (= (length query-results) 51) (length query-results) query-results)
 	  test-results)
-    
-    ;;(tear-down-universe)
-
+ 
     test-results))
 
 (defun simple-example-lazy-loading ()
   "naive-store does lazy loading of data from disk when doing queries."
-  ;;Clear any risidual 
+  ;;Clear any residual 
   (tear-down-universe)
-  
   ;;Setup the data universe aka the documents that will contain the data
   (setup-universe)
   ;;Generate some data and put it in the universe documents
   (populate-simple-data t)
 
-  
   ;;Unload the collection (contains the data) if it is already loaded.
   (let ((collection (get-collection (get-store *universe* "simple-store")
 				    "simple-collection")))
-
-    
     (when (data-loaded-p collection)
-      (clear-collection collection))
-    
-    ;;Query the data in the universe
-    (query-simple-data)))
+      (clear-collection collection)))
+  ;;Query the data in the universe
+  (query-simple-data))
 
-(defun test-lazy-loading ()
+
+(define-test test-lazy-loading ()
   (let ((test-results)
 	(query-results (simple-example-lazy-loading)))
 
-    
-    (push (list :query-result-count-51 (= (length query-results) 51)
+    (push (list :lazy-loading-query-result-count-51 (= (length query-results) 51)
 		:actual-count (length query-results))
-	   test-results)
+	  test-results)
+
     test-results))
 
 
 (defun simple-example-delete ()
   "naive-store does lazy loading of data from disk when doing queries."
-  ;;Clear any risidual 
+  ;;Clear any residual 
   (tear-down-universe)
   ;;Setup the data universe aka the documents that will contain the data
   (setup-universe)
   ;;Generate some data and put it in the universe documents
   (populate-simple-data t)
-
   
   (let ((results (query-simple-data))
 	(collection (get-collection (get-store *universe* "simple-store")
 				    "simple-collection")))
+
     ;;Delete the top 51 documents
     (dolist (document results)
       (delete-document collection document))
 
-
-    
-    
-    ;;Unload the collection (contains the data) if it is already loaded
     ;;to make sure the delete was persisted.
     (when (data-loaded-p collection)      
-      (clear-collection collection))
+      (clear-collection collection)))
 
-    ;;Query the data in the universe for the top 51 that has been deleted.
-    (query-simple-data)))
+  ;;Query the data in the universe for the top 51 that has been deleted.
+  (query-simple-data))
 
-(defun test-delete ()
+
+(define-test test-delete ()
   (let ((test-results)
 	(query-results (simple-example-delete)))
-   
     (push (list :query-result-nil (not query-results))
 	  test-results)
-    
     test-results))
 
-(defun test-simple-duplicates ()
+(define-test test-simple-duplicates ()
   (let ((test-results)
 	(data))
-    ;;Clear any risidual 
+    ;;Clear any residual 
     (tear-down-universe)
     ;;Setup the data universe aka the documents that will contain the data
     (setup-universe)
@@ -421,53 +419,53 @@ Only peristed if persist-p is t."
     
 
     ;;Query the data in the universe
-     (setf data (query-simple-data))
+    (setf data (query-simple-data))
 
-     (let ((collection (get-collection (get-store *universe* "simple-store")
-				       "simple-collection")))
+    (let ((collection (get-collection (get-store *universe* "simple-store")
+				      "simple-collection")))
 
-       (dolist (document data)
-	 (if (equalp *document-type* 'document)
-	     (persist-document collection
-			       (make-document 
-				:store (store collection)
-				:collection collection
-				:type-def (if (stringp (document-type collection))
-					  (document-type collection)
-					  (name (document-type collection)))		
-				:elements (document-elements document)))	    
-	     (persist-document collection 
-			     (list 
-			      :race (getf document :race)
-			      :gender (getf document :gender)
-			      :surname (getf document :surname)
-			      :name (getf document :name)			   
-			      :emp-no (getf document :emp-no)))))
+      (dolist (document data)
+	(if (equalp *document-type* 'document)
+	    (persist-document collection
+			      (make-document 
+			       :store (store collection)
+			       :collection collection
+			       :type-def (if (stringp (document-type collection))
+					     (document-type collection)
+					     (name (document-type collection)))		
+			       :elements (document-elements document)))	    
+	    (persist-document collection 
+			      (list 
+			       :race (getf document :race)
+			       :gender (getf document :gender)
+			       :surname (getf document :surname)
+			       :name (getf document :name)			   
+			       :emp-no (getf document :emp-no)))))
        
-       ;;Unload the collection (contains the data) if it is already loaded.
-       (when (data-loaded-p collection)
-	 (clear-collection collection)))
+      ;;Unload the collection (contains the data) if it is already loaded.
+      (when (data-loaded-p collection)
+	(clear-collection collection)))
      
     ;;Query the data in the universe
-    (setf test-results (query-simple-data) )
+    (setf test-results (query-simple-data))
 
     
     (list (list :no-duplicates (= (length data)
 				  (length test-results))
 		:actual-count (list (length data) (length test-results))))))
 
-(defun test-all-simple ()
-  (let ((results))
-    (setf results (append results (test-simple)))
-    (setf results (append results (test-simple-duplicates)))
-    (setf results (append results (test-lazy-loading)))
-    (setf results (append results (test-delete)))))
+(define-test test-all-simple ()
+  (append
+   (test-simple)
+   (test-simple-duplicates)
+   (test-lazy-loading)
+   (test-delete)))
 
-(defun test-all-simple-indexed ()
+(define-test test-all-simple-indexed ()
   (let ((*collection-class* 'collection-indexed))
     (test-all-simple)))
 
-(defun test-all-simple-documents ()
+(define-test test-all-simple-documents ()
   (let ((*document-type* 'document))
     (test-all-simple)))
 
@@ -477,8 +475,7 @@ Only peristed if persist-p is t."
 				    "simple-collection")))
     (query-data collection :query
 		(let ((size *monster-size*))
-		  (lambda (document)
-		    
+		  (lambda (document)		    
 		    (or (and
 			 (>= (getx document :emp-no) 50)
 			 (<= (getx document :emp-no) 100))
@@ -560,29 +557,30 @@ Only peristed if persist-p is t."
   "This example sets up a store and populates a collection with a 100 data documents and then queries 
 the collection to retrieve the the 50 documents that have a :emp-no >= 50.
 Only peristed if persist-p is t."
-  ;;Clear any risidual 
+  ;;Clear any residual 
   (tear-down-universe)
   ;;Setup the data universe aka the documents that will contain the data
   (setup-universe)
   ;;Generate some data and put it in the universe documents
   (populate-monster-data persist-p :size *monster-size*)
 
-  (format t "Query moster collection")
+  (format t "Query monster collection")
   ;;Query the data in the universe
   (time
    (query-monster-data)))
 
 
-(defun test-monster-size ()
+(define-test test-monster-size ()
   (let* ((test-results)
-	 (query-results (monster-size-example t))
-	 (query-length (length query-results)))
+	 (query-results   (monster-size-example t))
+	 (query-length    (length query-results))
+	 (universe-store  (cl-fad:merge-pathnames-as-directory
+			   (get-temp)
+			   (make-pathname :directory '(:relative "data-universe" "simple-store")))))
 
     (push (list :universe-directory-exists
-		(probe-file
-		 (cl-fad:merge-pathnames-as-directory
-				     (get-temp)
-				     (make-pathname :directory '(:relative "data-universe" "simple-store")))))
+		(probe-file universe-store)
+		universe-store)
 	  test-results)
     (unless *use-shards*
       (push (list :collection-log-exists
@@ -597,7 +595,7 @@ Only peristed if persist-p is t."
     (let ((documents (documents
 		      (get-collection (get-store *universe* "simple-store")
 				      "simple-collection"))))       
-       (push (list :documents-count-monster
+      (push (list :documents-count-monster
 		  (= (if (hash-table-p documents)
 			 (hash-table-count documents)
 			 (length documents))
@@ -616,7 +614,7 @@ Only peristed if persist-p is t."
 (defun monster-example-lazy-loading ()
   "naive-store does lazy loading of data from disk when doing queries."
 
-   ;;Clear any risidual 
+   ;;Clear any residual 
   (tear-down-universe)
   ;;Setup the data universe aka the documents that will contain the data
   (setup-universe)
@@ -637,17 +635,17 @@ Only peristed if persist-p is t."
   (time
    (query-simple-data)))
 
-(defun test-monster-lazy-loading ()
+(define-test test-monster-lazy-loading ()
   (let ((test-results)
 	(query-results (monster-example-lazy-loading)))
  
-    (push (list :lazy-query-result-count-51 (= (length query-results) 51) (length query-results))
+    (push (list :monster-lazy-query-result-count-51 (= (length query-results) 51) (length query-results))
 	   test-results)
     test-results))
 
-(defun test-all-monster ()
+(define-test test-all-monster ()
   (let ((*collection-class* 'collection)
-	;;have to trim down moster on list duplicate checking kills speed for loding db
+	;;have to trim down monster on list duplicate checking kills speed for loading db
 	(*monster-size* 10000)) 
     (let ((results))
       (setf results (append results (test-monster-size)))
@@ -655,7 +653,7 @@ Only peristed if persist-p is t."
      ;; (tear-down-universe)
       results)))
 
-(defun test-all-monster-indexed ()
+(define-test test-all-monster-indexed ()
     (let ((*collection-class* 'collection-indexed))
       (let ((results))
 	(setf results (append results (test-monster-size)))
@@ -663,7 +661,7 @@ Only peristed if persist-p is t."
 	;;(tear-down-universe)
 	results)))
 
-(defun test-all-monster-documents ()
+(define-test test-all-monster-documents ()
   (let ((*document-type* 'document))
     (let ((results))
 	(setf results (append results (test-monster-size)))
@@ -754,8 +752,7 @@ Only peristed if persist-p is t."
 	   results))
     results))
 
-
-(defun test-all-monster-indexed-queries ()
+(define-test test-all-monster-indexed-queries ()
   (let ((test-results))
     (dolist (result (indexed-query-examples))
       (push  (list (first result)
@@ -809,7 +806,7 @@ Only peristed if persist-p is t."
 	   results))
     results))
 
-(defun test-all-monster-document-queries ()
+(define-test test-all-monster-document-queries ()
   
   (let ((*document-type* 'document)
 	(test-results))
@@ -823,74 +820,57 @@ Only peristed if persist-p is t."
     test-results))
 
 
+(defvar *successes* 0)
+(defvar *failures*  0)
+
+(defmacro reporting-test-results (&body body)
+  `(let ((*successes* 0)
+         (*failures*  0))
+     (unwind-protect
+          (progn ,@body)
+       (format t "~&SUCCESS COUNT: ~8D~%" *successes*)
+       (format t "~&FAILURE COUNT: ~8D~%" *failures*)
+       (format t "~&TOTAL TESTS:  ~9D~%" (+ *successes* *failures*)))))
+
 (defun test-passed-p (results)
-  (let ((passed-p t))
+  (let ((passed-p t)
+	(*print-length* 3))
     (dolist (test results)
-      (unless (second test)
-	(setf passed-p nil)))
+      (if (second test)
+          (progn ;; success
+            (format t "~40A SUCCESS~@[ ~A~]~%" (first test)
+		    (rest (rest test)))
+            (incf *successes*))
+          (progn ;; failure
+            (format t "~40A FAILURE~@[ ~A~]~%" (first test)
+		    (rest (rest test)))
+	    (incf *failures*)
+            (setf passed-p nil))))
     passed-p))
 
 
-(defun test-all (&optional (*monster-size* 100000))
+(define-test test-all (&optional (*monster-size* 100000) &key (use-shards-p t))
+  (setf cl-naive-store-tests::*use-shards* use-shards-p)
   
   (tear-down-universe)
-  (and
-    (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-simple))
-    (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-simple-indexed))
-    (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-simple-documents))
-    (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster))
-    (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-indexed))
-    (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-indexed-queries))
-    (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-documents))
-    (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-document-queries))))
+  (reporting-test-results
+    (progn
+      (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-simple))
+      (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-simple-indexed))
+      (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-simple-documents))
+      (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster))
+      (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-indexed))
+      (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-indexed-queries))
+      (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-documents))
+      (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-document-queries)))))
 
 #|
-
 
 (push :naive-store-tests *features*)
 (ql:quickload :cl-naive-store :verbose t)
 (setf cl-naive-store-tests::*use-shards* t)
 
 (cl-naive-store-tests::test-all 100000)
-
-
-
-(cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-simple-indexed))
-(cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-simple-documents))
-(cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster))
-(cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-indexed))
-(cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-indexed-queries))
-(cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-documents))
-(cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-document-queries))
-
-;;(cl-naive-store-tests::test-monster-size)
-;;(length (cl-naive-store-tests::query-monster-data))
-;;(length (cl-naive-store-tests::query-simple-data))
-
-
-
-
-;;;IGNORE - Used to manually check stuff when writing tests
-(let ((cl-naive-store-tests::*collection-class* 'cl-naive-store::collection))
-    (cl-naive-store-tests::test-simple-duplicates))
-
-(let ((cl-naive-store-tests::*collection-class* 'cl-naive-store-tests::collection-indexed))
-    (cl-naive-store-tests::test-simple-duplicates))
-
-
-(let ((cl-naive-store-tests::*document-type* 'cl-naive-store-tests::document))
-    (cl-naive-store-tests::test-simple-duplicates))
-
-
-(let ((cl-naive-store-tests::*collection-class* 'cl-naive-store-tests::collection-indexed))
-(cl-naive-store-tests::test-simple))
-
-(let ((cl-naive-store-tests::*collection-class* 'cl-naive-store-tests::collection-indexed))
-(cl-naive-store-tests::monster-size-example t))
-
-(cl-naive-store-tests::key-values-lookup  (list :surname "Davis"))
-
-(cl-naive-store-tests::key-values-lookup  (list :race "African" :gender "Male" :surname "Davis" :name "Slave No 3" ))
 
 |#
 
@@ -911,8 +891,8 @@ Only peristed if persist-p is t."
     (sb-sprof:start-profiling)
     (time (load-data collection))
     (sb-sprof:stop-profiling)
-    (sb-sprof:report :type :flat)
-    ))
+    (sb-sprof:report :type :flat)))
+
 
 (defun profile-monster-index-load-data ()
   (let ((*collection-class* 'collection-indexed))

@@ -335,9 +335,7 @@ IMPL NOTES: To deal with customization of document-type.")
 				(make-instance (collection-class store)
 					       :name (getx file-contents :name)
 					       :location (getx file-contents :location)
-					       :document-type document-type
-						;;TODO: Is this still used????
-					       :filter (getx file-contents :filter))))
+					       :document-type document-type)))
 	      (when with-data-p
 		(load-data collection)))))))))
 
