@@ -1,7 +1,7 @@
 (in-package :naive-impl)
 
 
-(defparameter *task-pool-x* (make-instance 'cl-naive-task-pool:task-pool :thread-pool-size 8))
+;;(defparameter *task-pool-x* (make-instance 'cl-naive-task-pool:task-pool :thread-pool-size 8))
 
 (defun load-document-reference-collection (universe document-ref)
   "When documents are persisted to file any document values that are referencing an document in a different collection is first sanitized (just enough info to retrieve the document later from where it is stored).
@@ -9,8 +9,7 @@
 When documents are read from a file the references need to be converted to documents but for that to happen the collection containing the referenced documents need to be loaded first."
   (let* ((store      (get-store* universe (getx document-ref :store)))
 	 (collection (get-collection* store (getx document-ref :collection)))
-	 (shard-mac  (getx document-ref :shard-mac))
-	 (timeout 0))
+	 (shard-mac  (getx document-ref :shard-mac)))
 
     (unless collection
       (setf collection (add-collection store (getx document-ref :collection))))
