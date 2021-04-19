@@ -931,3 +931,46 @@ Only peristed if persist-p is t."
       (sb-sprof:stop-profiling)
       (sb-sprof:report :type :flat)
       )))
+
+(defun profile-monster-index-load-data-threads ()
+  (let ((*collection-class* 'collection-indexed))
+    (tear-down-universe)
+    ;;Setup the data universe aka the documents that will contain the data
+    (setup-universe)
+    ;;Generate some data and put it in the universe documents
+    (populate-monster-data t :size *monster-size*)
+    (let ((collection (get-collection (get-store *universe* "simple-store")
+				      "simple-collection")))
+      (when (data-loaded-p collection)
+	(clear-collection collection))  
+      (dotimes (i 10)
+	(bt:make-thread
+	 (lambda ()
+	   (format t "Loading data in thread - ~A~%" i)
+	   (time (load-data collection)))))
+      
+      )))
+
+
+(defun profile-monster-index-load-data-threads-queries ()
+  (let ((*collection-class* 'collection-indexed))
+    (tear-down-universe)
+    ;;Setup the data universe aka the documents that will contain the data
+    (setup-universe)
+    ;;Generate some data and put it in the universe documents
+    (populate-monster-data t :size *monster-size*)
+    (let ((collection (get-collection (get-store *universe* "simple-store")
+				      "simple-collection")))
+      (when (data-loaded-p collection)
+	(clear-collection collection))  
+      (format t "Loading data..")
+      (time (load-data collection))
+
+      (dotimes (i 50)
+	(bt:make-thread
+	 (lambda ()
+	   (format t "Query result count: ~A~%"
+		   (length (time (query-simple-data)))))))
+      
+      )))
+
