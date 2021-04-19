@@ -103,7 +103,11 @@ When documents are read from a file the references need to be converted to docum
 	 (ref-document (and collection
 			    (find-document-by-hash 
 			     ref-collection
-			     (digx sexp :hash)))))
+			     (digx sexp :hash)
+			     :shards (shards ref-collection)
+			     ))))
+
+    
     (unless ref-document
       (write-log (location (universe (store collection)))
 		 :error (list "Could not resolve reference ~S~%" sexp)))
@@ -140,6 +144,6 @@ When documents are read from a file the references need to be converted to docum
 	  (compose-special collection
 			   shard
 			   (compose-parse collection shard document-form nil)
-			   :document)))
+			   :document)))    
     (naive-impl::debug-log "END core:Compose-document ~A" (name collection))
     doc))

@@ -136,7 +136,9 @@
 		 (naive-impl::debug-log "index:index-lookup-hash ~A shard ~S -> ~S"
 					(name collection) (and shard (short-mac shard))
 					(gethash hash (hash-index shard)))
-		 (gethash hash (hash-index shard)))))
+		 (let ((doc (gethash hash (hash-index shard))))
+		   (when doc
+		     (return doc))))))
     
     ))
 

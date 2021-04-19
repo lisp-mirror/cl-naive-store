@@ -36,12 +36,13 @@
 	 :reference)
 	
 	(t
-	 (if (or
-	      (find :type document-form)
-	       (find :document-type document-form )
-	       (find :data-type document-form ))
-	     (naive-impl:write-log (location (universe (store collection)))
-			:error (list "Parsing is missing a child or reference ~%~A"  document-form)))
+	 (when (or
+		(find :type document-form)
+		(find :document-type document-form )
+		(find :data-type document-form ))
+	   (naive-impl:write-log
+	    (location (universe (store collection)))
+	    :error (list "Parsing is missing a child or reference ~%~A"  document-form)))
 
 	 nil)))
 
@@ -66,10 +67,9 @@
 
     (naive-impl::debug-log "? docs:Compose-special :document ~A" (name collection))
 
-   
     (if (getx sexp :deleted-p)
-	(when existing-document
-	  (remove-document collection existing-document))        
+	(when existing-document          
+	  (remove-document collection existing-document :shard shard))        
 	(if existing-document
 	    (progn
 	      (unless (equalp (document-elements existing-document) resolved-values)

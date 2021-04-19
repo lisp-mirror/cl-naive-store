@@ -3,6 +3,7 @@
 (defmethod naive-impl:find-document-by-hash ((collection indexed-collection-mixin) hash
 					     &key shards &allow-other-keys)
   (naive-impl::debug-log "indexed:find-document-by-hash :document ~A" (name collection))
+  
   (let ((doc 
 	  (index-lookup-hash
 	   collection
@@ -20,7 +21,8 @@
 			 sexp
 			 (subseq (cl-naive-store::mac shard) 0 8))
   (if (getx sexp :deleted-p)
-      (remove-document collection sexp :shard shard)
+      (progn (break "compose-special delete ~A~$~A" shard sexp)
+	     (remove-document collection sexp :shard shard))
       ;;TODO: Where to get handle-duplicates-p ???
       (add-document collection sexp :shard shard)))
 
