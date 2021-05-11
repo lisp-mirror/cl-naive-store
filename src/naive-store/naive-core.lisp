@@ -12,7 +12,7 @@
    (documents :initarg :documents
 	      :accessor documents
 	      :initform (make-array 1 :fill-pointer 0 :adjustable t :initial-element nil)
-	      :documentation "Documents belonging to shard.")   
+	      :documentation "Documents belonging to shard.")
    (status :initarg :status
 	     :accessor status
 	     :initform nil
@@ -20,7 +20,7 @@
    (lock :initarg :lock
 	 :accessor lock
 	 :initform (list :docs (bt:make-lock) :hash-index (bt:make-lock) :values-index (bt:make-lock))))
-  
+
   (:documentation "Sharding is when you break the physical file that backs the collection into smaller files based on data elements of a document. An instance of a shard class is used to load the documents belonging to the shard into memory."))
 
 (defclass collection ()
@@ -30,7 +30,7 @@
 	  :documentation "The store that this collection belongs to.")
    (name :initarg :name
 	 :accessor name
-	 :documentation "The collection name.")   
+	 :documentation "The collection name.")
    (location :initarg :location
 	     :accessor location
 	     :initform nil
@@ -39,7 +39,7 @@
 	  :accessor shards
 	  :initform (make-array 1 :fill-pointer 0 :adjustable t :initial-element nil)
 	  :type cl:vector
-	  :documentation "A vector of shards. 
+	  :documentation "A vector of shards.
 
 NOTES:
 
@@ -57,7 +57,7 @@ For collections that use cl-naive-document-type there is a fallback the document
 	 :accessor shard-elements
 	 :initform nil
 	 :documentation "shard-elements is a list of document element keywords to use for sharding."))
-  
+
   (:documentation "A collection of documents of a specific document-type."))
 
 (defclass store ()
@@ -82,12 +82,12 @@ For collections that use cl-naive-document-type there is a fallback the document
 	     :initform nil
 	     :documentation "The directory path to the document-type files and collection files for this store.")
    )
-  (:documentation "Document types and their associated collections are organized into groups called stores. 
+  (:documentation "Document types and their associated collections are organized into groups called stores.
 
 NOTES:
 
 collection-class and document-type-class is delcaritively specied here because they are dynamicly created when definition files are loaded. The alternative would be defmethod hell where the customizer of naive-store would have to implement a whole lot of methods that do exactly what the provided methods do just to be able to be type specific in other methods where it is actually needed. Alternatively meta classes could be used for element-class but that opens another can of worms."))
-    
+
 (defclass universe ()
   ((stores :initarg :stores
 	   :accessor stores
@@ -97,7 +97,7 @@ collection-class and document-type-class is delcaritively specied here because t
 		:accessor store-class
 		:initform 'store
 		:allocation :class
-		:documentation "The class that should be used to make stores. 
+		:documentation "The class that should be used to make stores.
 
 NOTES:
 
@@ -113,7 +113,7 @@ files are loaded. (see store notes for more about this.).")
 		  :accessor shards-cache%
 		  :initform
 		  #+(or sbcl ecl) (make-hash-table :test 'equalp :synchronized nil)
-		  #+(not (or sbcl ecl)) (make-hash-table :test 'equalp )                  
+		  #+(not (or sbcl ecl)) (make-hash-table :test 'equalp )
 		  :documentation "This was introduced to speedup finding a shard. It is only for internal use!")
    (shards-macs-cache% :initarg :shards-macs-cache%
 		  :accessor shards-macs-cache%
@@ -124,6 +124,45 @@ files are loaded. (see store notes for more about this.).")
    )
   (:documentation "Stores are held by a universe to make up a database." ))
 
+
+(defmethod print-object ((shard shard) stream)
+  (if *print-readably*
+      (format stream "(~S ~S)" (class-name (class-of shard))
+	      (list :status (slot-value shard 'status)
+		    :number-of-documents (length (documents shard))
+		    ;; there's no bt:lock-name function, so:
+		    :locks (mapcar (function princ-to-string) (lock shard))
+		    :mac (mac shard)
+		    :location (location shard)))
+      (print-unreadable-object (shard stream :type t :identity t)
+	(format stream "~S" (list :status (slot-value shard 'status)
+				  :number-of-documents (length (documents shard))
+				  :locks (lock shard)
+				  :mac (mac shard)
+				  :location (location shard)))))
+  shard)
+
+(defmethod print-object ((collection collection) stream)
+  (if *print-readably*
+      (format stream "(~S ~S)" (class-name (class-of collection))
+	      (list :name (name collection)
+		    :store (store collection)
+		    :shards (shards collection)))
+      (print-unreadable-object (collection stream :type t :identity t)
+	(format stream "~S" (list :name (name collection)
+				  :store (name (store collection))
+				  :shards (map 'list (function short-mac) (shards collection))))))
+  collection)
+
+(defmethod print-object ((store store) stream)
+  (if *print-readably*
+      (format stream "(~S ~S)" (class-name (class-of store))
+	      (list :name (name store)
+		    :collections (collections store)))
+      (print-unreadable-object (store stream :type t :identity t)
+	(format stream "~S" (list :name (name store)
+				  :colletions (map 'list (function name) (collections store))))))
+  store)
 
 
 (defgeneric short-mac (shard)
@@ -155,7 +194,7 @@ files are loaded. (see store notes for more about this.).")
        documents))
 
 (defun match-shard (filename shards)
-  (dolist (mac shards)    
+  (dolist (mac shards)
     (when (search (typecase mac
 		    (shard
 		     (mac mac))
@@ -205,7 +244,7 @@ files are loaded. (see store notes for more about this.).")
 		 :status :new))
 
 
-(defmethod get-shard (collection shard-mac &key &allow-other-keys)  
+(defmethod get-shard (collection shard-mac &key &allow-other-keys)
   (cl-naive-store::get-shard-cache-safe% collection shard-mac)
 #|
   (find (or shard-mac (name collection))
@@ -229,7 +268,7 @@ files are loaded. (see store notes for more about this.).")
   "Calculating a mac is expensive so caching shard value macs in a hashtable but that hashtable needs to be thread safe so using safe functions to get and set."
   (let ((value))
     ;;cant use lparallel the order of values are important.
-    (dolist (element (shard-elements collection))      
+    (dolist (element (shard-elements collection))
       (push (list element (getx document element)) value))
 
     (if value
@@ -258,7 +297,7 @@ files are loaded. (see store notes for more about this.).")
 
 (defgeneric persist (object &key &allow-other-keys)
   (:documentation "Writes various store structural objects to "))
-  
+
 (defmethod persist ((store store) &key &allow-other-keys)
   "Persists a store definition and not what it contains! Path to file is of this general format
 /universe/store-name/store-name.store."
@@ -269,7 +308,7 @@ files are loaded. (see store notes for more about this.).")
 		   :type "store"))
    (list :name (name store)
 	 :location (location store))
-  
+
    :if-exists :supersede))
 
 (defgeneric persist-collection-def (colleciton)
@@ -281,9 +320,9 @@ files are loaded. (see store notes for more about this.).")
     (pathname (location (store collection)))
     (make-pathname :name (name collection)
 		   :type "col"))
-   (list 
+   (list
     :name (name collection)
-    :location (location collection))		 		 
+    :location (location collection))
    :if-exists :supersede))
 
 ;;TODO: handle hashtable with specialization
@@ -299,7 +338,7 @@ files are loaded. (see store notes for more about this.).")
 	     (stream (location shard))
 
 	   (if (hash-table-p (documents shard))
-	       
+
 	       (maphash (lambda (key doc)
 			  (declare (ignore key))
 			  (persist-document collection doc :shard shard :file-stream stream))
@@ -309,7 +348,7 @@ files are loaded. (see store notes for more about this.).")
     (dotimes (i (length (shards collection)))
       i
       (lparallel:receive-result channel))
-    
+
     ))
 
 (defmethod persist ((collection collection) &key &allow-other-keys)
@@ -331,7 +370,7 @@ files are loaded. (see store notes for more about this.).")
 	       (make-pathname :directory (list :relative (name store))))))
 	(ensure-directories-exist location)
 	(setf (location store) (pathname location))))
-    
+
     (setf (universe store) universe)
     (persist store)
     (pushnew store (stores universe)))
@@ -348,15 +387,15 @@ files are loaded. (see store notes for more about this.).")
 	(store))
 
     (with-open-file (in filename :if-does-not-exist :create)
-      (with-standard-io-syntax              
+      (with-standard-io-syntax
 	(when in
 	  (setf store-def (read in nil))
 	  (close in))))
-    
+
     (when store-def
       (setf store
 	    (make-instance (store-class universe)
-			   :name (getx store-def :name)		    
+			   :name (getx store-def :name)
 			   :location (getx store-def :location))))
     store))
 
@@ -389,22 +428,22 @@ files are loaded. (see store notes for more about this.).")
 
 ;;TODO: Deal with sharding
 (defmethod add-collection ((store store) (collection collection))
-  (unless (get-collection store (name collection))    
+  (unless (get-collection store (name collection))
     (let ((location (location collection)))
-      
+
       (when location
 	(ensure-directories-exist (pathname location)))
 
-      (unless location 
+      (unless location
 	(setf location
 	      (cl-fad:merge-pathnames-as-file
 	       (pathname (location store))
 	       (make-pathname :directory (list :relative (name collection))
 			      :name (name collection)
 			      :type "log")))
-        
+
 	(ensure-directories-exist location))
-      
+
       (setf (location collection) (pathname location))
       (pushnew collection (collections store))
       (setf (store collection) store)
@@ -415,13 +454,13 @@ files are loaded. (see store notes for more about this.).")
   (:documentation "Clears documents indexes etc from collection."))
 
 (defmethod clear-collection (collection)
-  (do-sequence (shard (shards collection))    
+  (do-sequence (shard (shards collection))
     (remhash (frmt "~A-~A-~A"
 		      (name (store collection))
 		      (name collection)
 		      (or (mac shard) (name collection)))
 	     (shards-cache% (universe (store collection))))
-    (setf shard nil))  
+    (setf shard nil))
   (setf (shards collection) (make-array 1 :fill-pointer 0 :adjustable t :initial-element nil)))
 
 (defgeneric remove-collection (store collection)
@@ -467,7 +506,7 @@ load-data could have been used to load universe or store as well but those have 
 (defmethod ensure-location ((object collection))
   (if (and (not (empty-p (location object)))
 	   (equalp (pathname-type (pathname (location object)))
-		   "log"))      
+		   "log"))
       (location object)
       (if (not (store object))
 	  (error "Collection store not set, cant ensure location.")
@@ -486,7 +525,7 @@ load-data could have been used to load universe or store as well but those have 
 (defgeneric data-loaded-p (container &key *allow-other-keys)
   (:documentation "Checks if the data is loaded for the container, be it universe , store or collection.
 
-NOTES: 
+NOTES:
 
 This physically checks each collection's underlying concrete data structure for data. This is done because a collection can be empty and still loaded, thus setting a status when loaded became confusing and could be missed by an over loading method.
 
@@ -496,22 +535,22 @@ If you change the underlying container for (shards collection) or the container 
 (defmethod data-loaded-p ((collection collection) &key shard-macs &allow-other-keys)
 
   (let ((all-shards-p nil))
-    (if (not shard-macs)      
+    (if (not shard-macs)
 	(if (and collection
 		 (shards collection)
 		 (> (fill-pointer (shards collection)) 0))
 	    (do-sequence (shard-found (shards collection))
-	      (if (or		       
+	      (if (or
 		   (equalp (status shard-found) :loaded)
 		   (> (length (documents shard-found)) 0))
 		  (push shard-found all-shards-p)
 		  (push nil all-shards-p))))
-        
+
 	(do-sequence (mac shard-macs)
 	  (let ((shard-found (cl-naive-store::get-shard-cache-safe% collection mac)
 		  ;;(find mac (shards collection) :test 'equal :key 'mac)
 
-		  ))	  
+		  ))
 	    (if shard-found
 		(push shard-found all-shards-p)
 		(push nil all-shards-p)))))
