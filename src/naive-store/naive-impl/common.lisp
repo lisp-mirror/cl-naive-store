@@ -17,7 +17,7 @@ Source: On Lisp"
 	 (when result
 	   (if append-p
 	       (setf result (append results (list result)) )
-	       (push result results)))))     
+	       (push result results)))))
      hash-table)
     results))
 
@@ -33,9 +33,9 @@ Source: On Lisp"
    '(#\Space #\Newline #\Tab #\Return) string))
 
 (defun empty-p (value)
-  "Checks if value is null/nil or an empty string.."  
+  "Checks if value is null/nil or an empty string.."
   (or
-   (not value)   
+   (not value)
    (equal value "")
    (if (stringp value)
        (let ((stripped-value (trim-whitespace value)))
@@ -45,12 +45,12 @@ Source: On Lisp"
 
 (defun plist-to-values (values)
   "Returns the values of a plist."
-  (loop :for (nil b) :on values :by #'cddr 
+  (loop :for (nil b) :on values :by #'cddr
 	:collect b))
 
 (defun plist-to-pairs (values)
   "Returns a list of key value pairs of a plist."
-  (loop :for (a b) :on values :by #'cddr 
+  (loop :for (a b) :on values :by #'cddr
 	:collect (list a b)))
 
 (defparameter *mac-key* 5873965167969913164)
@@ -68,17 +68,16 @@ This is used to create shard filenames. "))
 	 (array (babel:string-to-octets
 		 (frmt
 		  "~S" value))))
-    
+
     (ironclad:update-mac mac array)
 
     (ironclad:byte-array-to-hex-string
      (ironclad:produce-mac
       mac))))
 
-(setf lparallel:*kernel* (lparallel:make-kernel (cl-cpus:get-number-of-processors)
-						;;:bindings '((*with-open-file-lock* . nil))
-						))
-
+(setf lparallel:*kernel* (lparallel:make-kernel
+                          ;; In ccl, cl-cpus:get-number-of-processors returns 0.
+                          (max 2 (cl-cpus:get-number-of-processors))))
 
 ;;(defparameter *task-pool* (make-instance 'cl-naive-task-pool:task-pool :thread-pool-size 8))
 
@@ -106,17 +105,17 @@ This is used to create shard filenames. "))
 
 (defmethod (setf gethash-safe) (value key hash &key (lock *lock*) (recursive-p nil))
   #|
-(if recursive-p 
-      (bt:with-recursive-lock-held (lock)	 
+(if recursive-p
+      (bt:with-recursive-lock-held (lock)
 	(setf (gethash key hash) value))
-      (bt:with-lock-held (lock)	 
+      (bt:with-lock-held (lock)
 	(setf (gethash key hash) value)))
 |#
   (setf (gethash key hash) value))
 
 (defmethod remhash-safe (key hash &key (lock *lock*) (recursive-p nil))
   #|
-  (if recursive-p 
+  (if recursive-p
       (bt:with-recursive-lock-held (lock)
 	(remhash key hash))
       (bt:with-lock-held (lock)
@@ -128,29 +127,29 @@ This is used to create shard filenames. "))
 
 (defun call-do-sequence (thunk with-index-p sequence &key parallel-p )
   (setf parallel-p nil)
-  (if parallel-p     
+  (if parallel-p
       (lparallel:pdotimes (index (length sequence))
 			   (let ((element (elt sequence index)))
 			     (if with-index-p
 				 (funcall thunk element index)
 				 (funcall thunk element))))
       (etypecase sequence
-	(list 
+	(list
 	 (loop for index from 0
 	    for element in sequence
 	    do (if with-index-p
 		   (funcall thunk element index)
 		   (funcall thunk element))))
-	(vector         
+	(vector
 	 (loop for index from 0
 	    for element across sequence
 	    do (if with-index-p
 		   (funcall thunk element index)
 		   (funcall thunk element)))))))
 
-(defmacro do-sequence ((element-var sequence &key index-var (parallel-p nil) )		       
+(defmacro do-sequence ((element-var sequence &key index-var (parallel-p nil) )
 		       &body body)
-  "Iterates over the sequence applying body. In the body you can use the element-var and/or the index-var if supplied. 
+  "Iterates over the sequence applying body. In the body you can use the element-var and/or the index-var if supplied.
 
 If you set parallel-p then the body is executed asyncronously. Asyncronous excecution places restraints on how special variables can be used within the body.
 
@@ -173,4 +172,3 @@ To get the best out of do-sequence use the parallel option if the sequence is la
     ,(when index-var t)
     ,sequence
     :parallel-p ,parallel-p ))
-
