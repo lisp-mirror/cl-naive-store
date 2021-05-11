@@ -1,0 +1,59 @@
+#!/bin/bash
+
+# Example of invokation to use ccl:
+# load_system=load_system_in_ccl tests/test-load-systems 
+load_system=${load_system:-load_system_in_sbcl}
+
+systems=(
+    cl-naive-store
+    cl-naive-store.naive-core
+    cl-naive-store.document-type-defs
+    cl-naive-store.document-types
+    cl-naive-store.naive-documents
+    cl-naive-store.naive-indexed
+    cl-naive-store.naive-merkle
+    cl-naive-store.test
+)
+
+line=------------------------------------------------------------------------
+
+function check_pwd(){
+    if [ -r cl-naive-store.asd ] ; then
+	true
+    else
+	printf 'Please change current directory to the root of the repository,\n' 1>&2
+	printf 'where cl-naive-store.asd is stored.\n' 1>&2
+	exit 69 # EX_UNAVAILABLE
+    fi
+}
+
+function load_system_in_sbcl(){
+    sbcl --no-userinit --non-interactive \
+         --eval '(load #P"~/quicklisp/setup.lisp")' \
+         --eval '(push #P"'$(pwd)/'" asdf:*central-registry*)' \
+         --eval '(ql:quickload :'$1' :verbose t)' \
+         --quit
+}
+
+function load_system_in_ccl(){
+    ccl --no-init --quiet --batch \
+        --eval '(load #P"~/quicklisp/setup.lisp")' \
+        --eval '(push #P"'$(pwd)/'" asdf:*central-registry*)' \
+        --eval '(ql:quickload :'$1' :verbose t)' \
+        --eval '(ccl:quit)'
+}
+
+
+function main(){
+    check_pwd
+
+    for system in ${systems[@]} ; do
+	echo "$line"
+	echo "$system"
+	echo "$line"
+	$load_system $system
+    done
+    echo "$line"
+}
+
+main

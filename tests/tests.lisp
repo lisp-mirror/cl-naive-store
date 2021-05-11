@@ -185,6 +185,14 @@ which contain the actual data. Each collection will have its own directory and f
 (defun random-from-list (list)
   (nth (random (length list)) list))
 
+
+(defun load-data-x (collection)
+  ;; TODO: there are cases where what is tested is (unless (documents collection) (load-data collection)) below.  Check if it's ok.  Do we want to time them too?
+  (unless (data-loaded-p collection)
+    (format t "Loading documents from file")
+    (time (load-data collection))))
+
+
 (defun populate-simple-data (persist-p &key (size 100))
   (let ((collection (get-collection (get-store *universe* "simple-store")
 				    "simple-collection"))
@@ -201,8 +209,7 @@ which contain the actual data. Each collection will have its own directory and f
 			"Miller")))
 
     ;;Make sure that any previously persisted documents are already loaded from disk.
-    (unless (data-loaded-p collection)
-      (load-data collection))
+    (load-data-x collection)
 
     ;;Add data documents in the form of plists to the collection. naive-store expects plists
     ;;by default.
@@ -505,8 +512,7 @@ Only peristed if persist-p is t."
 
     ;; (break "? ~A" collection)
     ;;Make sure that any previously persisted documents are already loaded from disk.
-    (unless (data-loaded-p collection)
-      (load-data collection))
+    (load-data-x collection)
 
     ;; (break "??~A" collection)
     ;;Add data documents in the form of plists to the collection. naive-store expects plists

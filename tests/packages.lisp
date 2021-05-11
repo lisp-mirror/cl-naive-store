@@ -10,9 +10,16 @@
 	:cl-naive-documents)
   (:export
    :*universe*
-   :test-simple
-   :test-lazy-loading
-   :test-delete
+
    :test-all
+   :test-all-examples
+   :test-all-simple
+   :test-all-simple-documents
+   :test-all-simple-indexed
+   :test-delete
+   :test-lazy-loading
+   :test-simple
+   :test-simple-duplicates
+   
    :test-passed-p
    ))
