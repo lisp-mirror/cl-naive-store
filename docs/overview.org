@@ -35,7 +35,7 @@ does what you need then write your own layer.
 There is a data-universe which contains a list of stores, which
 contains a list of collections, which contains a list of "objects".
 
-#+BEGIN_SRC mermaid :results value html :file universe.png
+#+BEGIN_SRC mermaid :exports results :file universe.png
   graph LR;
       A[data-universe]-->B[stores];
       B-->D[collections];
