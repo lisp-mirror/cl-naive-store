@@ -43,7 +43,7 @@ contains a list of collections, which contains a list of "objects".
 #+END_SRC
 
 #+RESULTS:
-[[file:universe.png]]
+[[universe.png]]
 
 When data is persisted the file folders/directories mirror the
 relationship above, which makes it possible to lazy load the data only
