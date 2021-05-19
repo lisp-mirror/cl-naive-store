@@ -35,14 +35,12 @@ does what you need then write your own layer.
 There is a data-universe which contains a list of stores, which
 contains a list of collections, which contains a list of "objects".
 
-#+BEGIN_EXAMPLE
 ```mermaid
 graph LR;
 A[data-universe]-->B[stores];
 B-->D[collections];
 D-->E[objects]
 ```
-#+END_EXAMPLE
 
 When data is persisted the file folders/directories mirror the
 relationship above, which makes it possible to lazy load the data only
