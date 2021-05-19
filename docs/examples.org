@@ -12,4 +12,4 @@ Examples below become more and more complex as you go down the list.
 
 [[file:sharding-example.org][Sharding]]
 
-[[file:home.org][[home]​]] [[file:over-view.org][[previous]​]] [[file:basic-example.org][[next]​]]
+[[file:home.org][Home]] [[file:overview.org][Previous]] [[file:basic-example.org][Next​]]

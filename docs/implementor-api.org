@@ -304,3 +304,4 @@ plist represents an document.
 
 **** [generic function] naive-impl:compose-document ((collection document-collection) shard document-form &key &allow-other-keys)
 
+[[file:home.org][Home]]

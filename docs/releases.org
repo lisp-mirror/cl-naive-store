@@ -231,4 +231,4 @@ Added date-time type to data-type-defs using local-time library.
 Made loading of indexes faster, and added alternative implementations
 (avl-tree) for indexing guts.
 
-[[previous](Home)]
+[[file:home.org][Home]]

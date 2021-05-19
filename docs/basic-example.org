@@ -56,4 +56,4 @@ You can see that Piet Gieter appears only once, because duplicates are handled.
 
 To allow duplicates set handle-duplicates on the collection or store or universe level to :no.
 
-[[file:home.org][[home]​]] [[file:examples.org][[previous]​]] [[file:basic-example-with-persistence.org][[next]​]]
+[[file:home.org][Home]] [[file:examples.org][Previous]] [[file:basic-example-with-persistence.org][Next]]

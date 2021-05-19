@@ -101,4 +101,4 @@ You could use
 
 to lookup Koos by uuid value.
 
-[[file:home.org][[home]​]] [[file:basic-example-with-persistence.org][[previous]​]] [[file:documents-example.org][[next]​]]
+[[file:home.org][Home]] [[file:basic-example-with-persistence.org][Previous]] [[file:documents-example.org][Next]]

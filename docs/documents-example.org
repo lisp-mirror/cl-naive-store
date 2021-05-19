@@ -267,5 +267,5 @@ the document is persisted or abandoned.
 Take note that **getx** will return "Potgieter" now even if the
 document has not been persisted yet.
 
-[[file:home.org][[home]​]] [[file:indexed-example.org][[previous]​]] [[file:sharding-example.org][[next]​]]
+[[file:home.org][Home]] [[file:indexed-example.org][Previous]] [[file:sharding-example.org][Next]]
 

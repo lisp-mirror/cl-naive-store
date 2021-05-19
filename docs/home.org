@@ -74,5 +74,5 @@ The following .asd files can be used to load different functionality:
 
 [[file:rough-bench-marks.org][Rough Bench Marks]]
 
-[[file:overview.org][[Next]​]]
+Home Previous [[file:overview.org][Next]]
 

@@ -69,4 +69,4 @@ In this example query-data loaded the data into the collection and then only ran
 
 You can explicitly load the collection yourself by using (load-data collection).
 
-[[file:home.org][[home]​]] [[file:basic-example.org][[previous]​]] [[file:basic-example-with-persistance.org][[next]​]]
+[[file:home.org][Home]] [[file:basic-example.org][Previous]] [[file:indexed-example.org][Next]]

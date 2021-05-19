@@ -750,3 +750,5 @@ store and universe using getx.
 **** [generic function]  digx ((place document) &rest indicators)
 
 (setf digx) (value (place document) &rest indicators)
+
+[[file:home.org][Home]]
