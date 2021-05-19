@@ -18,14 +18,12 @@ will look at the parts of the type def.
 ** :document-type
 
 #+BEGIN_SRC lisp
-  ```
   (:document-type
    (:name "for use by programs"
     :label "name for use by humans"
     :elements "a list of elements that make up the document type"
     :attributes "anything else you want to share about the data type"
     :documentation ""))
-  ```
 #+END_SRC
 
 Looks familiar? Well it should look and smell like a naivie-document-type
