@@ -71,36 +71,37 @@
 	(str ""))
 
     (with-open-file (in (getx blob-ref-values :location)
-			:direction :input		     
+			:direction :input
 			:if-does-not-exist nil)
       (when in
 	(loop for line = (read-line in nil)
-	   while line do (write-line line out) )
+	      while line do (write-line line out))
 	(close in))
       (setf str (get-output-stream-string out))
       (close out))
-    
+
     (make-blob
      :file-type (getx blob-ref-values :file-type)
      :file-ext (getx blob-ref-values :file-ext)
      :location (getx blob-ref-values :location)
-     :raw str     
+     :raw str
      :parent-accessor (getx blob-ref-values :parent-accessor))))
 
 (defun write-blob (file value)
   "Wrties the raw blob contents to file."
   (let ((*read-eval* nil)
 	(in (make-string-input-stream value)))
-    
+
     (ensure-directories-exist file)
     (naive-impl:with-file-lock (file)
-	(with-open-file (out file
-			     :direction :output
-			     :if-exists :supersede
-			     :if-does-not-exist :create)
-	  (when in
-	    (loop for line = (read-line in nil)		 
-	       while line do (write-line line out) )
-	    (close in))
-	  
-	  (close out)))))
+      (with-open-file (out file
+			   :direction :output
+			   :if-exists :supersede
+			   :if-does-not-exist :create)
+	(when in
+	  (loop for line = (read-line in nil)
+		while line do (write-line line out))
+	  (close in))
+
+	(close out)))))
+

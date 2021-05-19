@@ -1,0 +1,271 @@
+* Naive Documents Example
+
+Using cl-naive-documents gives you a lot of functionality out of the
+box but you need to do more work to set it up right.
+
+#+BEGIN_SRC lisp
+  ```common_lisp
+  ;;Setup to use cl-naive-store
+  (require 'cl-naive-store)
+  (defpackage :naive-examples (:use :cl
+			       :cl-getx :cl-naive-store
+			       :cl-naive-indexed
+				    :cl-naive-document-types
+			       :cl-naive-document-type-defs
+				    :cl-naive-documents))
+  (in-package :naive-examples)
+
+  ;;Create a data definition for an employee
+  ;;It looks like a lot but dont panic its simple.
+  (defparameter *employee-document-type*
+    '(:name "employee"
+      :label "Employee"
+      :elements ((:name :emp-no
+		  :label "Employee No"
+		  :db-type :string
+		  :key-p t
+		  :attributes (:display t :editable t))
+		 (:name :name
+		  :label "Name"
+		  :db-type :string
+		  :attributes (:display t :editable t))
+		 (:name :surname
+		  :label "Surname"
+		  :db-type :string
+		  :attributes (:display t :editable t)))
+      :documentation "This type represents a simple employee master."))
+
+  ;;Create a universe
+  (defparameter *universe* (make-instance
+			    'universe
+			    :location "~/data-universe/" ;Setting the location on disk.
+			    :store-class 'store))
+
+  (let* (;;Create a store and add it to the universe
+	 (store (add-store *universe*
+			   (make-instance 'document-store
+					  :name "simple-store"
+					  :collection-class 'collection)))
+	 (collection)
+	 (elements)
+	 (document-type)
+	 (results))
+
+    ;;initialize the data employee data definition.
+    (dolist (element (getf *employee-document-type* :elements))
+      (setf
+       elements
+       (append elements
+	       (list (make-instance
+		      'element
+		      :name (getf element :name)
+		      :key-p (getf element :key-p)
+		      :type-def (getf element :type-def)
+		      :attributes (getf element :attributes))))))
+
+    (setf document-type (add-document-type
+			 store
+			 (make-instance
+			  'document-type
+			  :name (getf *employee-document-type* :name)
+			  :label (getf *employee-document-type* :label)
+			  :elements elements)))
+
+    ;;Create a collection and add it to the store
+    (setf collection (add-collection store
+				     (make-instance 'document-collection ;;using documents collection.
+						    :name "simple-collection"
+						    :document-type document-type
+						    ;;Not specifying the keys to show
+						    ;;that they are retrieved from the document-type
+						    ;;if if no key is set.
+						    ;;:keys ...
+						    ;;Specifying the elements to set up indexes for.
+						    :indexes '((:name :surname)))))
+    ;;Add some documents to the collection
+    (persist-document collection
+		      (make-document
+		       :store (store collection)
+		       :collection collection
+		       :type-def "employee"
+		       :elements (list :name "Piet" :surname "Gieter" :emp-no 123)))
+
+    (persist-document collection
+		      (make-document
+		       :store (store collection)
+		       :collection collection
+		       :type-def "employee"
+		       :elements (list :name "Sannie" :surname "Gieter" :emp-no 321)))
+
+    (persist-document collection
+		      (make-document
+		       :store (store collection)
+		       :collection collection
+		       :type-def "employee"
+		       :elements (list :name "Koos" :surname "Van" :emp-no 999)))
+
+    (persist-document collection
+		      (make-document
+		       :store (store collection)
+		       :collection collection
+		       :type-def "employee"
+		       :elements (list :name "Frikkie" :surname "Frikkedel" :emp-no 1001)))
+
+    (persist-document collection
+		      (make-document
+		       :store (store collection)
+		       :collection collection
+		       :type-def "employee"
+		       :elements (list :name "Tannie" :surname "Frikkedel" :emp-no 1001)))
+
+    ;;Lookup koos using index values and add it to results
+    (push
+     (index-lookup-values collection (list (list :name "Koos")
+					   (list :surname "Van")))
+     results)
+
+    ;;Lookup Frikkedel using index values and add it to results
+    (push
+     (index-lookup-values collection (list :surname "Frikkedel"))
+     results)
+
+    ;;Query the collection, query-data will load the data from file if the collection is empty,
+    ;;and add it to the results
+    (push (query-data collection :query (lambda (document)
+					  (<= (getx document :emp-no) 900)))
+	  results)
+
+    (reverse results))
+
+  ```
+#+END_SRC
+
+Output:
+
+#+BEGIN_SRC lisp
+  ```common_lisp
+  ((#S(document
+       :STORE #<document-STORE {10172A8A73}>
+       :COLLECTION #<document-COLLECTION {1017369EA3}>
+       :DATA-TYPE "employee"
+       :HASH "8290C189-175D-4327-A471-E52A42555AAB"
+       :VALUES (:NAME "Koos" :SURNAME "Van" :EMP-NO 999)
+       :CHANGES NIL
+       :VERSIONS NIL
+       :DELETED-P NIL
+       :PERSISTED-P T))
+   (#S(document
+       :STORE #<document-STORE {10172A8A73}>
+       :COLLECTION #<document-COLLECTION {1017369EA3}>
+       :DATA-TYPE "employee"
+       :HASH "94CD51F9-9346-473D-B8F9-DE17B8E050E1"
+       :VALUES (:NAME "Tannie" :SURNAME "Frikkedel" :EMP-NO 1001)
+       :CHANGES NIL
+       :VERSIONS NIL
+       :DELETED-P NIL
+       :PERSISTED-P T)
+      #S(document
+	 :STORE #<document-STORE {10172A8A73}>
+	 :COLLECTION #<document-COLLECTION {1017369EA3}>
+	 :DATA-TYPE "employee"
+	 :HASH "94CD51F9-9346-473D-B8F9-DE17B8E050E1"
+	 :VALUES (:NAME "Frikkie" :SURNAME "Frikkedel" :EMP-NO 1001)
+	 :CHANGES NIL
+	 :VERSIONS NIL
+	 :DELETED-P NIL
+	 :PERSISTED-P T))
+   (#S(document
+       :STORE #<document-STORE {10172A8A73}>
+       :COLLECTION #<document-COLLECTION {1017369EA3}>
+       :DATA-TYPE "employee"
+       :HASH "68434DF1-A04D-4D33-96F1-89D217A193FD"
+       :VALUES (:NAME "Sannie" :SURNAME "Gieter" :EMP-NO 321)
+       :CHANGES NIL
+       :VERSIONS NIL
+       :DELETED-P NIL
+       :PERSISTED-P T)
+      #S(document
+	 :STORE #<document-STORE {10172A8A73}>
+	 :COLLECTION #<document-COLLECTION {1017369EA3}>
+	 :DATA-TYPE "employee"
+	 :HASH "8C4733F2-5309-41A7-BB21-D5625A9A30FE"
+	 :VALUES (:NAME "Piet" :SURNAME "Gieter" :EMP-NO 123)
+	 :CHANGES NIL
+	 :VERSIONS NIL
+	 :DELETED-P NIL
+	 :PERSISTED-P T)))
+  ```
+#+END_SRC
+
+In the returned list the first document is Koos that we looked up using the index. We used a full index lookup ie we used all the index values.
+
+The second document is a list of both Frikie and Tannie that we looked up using the surname index. We used partial index lookup ie just the surname was used in the lookup.
+
+The third document is a list of all the :key values <= 900
+
+You will notice that the employees are now represented by a complex struct. All the meta data for the employee document is now captured by the struct elements. The value element contains the actual employee element values.
+
+To see the file created for the data go to \~/data-universe/simple-store/simple-collection/ there you should find a simple-collection.log file and you should see the following in the file:
+
+#+BEGIN_SRC lisp
+  ```common_lisp
+
+  (:STORE "simple-store" :COLLECTION "simple-collection" :DATA-TYPE "employee"
+   :HASH "12866A48-A0E3-4237-BB15-9036550B63E6" :DELETED-P NIL :VALUES
+	  (:NAME "Piet" :SURNAME "Gieter" :EMP-NO 123))
+  (:STORE "simple-store" :COLLECTION "simple-collection" :DATA-TYPE "employee"
+   :HASH "18126ED4-7A89-4303-9709-C055DFC93AE6" :DELETED-P NIL :VALUES
+	  (:NAME "Sannie" :SURNAME "Gieter" :EMP-NO 321))
+  (:STORE "simple-store" :COLLECTION "simple-collection" :DATA-TYPE "employee"
+   :HASH "70A97B01-0E36-4B8C-9983-A017465A59D5" :DELETED-P NIL :VALUES
+	  (:NAME "Koos" :SURNAME "Van" :EMP-NO 999))
+  (:STORE "simple-store" :COLLECTION "simple-collection" :DATA-TYPE "employee"
+   :HASH "9C581722-D1C4-4E76-8D20-E2702D19C230" :DELETED-P NIL :VALUES
+	  (:NAME "Frikkie" :SURNAME "Frikkedel" :EMP-NO 1001))
+  (:STORE "simple-store" :COLLECTION "simple-collection" :DATA-TYPE "employee"
+   :HASH "9C581722-D1C4-4E76-8D20-E2702D19C230" :DELETED-P NIL :VALUES
+	  (:NAME "Tannie" :SURNAME "Frikkedel" :EMP-NO 1001))
+  ```
+#+END_SRC
+
+To change a value for an employee you just set the value using getx. For example lets change Sannie's surname.
+
+#+BEGIN_SRC lisp
+  ```common_lisp
+  (let ((sannie (first (index-lookup-values (get-collection
+					     (get-store *universe* "simple-store")
+					     "simple-collection")
+					    (list (list :name "Sannie")
+						  (list :surname "Gieter"))))))
+
+    (setf (getx sannie :surname) "Potgieter")
+
+    sannie)
+  ```
+#+END_SRC
+
+Which will give you
+
+#+BEGIN_SRC lisp
+  ```common_lisp
+  #S(document
+     :STORE #<document-STORE {10172A8A73}>
+     :COLLECTION #<document-COLLECTION {1017369EA3}>
+     :DATA-TYPE "employee"
+     :HASH "68434DF1-A04D-4D33-96F1-89D217A193FD"
+     :VALUES (:NAME "Sannie" :SURNAME "Gieter" :EMP-NO 321)
+     :CHANGES (:NAME "Sannie" :SURNAME "Potgieter" :EMP-NO 321)
+     :VERSIONS NIL
+     :DELETED-P NIL
+     :PERSISTED-P T)
+  ```
+#+END_SRC
+
+The update values can be found in :changes, and will stay there until
+the document is persisted or abandoned.
+
+Take note that **getx** will return "Potgieter" now even if the
+document has not been persisted yet.
+
+[[file:home.org][[home]​]] [[file:indexed-example.org][[previous]​]] [[file:sharding-example.org][[next]​]]
+

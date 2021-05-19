@@ -1,0 +1,234 @@
+[[previous](Home)]
+
+* Version 2021.5.18
+
+What was supposed to take weeks ended up taking months, but we are
+finally there. This version adds sharding to cl-naive-store and as a
+consequence of that the use of threads internally and thread safety over all.
+
+We went through a couple of designs to get the threading to work
+properly without having to pay a hefty a price in terms of speed and
+complexity.
+
+Unfortunately in the process the release change log suffered serious
+neglect and that amount of detail would have been senseless as
+well. Instead I will ask forgiveness and just discuss the changes
+introduced in broader terms.
+
+** Packages
+
+I was not happy with having individual .asd files for extensions of
+functionality because I felt that it polluted the quicklisp name space
+and in 2020.8.12 I removed the individual .asd files in favour of
+using *features* to toggle additional functionality. I have since
+taken the advise to not use *features* to switch functionality on and
+off and thus we now have individual .asd functions for the additional
+functionality in cl-naive-store again. The compromise was to change the
+package naming to cl-naive-store.[additional-functionality] which at least
+makes it clear that the packages are related to cl-naive-store.
+
+We now have the following packages:
+
+- cl-naive-store.naive-core
+- cl-naive-store.document-types
+- cl-naive-store.document-type-defs
+- cl-naive-store.naive-documents
+- cl-naive-store.naive-indexed
+- cl-naive-store.naive-merkle
+- cl-naive-store.test
+
+** ASDF
+
+The following .asd files now exist:
+
+- cl-naive-store.naive-core.asd loads the most basic functionality for
+  cl-naive-store. Use this if you don't any of the other extensions.
+
+- cl-naive-store.naive-merkle.asd loads naive-documents and the
+  /experimental/ merkle functionality.
+
+- cl-naive-store.naive-indexed.asd loads naive-core and index
+  functionality.
+
+- cl-naive-store.document-types.asd loads naive-core and document-type
+  functionality.
+
+- cl-naive-store.document-defs.asd loads naive-core, document-types
+  and type definition functionality.
+
+- cl-naive-store.documents.asd loads naive-core, naive-indexed,
+  documents-types, document-type-defs and document functionality.
+
+- cl-naive-store.asd loads the whole shebang.
+
+- cl-naive-store.test loads tests
+
+** Shards
+
+A shard class was added and indexes and documents where moved to the shard class.
+
+All the functions that need to use shards now has a shard or shards parameter.
+
+* Version 2020.8.12
+
+Lots of bug fixes and internalized modules.
+
+** Incompatibility Issues:
+
+cl-naive-indexed, cl-naive-document-types, cl-naive-document-types,
+cl-naive-documents and cl-naive-store-tests will not appear in
+quicklisp anymore because they don't have their own .asd files.
+
+Loading cl-naive-store now loads all modules by default, to do
+conditional loading you need to use to add to various features to
+*features* before you load cl-naive-store.
+
+** Other Work Done:
+
+Empty source files where removed.
+
+Removed top-level-p every where.
+
+Added maintenance back into asd
+
+Added tests for reference objects to tests
+
+Added getx for document-type and element
+
+Disabled validate-xe it needs a lot more work.
+
+Added murmurhash for local-time:timestamp
+
+Dropped write-object and kin
+
+Changed some errors to write to log instead
+
+Added more checks on ensure path for collections.
+
+** Bug fixes
+
+Fixed sed replace that blurred the line between document-type of
+collection and document-type-def of document.
+
+Fixed getsfx to getxe replacement missed previously
+
+Fixed persist-document to return document
+
+Fixed reference check in type-of-doc-element
+
+Fixed perist-form for references
+
+Fixed perist-parse to check for types in the right place
+
+Fixed find-document-by-hash for naive-indexed
+
+Removed duplicate getx for naive-documents that was clobbering normal
+behaviour
+
+Fixed method confusion for getx of (document document) (element
+element) vs document (element element)
+
+Fixed load parsing of child and reference documents where they where
+not picked up by the type check.
+
+Fixed type-defs parameter order for various functions.
+
+Fixed checking for real changes in persist-document,
+document-persisted-p was unreliable.
+
+Fixed collection-class init for document-types
+
+Fixed init args for document-store class
+
+* Version 2020.07.16
+
+A majour code refactoring exercise was under taken and backward
+compatibility was mostly abandoned. Sorry if that hurts you, it hurts
+me more I have a lot of projects to update now, but the changes where
+desperately needed.
+
+When updating the examples 2 to 3 text replaces fixed the
+combatibility issues so it should not be to bad since 99% of the old
+expose api was for implementors and not users their should be very
+little pain.
+
+Implmentors api's where moved to seperate packages to limit the public
+api.
+
+Only listing the public/user api issues in broad strokes. Thousands of
+lines of code was changed, deleted or replaced so a list of changes is
+not really practical.
+
+** Incompatibility Issues:
+
+- data-items was renamed to documents
+- data-types where renamed to document-types
+- add-data-object was renamed to add-document
+- persist-data-object was renamed to persist-document
+- data-type was renamed to document-type
+- field war renamed to element
+
+** Other Work Done:
+
+The implementor's api was mostly rewritten.
+
+** Bug fixes
+
+Lots
+
+* Version 2020.07.08
+
+A majour code refactoring exercise was under taken. Not only was code
+improved where possible new functionality was added and in a few cases
+removed.
+
+** Incompatibility Issues:
+
+- load-store-collections was renamed to load-collections
+
+- loaded-p slot was removed form collection, store and universe. Use data-loaded-p in the future.
+
+- Removed handle-duplicates on universe, store and collection and replaced it with keys slot on collection that defaults to :key. This simplifies behaviour for handling duplicates, and also speeds up handling of duplicates. If no keys is set to nil then duplicates are allowed, if :key is not found in the object duplicates will occur.
+
+- Removed must-handle-duplicates since it was part and parcel of handle-duplicates.
+
+** Other Work Done:
+
+- collection-container-loaded-p was added to use :around load-data method.
+
+- data-loaded-p was added to test if a collection, store or universe was truely/completely loaded.
+
+- Added :before method for query-data query-data-object and naive-reduce to ensure data is lazy loaded.
+
+- find-object-by-hash was added to help with different collection containers.
+
+- set-print-reabability and print-readability-p was to set on *print-readably* for write-object
+
+- Exported write-object so that it can be specialized if needed.
+
+- Moved lazy loading when querying to :before methods.
+
+- Updated and changed a lot of doc strings.
+
+- Refactored code al over the place.
+
+- Adjusted tests to cope with compatibility breaks.
+
+- Stripped out experimental avl tree stuff.
+
+- Refactored the code naive-store-items persist.lisp heavily.
+
+** Bug fixes
+
+- Fixed add-object in core to replace object when key values match to an existing object and not to just ignore it.
+
+* Version 2019.9.14
+
+Added date-time type to data-type-defs using local-time library.
+
+* Version 2020.6.13
+
+Made loading of indexes faster, and added alternative implementations
+(avl-tree) for indexing guts.
+
+[[previous](Home)]

@@ -16,40 +16,39 @@
     (dolist (index (indexes collection))
       (push
        (loop for (a b) on values by #'cddr
-	  when (find a index :test 'equalp)
-	  :collect (list a b))
+	     when (find a index :test 'equalp)
+	       :collect (list a b))
        index-values))
     index-values))
 
 (defgeneric push-value-index (collection index-values document &key shard &allow-other-keys)
-  (:documentation "Uses lists within the key-value-index hash-table to store/group documents that match a key value combination. 
+  (:documentation "Uses lists within the key-value-index hash-table to store/group documents that match a key value combination.
 
 On updates of documents could end up with duplicate documents returned by the index lookup. The speed more than makes up for the occasional duplicate for now!
 
 TODO: Implement index-lookup-value that strips out duplicates??"))
 
 (defmethod push-value-index (collection index-values document
-			     &key (shard cl-naive-store::%loading-shard%) &allow-other-keys)
+			     &key (shard naive-impl:%loading-shard%) &allow-other-keys)
 
   (unless shard
-    ;;(break "poes")
-    (setf shard  (or cl-naive-store::%loading-shard%
+    (setf shard  (or naive-impl:%loading-shard%
 		     (get-shard collection (document-shard-mac collection document))))
     (unless shard
-      (break "poes ~A" cl-naive-store::%loading-shard%)))
-  
+      (error "No shard - ~A" naive-impl:%loading-shard%)))
+
   (unless (key-value-index shard)
     (setf (key-value-index shard) (make-hash-table :test 'equalp)))
 
   (push document (gethash-safe (cl-murmurhash:murmurhash index-values)
-				 (key-value-index shard)
-				 :lock (getx (lock shard) :values-index))))
+			       (key-value-index shard)
+			       :lock (getx (lock shard) :values-index))))
 
 (defun populate-partial-value-index (collection index-values document
-				     &key (shard cl-naive-store::%loading-shard%))
+				     &key (shard naive-impl:%loading-shard%))
   (let ((compounded)
-	  (compounded-count 1))
-    (dolist (pair index-values)      
+	(compounded-count 1))
+    (dolist (pair index-values)
       (push pair compounded)
       (when (> compounded-count 1)
 	(push-value-index collection (reverse compounded) document
@@ -57,23 +56,22 @@ TODO: Implement index-lookup-value that strips out duplicates??"))
 
       (push-value-index collection pair document
 			:shard shard)
-      
+
       (incf compounded-count))))
 
 (defun populate-value-index (collection indexes-values document
-			     &key (shard cl-naive-store::%loading-shard%))
-  (dolist (index-values indexes-values)    
+			     &key (shard naive-impl:%loading-shard%))
+  (dolist (index-values indexes-values)
     (if *do-partial-indexing*
 	(populate-partial-value-index collection index-values document
 				      :shard shard)
 	(push-value-index collection index-values document
-			  :shard shard
-			  ))))
+			  :shard shard))))
 
 (defun remove-partial-value-index (collection shard index-values document)
   (let ((compounded)
-	  (compounded-count 1))
-    (dolist (pair index-values)      
+	(compounded-count 1))
+    (dolist (pair index-values)
       (push pair compounded)
       (when (> compounded-count 1)
 	(remove-value-index collection shard (reverse compounded) document))
@@ -93,10 +91,6 @@ TODO: Implement index-lookup-value that strips out duplicates??"))
   (declare (ignorable collection))
   (when (and shard (key-value-index shard))
     (remove document (gethash-safe (cl-murmurhash:murmurhash index-values)
-				     (key-value-index shard)
-				     :lock (getx (lock shard) :values-index)))))
-
-
-
-
+				   (key-value-index shard)
+				   :lock (getx (lock shard) :values-index)))))
 

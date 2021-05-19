@@ -1,6 +1,6 @@
 (defsystem "cl-naive-store"
-  :description "This is a naive, persisted, in memory (lazy loading) data store for Common Lisp."
-  :version "2021.4.19"
+  :description "This is a persisted, in memory (lazy loading) document store for Common Lisp."
+  :version "2021.5.18"
   :author "Phil Marneweck"
   :licence "MIT"
   ;;TODO: add feature to conditional depend on UUID and cl-murmurhash...really?

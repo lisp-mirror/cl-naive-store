@@ -16,7 +16,7 @@ Source: On Lisp"
        (let ((result (funcall fn key value)))
 	 (when result
 	   (if append-p
-	       (setf result (append results (list result)) )
+	       (setf result (append results (list result)))
 	       (push result results)))))
      hash-table)
     results))
@@ -60,7 +60,7 @@ Source: On Lisp"
 
 NOTES:
 
-This is used to create shard filenames. "))
+This is used to create shard filenames."))
 
 (defmethod make-mac (value &key (key *mac-key*))
 
@@ -79,75 +79,85 @@ This is used to create shard filenames. "))
                           ;; In ccl, cl-cpus:get-number-of-processors returns 0.
                           (max 2 (cl-cpus:get-number-of-processors))))
 
-;;(defparameter *task-pool* (make-instance 'cl-naive-task-pool:task-pool :thread-pool-size 8))
+(defparameter %loading-shard% nil
+  "Used during the loading of an individual shard. That way no heavy recursive locking has to be done.")
 
 (defvar *lock* (bt:make-lock))
 
 (defgeneric gethash-safe (key hash &key lock recursive-p)
-  (:documentation "Puts lock around hash get access."))
+  (:documentation "Puts lock around hash get access for those cl implementations that dont have a thread safe hashtable."))
 
 (defgeneric (setf gethash-safe) (new-value key hash &key lock recursive-p)
   (:documentation "Puts lock around hash set access."))
 
 (defgeneric remhash-safe (key hash &key lock recursive-p)
-  (:documentation "Puts lock around hash remove access."))
+  (:documentation "Puts lock around hash remove access for those cl implementations that dont have a thread safe hashtable."))
 
 (defmethod gethash-safe (key hash &key (lock *lock*) (recursive-p nil))
-  #|
+  (declare (ignorable lock recursive-p))
+  #+(not (or sbcl ecl))
   (if recursive-p
       (bt:with-recursive-lock-held (lock)
 	(gethash key hash))
       (bt:with-lock-held (lock)
 	(gethash key hash)))
-  |#
-  (gethash key hash)
-)
+
+  #+(or sbcl ecl)
+  (gethash key hash))
 
 (defmethod (setf gethash-safe) (value key hash &key (lock *lock*) (recursive-p nil))
-  #|
-(if recursive-p
+  (declare (ignorable lock recursive-p))
+  #+(not (or sbcl ecl))
+  (if recursive-p
       (bt:with-recursive-lock-held (lock)
 	(setf (gethash key hash) value))
       (bt:with-lock-held (lock)
 	(setf (gethash key hash) value)))
-|#
+  #+(or sbcl ecl)
   (setf (gethash key hash) value))
 
 (defmethod remhash-safe (key hash &key (lock *lock*) (recursive-p nil))
-  #|
+  (declare (ignorable lock recursive-p))
+  #+(not (or sbcl ecl))
   (if recursive-p
       (bt:with-recursive-lock-held (lock)
 	(remhash key hash))
       (bt:with-lock-held (lock)
 	(remhash key hash)))
-  |#
-  (remhash key hash)
-  )
+  #+(or sbcl ecl)
+  (remhash key hash))
 
+(defparameter *disable-parallel-p* nil
+  "Depending on the data and how naive-store is used switching of parallel processing could produce better performance. This does not disable parallel loading of shards but it does disable all other parallel processing.
 
-(defun call-do-sequence (thunk with-index-p sequence &key parallel-p )
-  (setf parallel-p nil)
-  (if parallel-p
+Switching off parallel processing is achieved by ignoring the parallel-p argument of do-sequence when *disable-parallel-p* is t.
+
+So if you are customising cl-naive-store use do-sequence for simple parallel processing or make sure that your customization obeys *disable-parallel-p* where possible.
+
+")
+
+(defun call-do-sequence (thunk with-index-p sequence &key parallel-p)
+  (if (and (not *disable-parallel-p*) parallel-p)
       (lparallel:pdotimes (index (length sequence))
-			   (let ((element (elt sequence index)))
-			     (if with-index-p
-				 (funcall thunk element index)
-				 (funcall thunk element))))
+	(let ((element (elt sequence index)))
+	  (if with-index-p
+	      (funcall thunk element index)
+	      (funcall thunk element))))
       (etypecase sequence
 	(list
 	 (loop for index from 0
-	    for element in sequence
-	    do (if with-index-p
-		   (funcall thunk element index)
-		   (funcall thunk element))))
+	       for element in sequence
+	       do (if with-index-p
+		      (funcall thunk element index)
+		      (funcall thunk element))))
 	(vector
 	 (loop for index from 0
-	    for element across sequence
-	    do (if with-index-p
-		   (funcall thunk element index)
-		   (funcall thunk element)))))))
+	       for element across sequence
+	       do (if with-index-p
+		      (funcall thunk element index)
+		      (funcall thunk element)))))))
 
-(defmacro do-sequence ((element-var sequence &key index-var (parallel-p nil) )
+(defmacro do-sequence ((element-var sequence &key index-var (parallel-p nil))
 		       &body body)
   "Iterates over the sequence applying body. In the body you can use the element-var and/or the index-var if supplied.
 
@@ -161,9 +171,8 @@ Notes:
 
 Uses loop or lparallel:pdotimes depending on parallel-p value.
 
-To get the best out of do-sequence use the parallel option if the sequence is large (> 1000) or the body is excecution heavy.
+To get the best out of do-sequence use the parallel option if the sequence is large (> 1000) or the body is excecution heavy."
 
-"
   `(call-do-sequence
     (lambda (,element-var
 	     ,@(when index-var
@@ -171,4 +180,4 @@ To get the best out of do-sequence use the parallel option if the sequence is la
       ,@body)
     ,(when index-var t)
     ,sequence
-    :parallel-p ,parallel-p ))
+    :parallel-p ,parallel-p))

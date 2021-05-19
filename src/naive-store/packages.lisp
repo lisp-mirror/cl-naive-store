@@ -7,8 +7,8 @@
    ;;####common.lisp
    :frmt ;;Exposing naive-impl:frmt
    :empty-p ;;Exposing naive-impl:empty-p
+   :*disable-parallel-p* ;;Exposing naive-impl:*disable-parallel-p*
    :do-sequence ;;Exposing naive-impl:do-sequence
-   :*task-pool* ;;Exposing naive-impl:*task-pool*
    :gethash-safe
    :remhash-safe
 
@@ -69,7 +69,6 @@
    :get-store-from-def
    :get-collection-from-def
 
-
    ;;adding
    :add-store
    :add-collection
@@ -79,7 +78,7 @@
    :clear-collection
    :remove-collection
    :clear-documents
-   
+
    ;;:persist
    :persist-collection-def
    :persist-collection
@@ -115,6 +114,5 @@
    ;;####query.lisp
    :naive-reduce
    :query-data
-   :query-document
+   :query-document))
 
-   ))

@@ -1,0 +1,67 @@
+* Bench Marks
+
+These are just rough benchmarks taken from the sharding example. To
+get these on your local machine just load cl-naive-store and compile
+the sharding.lisp in examples/ folder.
+
+This was run on a Lenovo Ideapad with i5 cpu and 64gb of ram, of
+which 24gb was allocated to sbcl. sbcl but only used about 1.4gb for this
+example.
+
+#+BEGIN_SRC lisp
+  ```common_lisp
+
+  "Adding 200000 documents to collections"
+  Evaluation took:
+  3.348 seconds of real time
+  3.348191 seconds of total run time (3.153011 user, 0.195180 system)
+  100.00% CPU
+  322 lambdas converted
+  8,357,290,672 processor cycles
+  643,119,488 bytes consed
+
+  "Persisting 100000 assets to disk"
+  Evaluation took:
+  3.542 seconds of real time
+  3.540403 seconds of total run time (2.796032 user, 0.744371 system)
+  [ Run times consist of 0.243 seconds GC time, and 3.298 seconds non-GC time. ]
+  99.94% CPU
+  8,840,403,198 processor cycles
+  708,633,488 bytes consed
+
+  "Persisting 100000 employees to disk"
+  Evaluation took:
+  0.734 seconds of real time
+  5.659794 seconds of total run time (5.004146 user, 0.655648 system)
+  [ Run times consist of 0.010 seconds GC time, and 5.650 seconds non-GC time. ]
+  771.12% CPU
+  1,830,877,350 processor cycles
+  1,255,683,424 bytes consed
+
+  "Doing a straight up query that touches each record."
+  Evaluation took:
+  0.012 seconds of real time
+  0.054013 seconds of total run time (0.052237 user, 0.001776 system)
+  450.00% CPU
+  28 lambdas converted
+  30,247,018 processor cycles
+  11,671,520 bytes consed
+
+  "Fetching an index set."
+  Evaluation took:
+  0.007 seconds of real time
+  0.007373 seconds of total run time (0.006943 user, 0.000430 system)
+  100.00% CPU
+  16,802,684 processor cycles
+  26,441,904 bytes consed
+
+  "Doing a query against an index set."
+  Evaluation took:
+  0.009 seconds of real time
+  0.008835 seconds of total run time (0.008835 user, 0.000000 system)
+  100.00% CPU
+  22,044,690 processor cycles
+  26,434,848 bytes consed
+
+  ```
+#+END_SRC

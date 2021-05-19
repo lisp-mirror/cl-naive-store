@@ -13,7 +13,7 @@
 			   shards)
   "Extends naive-reduce to be able to take advantage of indexing. Reduce is done on values retrieved by the supplier index."
   (let ((indexed-values (indexed-values collection index-values shards)))
-    
+
     (if indexed-values
 	(naive-reduce indexed-values
 		      :query query
@@ -33,6 +33,7 @@
 		       &key index-values query shards &allow-other-keys)
   "Extends query-data to be able to take advantage of indexing. Query is done on values retrieved by the supplied index."
   (let ((indexed-values (indexed-values collection index-values shards)))
+
     (if indexed-values
 	(progn
 	  (query-data indexed-values
@@ -42,12 +43,10 @@
 				  shards
 				  (shards collection))
 			:parallel-p t)
+
 	    (let ((result (query-data (documents shard)
 				      :query query)))
 	      (bt:with-recursive-lock-held (*index-query-lock*)
 		(setf %result% (append result %result%)))))
 	  %result%))))
-
-
-
 

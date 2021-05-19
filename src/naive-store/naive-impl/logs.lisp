@@ -10,19 +10,19 @@
     (aref *short-months* (1- n))))
 
 (defun format-date-time (year month day hour min sec
-                        &optional timezone)
+			 &optional timezone)
   (declare (ignore timezone))
   (format nil "~d ~a ~d ~@{~2,'0d~^:~}"
           day (short-month-name month) year hour min sec))
 
 (defun format-universal-date-time (universal-date)
   (if (stringp universal-date)
-        universal-date
-        (multiple-value-bind (sec min hour day month year)
-            (decode-universal-time
-             (or universal-date (get-universal-time))
-             *time-zone*)
-          (format-date-time year month day hour min sec))))
+      universal-date
+      (multiple-value-bind (sec min hour day month year)
+	  (decode-universal-time
+	   (or universal-date (get-universal-time))
+	   *time-zone*)
+	(format-date-time year month day hour min sec))))
 
 (defvar *now* (cons 0 "00000000T000000Z"))
 (defun iso-timestamp-now ()
@@ -38,17 +38,15 @@
 (defparameter *std-lock* (bt:make-lock)
   "Used to lod STD to log debug messages safely between threads.")
 
-
 (defparameter *break-on-debug-log* nil
   "Causes a break when logging errors of type :error and :warning.")
 
 (defparameter *debug-log-p* nil
   "Switches debug logging or off for debug-log")
 
-
 (defun get-temp ()
   (handler-case
-      (cl-fad::get-default-temporary-directory )
+      (cl-fad::get-default-temporary-directory)
     (error (c)
       (declare (ignore c))
       (make-pathname :directory '(:absolute "tmp")))))
@@ -71,7 +69,6 @@
 	(break "~?" format-control-string arguments))
 
       (if file-p
-
 	  (write-to-file
 	   (cl-fad:merge-pathnames-as-file
 	    (or path (get-temp))
@@ -85,7 +82,7 @@
 		   (second #+sbcl (sb-debug:list-backtrace)
 			   #+ccl (ccl::backtrace-as-list)
 			   #-(or sbcl ccl) nil)))
-	  
+
 	  (bt:with-lock-held (*std-lock*)
 	    (format *trace-output*
 		    "~&~A:~A:~?~%"
@@ -133,11 +130,4 @@ Not writing stuf to .log files because that is what persist uses!!!.
 	   (make-pathname :name "log"
 			  :type "lg"))))
    message))
-
-
-
-
-
-
-
 
