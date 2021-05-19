@@ -169,4 +169,4 @@ correct file type is used.
 
 There are no tests for blobs yet so use at own risk!
 
-[[file:home.org][[home]​]] [[file:home.org][[previous]​]] [[file:examples.org][[next]​]]
+[[file:home.org][Home]] [[file:home.org][Previous]] [[file:examples.org][Next]]
