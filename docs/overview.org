@@ -42,8 +42,7 @@ contains a list of collections, which contains a list of "objects".
       D-->E[objects]
 #+END_SRC
 
-#+RESULTS:
-[[universe.png]]
+[[file:universe.png][Eish]]
 
 When data is persisted the file folders/directories mirror the
 relationship above, which makes it possible to lazy load the data only
