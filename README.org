@@ -17,6 +17,10 @@ The store was also designed to be customisable, just about anything
 can be customised, have a look at the implementation api to get an
 idea of what is possible.
 
+** License
+
+MIT the doc is [[file:src/naive-store/LICENSE][here]].
+
 ** News
 
 What was supposed to take weeks ended up taking months, but we are
@@ -121,7 +125,7 @@ Documentation can be found in the docs folder in the repository.
 
 ** Examples
 
-Examples are the examples folder in the git repository or if those are
+Examples are in the examples folder in the git repository. If those are
 to simplistic for you have a look at the code in the tests.
 
 ** Dependencies
