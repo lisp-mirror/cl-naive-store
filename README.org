@@ -28,6 +28,9 @@ There is more refinement that we would like to do in the future for
 the parallel processing but what we have now is fast enough and simple
 enough for a good start.
 
+All the documentation from the wiki has been placed into a docs/
+folder as org-mode files.
+
 ** Acknowledgements
 
 The latest version was financially supported by [[https://mts.co.za][Managing
@@ -55,13 +58,12 @@ fast.
 
 Data is only loaded when needed and not before. If you use the store
 correctly it means that you will only have the data that users
-requested up to that point in memory. Data in memory can easily be
-garbage collected if not in use any more.
+requested up to that point in memory.
 
 *** Indexed
 
 Documents and key values can be indexed, and a user can specify their
-own indexes as well. Queries and lookups can both be done using
+own additional indexes as well. Queries and lookups can both be done using
 indexes which speeds up the retrieval of data considerably.
 
 *** Sharding

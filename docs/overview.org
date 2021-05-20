@@ -110,6 +110,13 @@ Sharding is done based on the actual data in collections. The user
 specifies which elements of a document it wants to use for sharding on
 a collection. If none is specified no sharding is done.
 
+You should not set up sharding to use data that can change for a
+document, it will cause problems. For instance if you use
+company name to affect sharding for data by company/client then you
+should not be able to change the company name for the document. If you
+need to do it on rare occasions then you should delete the object and
+recreate it to keep your sanity.
+
 ** Data Types
 
 cl-naive-store is mostly/blissfully unaware of user defined "document
