@@ -143,7 +143,7 @@
                   
 		  (result))
                           
-	      (setf result (naive-impl::compose-parse nil sexp nil))
+	      (setf result (naive-impl::compose-parse nil nil sexp nil))
               
 	      (values (equalp (format nil "~S" result)
 			      "(:NAME \"Piet\" :SURNAME \"Gieter\" :ID 123 :WIFE

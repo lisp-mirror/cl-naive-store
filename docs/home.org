@@ -1,0 +1,78 @@
+* cl-naive-store
+
+cl-naive-store is a persisted, in memory (lazy loading), indexed,
+document store for Common Lisp.
+
+The naive bit comes from the fact that data is persisted as plist in
+files to make them human and machine readable and that there is no
+rocket science code.
+
+The store was also designed to be customisable, just about anything
+can be customised, have a look at the implementation api to get an
+idea of what is possible.
+
+** Layered Design
+
+cl-naive-store can do a lot but you as the user decides how much of
+the store's functionality you want to use for your own project.
+
+Functionality was broken down into these packages:
+
+- cl-naive-store.naive-core
+- cl-naive-store.document-types
+- cl-naive-store.document-type-defs
+- cl-naive-store.naive-documents
+- cl-naive-store.naive-indexed
+- cl-naive-store.naive-merkle
+- cl-naive-store.test
+
+The following .asd files can be used to load different functionality:
+
+- cl-naive-store.naive-core.asd loads the most basic functionality for
+  cl-naive-store. Use this if you don't any of the other extensions.
+
+- cl-naive-store.naive-merkle.asd loads naive-documents and the
+  /experimental/ merkle functionality.
+
+- cl-naive-store.naive-indexed.asd loads naive-core and index
+  functionality.
+
+- cl-naive-store.document-types.asd loads naive-core and document-type
+  functionality.
+
+- cl-naive-store.document-defs.asd loads naive-core, document-types
+  and type definition functionality.
+
+- cl-naive-store.documents.asd loads naive-core, naive-indexed,
+  documents-types, document-type-defs and document functionality.
+
+- cl-naive-store.asd loads the whole shebang.
+
+- cl-naive-store.test.asd loads tests
+
+** Overview
+
+[[file:overview.org][Overview]]
+
+** Examples
+
+[[file:examples.org][Examples]]
+
+** Releases
+
+[[file:releases.org][Releases]]
+
+** User API
+
+[[file:user-api.org][User API Documentation]]
+
+** Implementor API
+
+[[file:implementor-api.org][Implementor API Documentation]]
+
+** Rough Bench Marks
+
+[[file:rough-bench-marks.org][Rough Bench Marks]]
+
+Home Previous [[file:overview.org][Next]]
+

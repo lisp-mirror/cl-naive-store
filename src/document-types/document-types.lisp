@@ -19,12 +19,12 @@
 	       :accessor attributes
 	       :initform nil
 	       :documentation "A property list of additional element attributes that are not data type specific."))
-  
+
   (:documentation "A definition of an element of a document.
 
-NOTES: 
+NOTES:
 
-Elements can reference simple types, a complex document or documents based on other document-types. 
+Elements can reference simple types, a complex document or documents based on other document-types.
 
 naive-store can be used as a hierarchical database or a flat databases or a mix."))
 
@@ -41,14 +41,14 @@ naive-store can be used as a hierarchical database or a flat databases or a mix.
 	       :accessor element-class
 	       :initform 'element
 	       :allocation :class
-	       :documentation "The class that should be used to make element documents. 
+	       :documentation "The class that should be used to make element documents.
 NOTES:
 
 element-class is declaratively specified here because so that elements can be dynamicly created when definition type definitions are read from file. See naive-store-documents for usage examples. ")
    (label :initarg :label
 	  :accessor label
 	  :initform nil
-	  :documentation "Human readable/formated short description.")   
+	  :documentation "Human readable/formated short description.")
    (elements :initarg :elements
 	   :accessor elements
 	   :initform nil
@@ -57,17 +57,14 @@ element-class is declaratively specified here because so that elements can be dy
 
 NOTES:
 
-The default implementation of cl-naive-store is unaware of document-types when reading and writing documents to and from file. This was by design, to place as little burden on reading and writing documents. Depending on the use of naive-store a user could customize the reading and writing methods of naive-store to use document-types for validation and file layout specifics. 
+The default implementation of cl-naive-store is unaware of document-types when reading and writing documents to and from file. This was by design, to place as little burden on reading and writing documents. Depending on the use of naive-store a user could customize the reading and writing methods of naive-store to use document-types for validation and file layout specifics.
 
-GUI's like cl-wfx use these to help with generic rendering of user input screens. 
+GUI's like cl-wfx use these to help with generic rendering of user input screens.
 
 See cl-naive-type-defs:*example-type-defs* for examples of type definitions to get a feel for the intended use."))
 
-
-
 (defmethod getx ((element element) accessor &key &allow-other-keys)
   ""
-  
   (cond ((equalp accessor :name)
 	 (name element))
 	((equalp accessor :type-def)
@@ -79,7 +76,6 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
 
 (defmethod (setf getx) (value (element element) accessor &key &allow-other-keys)
   ""
-  
   (cond ((equalp accessor :name)
 	 (setf (name element) value))
 	((equalp accessor :type-def)
@@ -91,7 +87,6 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
 
 (defmethod getx ((document-type document-type) accessor &key &allow-other-keys)
   ""
-  
   (cond ((equalp accessor :store)
 	 (store document-type))
 	((equalp accessor :name)
@@ -105,7 +100,6 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
 
 (defmethod (setf getx) (value (document-type document-type) accessor &key &allow-other-keys)
   ""
-  
   (cond ((equalp accessor :store)
 	 (setf (store document-type) value))
 	((equalp accessor :name)
@@ -117,51 +111,45 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
 	((equalp accessor :elements)
 	 (setf (elements document-type) value))))
 
-
 (defmethod persist ((document-type document-type) &key &allow-other-keys)
-  "Persists a document-type definition. Path to file is of this general format
-/universe/store-name/document-type-name.type."
-  (let ((elements))    
-    (dolist (element (elements document-type))
-      (setf elements (append elements (list (list
-					 :name (name element)
-					 :key-p (key-p element)
-					 :type-def (type-def element)
-					 :attributes (attributes element))))))
-
-    (naive-impl:write-to-file
-     (cl-fad:merge-pathnames-as-file
-	       (pathname (location (store document-type)))
-	       (make-pathname :name (name document-type)
-			      :type "type"))
-     (list 
-      :name (name document-type)
-      :label (label document-type)
-      :top-level-p t
-      :elements elements)
-     :if-exists :supersede)))
+  "Persists a document-type definition. Path to file is of this general format /universe/store-name/document-type-name.type."
+  (let ((elements (mapcar (lambda (element)
+			    (list :name (name element)
+				  :key-p (key-p element)
+				  :type-def (type-def element)
+				  :attributes (attributes element)))
+			  (elements document-type))))
+    (naive-impl:write-to-file (cl-fad:merge-pathnames-as-file
+			       (pathname (location (store document-type)))
+			       (make-pathname :name (name document-type)
+					      :type "type"))
+			      (list :name (name document-type)
+				    :label (label document-type)
+				    :top-level-p t
+				    :elements elements)
+			      :if-exists :supersede)))
 
 (defclass document-type-collection-mixin ()
   ((document-type :initarg :document-type
 	      :accessor document-type
 	      :initform nil
 	      :documentation "The document-type that this collection contains documents of."))
-  
   (:documentation "Collection extention to make collection of a specific document-type."))
 
 (defmethod add-collection :after ((store store) (collection document-type-collection-mixin))
+  "Uses document type to figure out what the keys of the collection are."
   (when (or
 	 (not (keys collection))
 	 (equalp (keys collection) '(:key)))
     (when (document-type collection)
       (let ((document-type (typecase (document-type collection)
-				  (document-type
-				   (document-type collection))
-				  (t
-				   (get-document-type store (document-type collection))))))
+			     (document-type
+			      (document-type collection))
+			     (t
+			      (get-document-type store (document-type collection))))))
 	(when document-type
 	  (let (keys)
-	    (dolist (element (elements document-type))	      
+	    (dolist (element (elements document-type))
 	      (when (key-p element)
 		(push (name element) keys)))
 	    (when keys
@@ -170,108 +158,82 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
 (defmethod persist-collection-def ((collection document-type-collection-mixin))
   (naive-impl:write-to-file
    (cl-fad:merge-pathnames-as-file
-	       (pathname (location (store collection)))
-	       (make-pathname :name (name collection)
-			      :type "col"))
-   
-    (list 
+    (pathname (location (store collection)))
+    (make-pathname :name (name collection)
+		   :type "col"))
+   (list
     :name (name collection)
     :location (location collection)
     :document-type (and (document-type collection) (name (document-type collection))))
-		 		 
-    :if-exists :supersede))
+
+   :if-exists :supersede))
 
 (defclass document-type-store-mixin ()
   ((document-type-class :initarg :document-type-class
 	       :accessor document-type-class
 	       :initform 'document-type
 	       :allocation :class
-	       :documentation "Then class that should be used to make document-type documents.
+	       :documentation "The class that should be used to make document-type documents.
 IMPL NOTES: To deal with customization of document-type.")
    (document-types :initarg :document-types
 	       :accessor document-types
 	       :initform nil
 	       :documentation "List of document-types represented by this store's collections.")))
 
-
 (defmethod get-collection-from-def ((store document-type-store-mixin) collection-name)
-  (let ((filename (cl-fad:merge-pathnames-as-file
-		   (pathname (location store))
-		   (make-pathname :name collection-name
-				  :type "col")))
-	(collection-def))
-    
-    (with-open-file (in filename :if-does-not-exist :create)
-      (with-standard-io-syntax
-	(when in
-	  (setf collection-def (read in nil))
-	  (close in))))
-
+  (let ((collection-def (naive-impl:sexp-from-file
+			 (cl-fad:merge-pathnames-as-file
+			  (pathname (location store))
+			  (make-pathname :name collection-name
+					 :type "col")))))
     (when collection-def
-      (let ((document-type (get-document-type store (or (getx collection-def :document-type)
-							;;TODO: Backwards compatibility
-							(getx collection-def :data-type)))))
+      (let ((document-type (get-document-type
+			    store
+			    (or (getx collection-def :document-type)
+				;;TODO: Backwards compatibility to be removed some time in the future.
+				(getx collection-def :data-type)))))
 	(unless document-type
 	  (load-store-document-types store)
-	  (setf document-type (get-document-type store (or (getx collection-def :document-type)
-							   ;;TODO: Backwards compatibility
-							   (getx collection-def :data-type)))))
+	  (setf document-type (get-document-type
+			       store
+			       (or (getx collection-def :document-type)
+				   ;;TODO: Backwards compatibility
+				   (getx collection-def :data-type)))))
 
 	(unless document-type
 	  (error "Collection document-type could not be found."))
-	
-	(when document-type
-	  (let ((collection))
-	    (setf collection
-		  (make-instance (collection-class store)
-				 :store store
-				 :name (getx collection-def :name)
-				 :location (getx collection-def :location)
-				 :document-type document-type))
-	    (setf (location collection) (ensure-location collection))
-	    collection)
 
-	  
-	  )))))
+	(let ((collection (make-instance (collection-class store)
+					 :store store
+					 :name (getx collection-def :name)
+					 :location (getx collection-def :location)
+					 :document-type document-type)))
+	  (setf (location collection) (ensure-location collection))
+	  collection)))))
 
 (defgeneric get-document-type-from-def (store document-type-name)
   (:documentation "Tries to find the document definition on disk."))
 
 (defmethod get-document-type-from-def ((store store) document-type-name)
-  (let ((filename (cl-fad:merge-pathnames-as-file
-		   (pathname (location store))
-		   (make-pathname :name document-type-name
-				  :type "type")))
-	(document-type-def))
-
-    (with-open-file (in filename :if-does-not-exist :create)
-      (with-standard-io-syntax
-	(when in
-	  (setf document-type-def (read in nil))
-	  (close in))))
-
+  (let ((document-type-def (naive-impl:sexp-from-file (cl-fad:merge-pathnames-as-file
+						       (pathname (location store))
+						       (make-pathname :name document-type-name
+								      :type "type")))))
     (when document-type-def
-      (let ((elements)
-	    (document-type (add-document-type 
-			    store 
+      (let ((document-type (add-document-type
+			    store
 			    (make-instance (document-type-class store)
 					   :name (getx document-type-def :name)
 					   :label (getx document-type-def :label)
 					   :elements nil))))
-	
-	(dolist (element (getx document-type-def :elements))
-	 (setf elements 
-		(append elements 
-			(list (make-instance
-			       (element-class document-type)
-			       :name (getx element :name)
-			       :key-p (getx element :key-p)
-			       :type-def (getx element :type-def)
-			       :attributes (getx element :attributes)))))
-	  
-	  setf elements )
-	(setf (elements document-type) elements)
-	
+	(setf (elements document-type)
+	      (mapcar (lambda (element)
+			(make-instance (element-class document-type)
+				       :name (getx element :name)
+				       :key-p (getx element :key-p)
+				       :type-def (getx element :type-def)
+				       :attributes (getx element :attributes)))
+		      (getx document-type-def :elements)))
 	document-type))))
 
 (defgeneric get-document-type (store type-name)
@@ -292,7 +254,6 @@ IMPL NOTES: To deal with customization of document-type.")
     (persist document-type))
   document-type)
 
-
 (defun load-store-document-types (store)
   "Finds and loads the files representing data types for a store."
   (let ((files (directory
@@ -304,83 +265,83 @@ IMPL NOTES: To deal with customization of document-type.")
 	(type-contents))
     (dolist (file files)
       (with-open-file (in file :if-does-not-exist :create)
-	(with-standard-io-syntax              
+	(with-standard-io-syntax
 	  (when in
 	    (setf type-contents (read in nil))
 	    (close in))))
-      
+
       (let ((elements)
-	    (document-type (add-document-type 
-			    store 
+	    (document-type (add-document-type
+			    store
 			    (make-instance (document-type-class store)
 					   :name (getx type-contents :name)
 					   :label (getx type-contents :label)
 					   :elements nil))))
-	
+
 	(dolist (element (getx type-contents :elements))
-	 (setf elements 
-		(append elements 
+	  (setf elements
+		(append elements
 			(list (make-instance
 			       (element-class document-type)
 			       :name (getx element :name)
 			       :key-p (getx element :key-p)
 			       :type-def (getx element :type-def)
 			       :attributes (getx element :attributes)))))
-	  
-	  setf elements )
+
+	  setf elements)
 	(setf (elements document-type) elements)))))
 
-
 (defmethod load-store-collections ((store document-type-store-mixin) &key with-data-p
-								       &allow-other-keys)
+				   &allow-other-keys)
   "Finds and loads collection definitions for a store, with or without data documents."
   (let ((files (find-collection-definitions store)))
     (dolist (file files)
       (let ((file-contents))
 	(with-open-file (in file :if-does-not-exist :create)
-	  (with-standard-io-syntax              
+	  (with-standard-io-syntax
 	    (when in
 	      (setf file-contents (read in nil))
 	      (close in))))
-	
-	(when file-contents	  
-	  (let ((document-type (get-document-type store
-						  (or
-						   (getx file-contents :document-type)
-						   ;;TODO: remove later, backward compatibility issue
-						   (getx file-contents :data-type))))
+
+	(when file-contents
+	  (let ((document-type
+		  (get-document-type store
+				     (or
+				      (getx file-contents :document-type)
+				      ;;TODO: remove later, backward compatibility issue
+				      (getx file-contents :data-type))))
 		(collection))
-	    
+
 	    (unless document-type
 	      (load-store-document-types store)
-	      (setf document-type (get-document-type store
-						     (or
-						      (getx file-contents :document-type)
-						      ;;TODO: remove later, backward compatibility issue
-						      (getx file-contents :data-type)))))
+	      (setf document-type
+		    (get-document-type store
+				       (or
+					(getx file-contents :document-type)
+					;;TODO: remove later, backward compatibility issue
+					(getx file-contents :data-type)))))
 
 	    (unless document-type
 	      (error "Collection document-type not found."))
 
 	    (when document-type
-	      (setf collection (add-collection 
-				store 
+	      (setf collection (add-collection
+				store
 				(make-instance (collection-class store)
 					       :name (getx file-contents :name)
 					       :location (getx file-contents :location)
-					       :document-type document-type
-					       :filter (getx file-contents :filter))))
+					       :document-type document-type)))
 	      (when with-data-p
 		(load-data collection)))))))))
 
 (defmethod load-store ((store document-type-store-mixin) &key with-data-p &allow-other-keys)
   (load-store-document-types store)
-  (load-store-collections store with-data-p))
+  (load-store-collections store :with-data-p with-data-p))
 
 (defun values-from-key-elements% (elements document)
     (let ((keys)
 	(values (document-values document)))
-    (dolist (element elements)     
+    (dolist (element elements)
       (when (key-p element)
 	(push (list (name element) nil (getx values (name element)))
 	      keys)))
@@ -392,12 +353,12 @@ IMPL NOTES: To deal with customization of document-type.")
       ;;If types have not been loaded yet load type.
       (unless (document-types (store collection))
 	(get-document-type-from-def (store collection) document-type))
-      
+
       (setf document-type (get-document-type (store collection) document-type)))
-    
+
     (unless document-type
-    ;;Raising an error here because its problem with datatype specifications some where.
-      (error "index-keys called with document-type = nil. 
+      ;;Raising an error here because there is a problem with datatype specifications some where.
+      (error "index-keys called with document-type = nil.
 cl-wfx tip: If this happened on a save look for a mismatch between a collection and its document-type's destinations"))
-    
+
     (values-from-key-elements% (elements document-type) document)))

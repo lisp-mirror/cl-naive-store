@@ -140,4 +140,4 @@
 					  (list (list :name "Sannie" )
 						(list :surname "Gieter"))))))
  
-  (setf (getx sannie :surname) "Potgieter")
+  (setf (getx sannie :surname) "Potgieter"))

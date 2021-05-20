@@ -1,0 +1,744 @@
+* User API
+
+The classes, accessors and generic functions used by the typical user
+of cl-naive-store. Please have a look at the documentation and
+examples for help on how to use cl-naive-store. The api documentation
+only deals with the specifics of individual api functions. If you want
+to cutsomize cl-naive-store then you need to use the functionality
+described here in condjuction with the Implementor's Api.
+
+** Naive Core
+
+*** [class] universe
+
+Stores are held by a universe to make up a database.
+
+**** [accessor] stores
+
+List of stores contained by this universe.
+
+**** [accessor] store-class
+
+The class that should be used to make stores.
+
+NOTES:
+
+store-class is delcaritively specied here because stores are dynamically
+created when definition files are loaded.
+
+**** [accessor] location
+
+Directory path to stores.
+
+*** [class] store
+
+Document types and their associated collections are organized into
+groups called stores.
+
+**** [accessor] universe
+
+The universe this store belongs to.
+
+**** [accessor] name
+
+Store name.
+
+**** [accessor] collection-class
+
+The class that should be used to make collections.
+
+**** [accessor] collections
+
+List of collections represented by this store.
+
+**** [accessor] Location
+
+The directory path to the document-type files and collection files for
+this store.
+
+-----
+
+**** [class] shard
+
+Sharding is when you break the physical file that backs the collection
+into smaller files based on data elements of a document. An instance
+of a shard class is used to load the documents belonging to the shard
+into memory.
+
+**** [accessor] mac
+
+Mac to identify shard.
+
+**** [accessor] location
+
+The file path to this shard is stored.
+
+**** [accessor] documents
+
+Documents belonging to shard stored in an adjustable array.
+
+**** [accessor] status
+
+Used internally during the loading of the documents in a shard to help with locking.
+
+**** [accessor] lock
+
+Used internally to do shard specific locking.
+
+-----
+
+**** [class] collection
+
+A collection of documents of a specific document-type.
+
+**** [accessor] store
+
+The store that this collection belongs to.
+
+**** [accessor] name
+
+The collection name.
+
+**** [accessor] location
+
+The directory path to where files for this collection are stored.
+
+**** [accessor] shards
+
+A vector of shards.
+
+NOTES:
+
+Originally naive-store used lists but with the re-introduction of
+sharding, we chose to also introduce the use of lparrallel to speed
+up many functions and lparrallel has a preference for arrays.
+
+**** [accessor] keys
+
+Keys need to be set to handle duplicates, the default is :key if :key
+is not found in the document then duplicates will occur.
+
+NOTES:
+
+For collections that use cl-naive-document-type there is a fallback
+the document-type is checked for keys as well and the collection's
+keys will be set to the keys set in the document-type elements.
+
+**** [accessor] shard-elements
+
+shard-elements is a list of document element keywords to use for sharding.
+
+-----
+
+*** [generic function] short-mac (shard)
+
+Return a short string containing a prefix of the MAC.
+
+*** [function] match-shard (filename shards)
+
+Check filename against a list of shards to find the matching shard.
+
+*** [generic function] get-shard (collection shard-mac &key &allow-other-keys)
+
+Get the shard object by its mac. Shard lookups are done so much that
+there is no choice but to cache them in a hashtable, but that
+hashtable needs to be thread safe so using safe functions to get and
+set.
+
+*** [generic function] make-shard (collection shard-mac))
+make-shard ((collection indexed-collection-mixin) shard-mac)
+
+Creates an instance of a shard using the supplied mac.
+
+*** [function] document-shard-mac (collection document)
+
+Calculating a mac is expensive so caching shard value macs in a
+hashtable but that hashtable needs to be thread safe so using safe
+functions to get and set.
+
+*** [generic function] get-store (universe store-name)
+
+Returns a store if found in the universe.
+
+*** [generic function] get-collection (store collection-name)
+
+Returns a collection document if found in the store.
+
+*** [generic function] persist (object &key &allow-other-keys)
+
+persist ((store store) &key &allow-other-keys)
+
+Persists a store definition and not what it contains! Path to file is
+of this general format /universe/store-name/store-name.store.
+
+persist ((collection collection) &key &allow-other-keys)
+
+Persists a collection definition and the documents in a
+collection. Path to file for data is this general format
+/universe/store-name/collection-name/collection-name.log
+
+*** [function] persist-collection (collection)
+
+Persists the documents in a collection in the order that they where
+added.
+
+*** [generic function] add-store (universe store)
+
+add-store ((universe universe) (store store))
+
+*** [generic function] add-collection (store collection)
+
+add-collection ((store store) (collection collection))
+
+Adds a collection to a store.
+
+*** [generic function] clear-collection (collection)
+
+Clears documents indexes etc from collection.
+
+*** [generic function] remove-collection (store collection)
+
+Removes a collection to a store.
+
+*** [generic function] load-data (collection &key force-reload-p &allow-other-keys)
+
+Loads the data documents of a collection from file or files if
+sharding is used. If the data is already loaded it wont reload it, if
+you want the data to be reloaded use force-reload-p.
+
+shard-macs is a list of shard macs to indicate which shards should be
+used. If no shards are specified all shards will be loaded.
+
+NOTES:
+
+load-data could have been used to load universe or store as well but
+those have a wealth of other key word parameters to control exactly
+what to do that makes the load-data signature a nightmare to
+understand. So separate methods load-stores (for universe) and
+load-collections (for a store) exists for that.
+
+load-data :around ((collection collection) &key force-reload-p &allow-other-keys)
+load-data ((collection collection) &key &allow-other-keys)
+
+Explicitly stops execution of main methods if already loaded, unless forced.
+
+**** [generic function] data-loaded-p (container &key *allow-other-keys)
+
+data-loaded-p ((collection collection) &key &allow-other-keys)
+
+data-loaded-p ((collection collection) &key &allow-other-keys)
+
+data-loaded-p ((universe universe) &key &allow-other-keys)
+
+Checks if the data is loaded for the container, be it universe , store or collection.
+
+NOTES:
+
+This physically checks each collection's underlying concrete data structure for data. This is done because a collection can be empty and still loaded, thus setting a status when loaded became confusing and could be missed by an over loading method.
+
+If you change the underlying container for (shards collection) or the
+container for (docutments shard) you have to implement
+data-loaded-p. Your implementation is expected to physically check for
+document count > 0 and not some status set. Be smart about it you are
+not expected to return a count so dont waist time counting just check
+if there is at least one document in the container.
+
+-----
+
+*** [generic function] load-collections (store  &key with-data-p &allow-other-keys)
+
+load-collections ((store store) &key with-data-p &allow-other-keys)
+
+Finds and loads collections of a store, with or without documents.
+
+**** [generic function] load-stores (universe  &key with-collections-p with-data-p &allow-other-keys)
+
+Finds and loads collections a store, with or without data documents.
+
+**** [generic function] load-store (store &key &allow-other-keys)
+
+load-store ((store store) &key with-data-p &allow-other-keys)
+
+Loads the document-types and collections, with or without the actual
+data documents.
+
+-----
+
+*** [generic function] document-values (document)
+
+Returns a plist of document values.
+
+NOTES:
+
+Exists to ease the compatibility of various implementation
+functions. Basically it blurs the line between plists and more complex
+documents like cl-naive-documents document struct.
+
+This helps keep the amount of specializations needed down
+considerably.
+
+*** [generic function] key-values (collection values &key &allow-other-keys)
+
+key-values ((collection collection) values &key &allow-other-keys)
+
+Returns a set of key values from the values of a data document. Checks
+the collection keys or uses hash.
+
+*** [generic function] existing-document (collection document &key shard &allow-other-keys)
+
+Finds any documents with the same key values. This could return the
+exact same document or a similar document.
+
+If a shard is passed in then the search is limited to that shard.
+
+IMPL NOTES:
+
+This is an essential part of loading and persisting documents, take
+care when implementing.
+
+*** [generic function] deleted-p (document)
+
+(setf deleted-p) (value document &key &allow-other-keys))
+
+Indicates if a data document has been marked as deleted.
+
+naive-store writes data to file sequentially and when deleting data
+documents it does not remove a data document from the underlying file
+it just marks it as deleted.
+
+*** [generic function] remove-document (collection document &key shard &allow-other-keys)
+
+remove-document ((collection collection) document &key shard &allow-other-keys)
+
+Removes an document from the collection and its indexes. See add-document.
+
+Supplying a shard saves the function from trying to figure out which
+shard to remove the document from.
+
+*** [generic function] delete-document (collection document &key shard &allow-other-keys))
+
+delete-document ((collection collection) document &key shard &allow-other-keys)
+
+Removes a document from the collection, marks the document as deleted
+and persists the deleted document to disk.
+
+Supplying a shard saves the function from trying to figure out which
+shard to remove the document from.
+
+*** [generic function] add-document (collection document &key shard &allow-other-keys)
+
+add-document ((collection collection) document &key (shard naive-impl:%loading-shard%) (handle-duplicates-p t) (replace-existing-p t) &allow-other-keys)
+
+Adds a document to the collection, it DOES NOT PERSIST the change, if
+you want adding with persistance use persist-document or persist the
+collection as a whole after you have done your adding.
+
+add-document returns multiple values:
+
+The first returned value is the actual document supplied.  The second
+returned value indicates what action was taken ie. was it added newly
+or was an exiting document replaced.  The third returned value is the
+replaced document.
+
+NOTES:
+
+In general you should not be calling add-document directly, you should
+use persist-document. Calling add-document directly is allowed so you
+can create temporary collections that can be thrown away.
+
+cl-naive-store does not have a update-document function, add-document
+does both and its behaviour can be complex depending on the key
+parameters supplied. Also the behaviour can differ for different types
+of collections. Check the appropriate collection documentation for
+more details.
+
+Supplying a shard saves the function from trying to figure out which
+shard to add the document to. During loading of a shard
+naive-impl:%loading-shard% must be used as the default.
+
+add-document ((collection collection) document &key (shard naive-impl:%loading-shard%) (handle-duplicates-p t) (replace-existing-p t) &allow-other-keys)
+
+None of the following will have an effect if handle-duplicates = nil.
+
+If a document with the same keys exists in the collection the supplied
+the existing document will be replaced with the supplied document.
+
+If you set replace-existing-p to nil then an existing document wont be
+replaced by the supplied document. Basically nothing will be done.
+
+Supplying a shard saves the function from trying to figure out which
+shard to add the document to. During loading of a shard
+naive-impl:%loading-shard% is used.
+
+*** [generic function] persist-document (collection document-form &key shard &allow-other-keys)
+
+persist-document ((collection collection) document &key shard (handle-duplicates-p t) delete-p &allow-other-keys)
+
+Traverses the document and composes a list representation that is
+written to file. If the document is new it is added to the collection.
+
+The shard the document should belong to can be passed in to save the
+function from trying to establish which shard on its own.
+
+-----
+
+*** [generic function] naive-reduce (collection &key query function initial-value &allow-other-keys)
+
+naive-reduce ((hash-table hash-table) &key query function initial-value  &allow-other-keys)
+
+naive-reduce ((list list) &key query function initial-value  &allow-other-keys)
+
+Uses query to select data documents from a collection and applies the
+function to those documents returning the result.
+
+NOTES:
+
+Does lazy loading.
+
+naive-reduce ((collection collection) &key query function initial-value shards &allow-other-keys)
+naive-reduce :before ((collection collection) &key shards &allow-other-keys)
+
+Lazy loading data.
+
+*** [generic function] query-data (collection &key query &allow-other-keys)
+
+query-data :before ((collection collection) &key shards &allow-other-keys)
+
+Does lazy loading
+
+query-data ((collection collection) &key query shards &allow-other-keys)
+
+query-data ((store store) &key collection-name query shards &allow-other-keys)
+
+query-data ((hash-table hash-table) &key query &allow-other-keys)
+
+Returns the data that satisfies the query.
+
+NOTES:
+
+Does lazy loading.
+
+Will only use shards supplied if supplied.
+
+*** [generic function] query-document (collection &key query &allow-other-keys)
+
+query-document :before ((collection collection) &key shards &allow-other-keys)
+
+Does lazy loading.
+
+query-document ((collection collection) &key query shards &allow-other-keys)
+
+query-document ((store store) &key collection-name query &allow-other-keys)
+
+query-document ((list list) &key query &allow-other-keys)
+
+query-document ((hash-table hash-table) &key query &allow-other-keys)
+
+Returns the first last document found, and any others that satisfies
+the query
+
+NOTES:
+
+Does lazy loading.
+
+** Naive Indexed
+
+*** [global parameter] *do-partial-indexing*
+
+When this is set to t (which is the default), indexing is done for the
+individual elements of the indexes as well.
+
+*** [class] indexed-shard (shard)
+
+**** [accessor] hash-index
+
+Hash table keyed on document uuid for quick retrieval of an document.
+
+**** [accessor] key-value-index
+
+Hash table keyed on document key values for quick retrieval of an document.
+Used when doing key value equality comparisons.
+
+*** [class] indexed-collection-mixin
+
+Collection extension to add very basic indexes.
+
+**** [accessor] indexes
+
+List of index combinations. Also indexes members partially if
+*do-partial-indexing* is t, for example '((:emp-no :surname gender))
+is indexed as (:emp-no :surname :gender), (:emp-no :surname), :emp-no,
+:surname and :gender
+
+*** [generic function] make-shard ((collection indexed-collection-mixin) shard-mac)
+
+Extends make-shard to deal with indexed collections.
+
+*** [generic function] get-shard ((collection indexed-collection-mixin) shard-mac &key &allow-other-keys)
+
+Extends get-shard to deal with indexed collections.
+
+*** [generic function] hash (document)
+
+(setf hash) (value document)
+
+Returns the hash identifier for a data document. Data documents need a
+hash identifier to work with naive-store-indexed. naive-store-indexed
+will edit the document to add a hash identifier when adding documents
+to a collection. naive-store-indexed uses a UUID in its default
+implementation.
+
+*** [generic function] index-lookup-values  (collection values &key shards &allow-other-keys)
+
+index-lookup-values ((collection indexed-collection-mixin) values
+&key (shards (and naive-impl:%loading-shard% (list naive-impl:%loading-shard%)))
+&allow-other-keys)
+
+Looks up document in key value hash index. If you are not using
+document-types then the order of values matter.
+
+Will use shards to limit the lookup to specific shards.
+
+*** [generic function] index-lookup-hash (collection hash &key shards &allow-other-keys)
+
+index-lookup-hash ((collection indexed-collection-mixin) hash
+(shards (and naive-impl:%loading-shard%	(list naive-impl:%loading-shard%)))
+&allow-other-keys)
+
+Looks up document in UUID hash index.
+
+*** [generic function] add-index (collection shard document &key &allow-other-keys)
+
+add-index ((collection indexed-collection-mixin) shard document &key key-values &allow-other-keys)
+
+Adds a document to two indexes. The first uses a UUID that will stay
+with the document for its life time. The UUID is used when persisting
+the document and is never changed once created. This allows us to
+change key values without loosing the identify of the original
+document.
+
+The second is a key value hash index to be used when looking for
+duplicate documents during persist. If you are not using
+document-types the order of the keys in the plist matter. To make sure
+that you dont muck with the order of values/keys in your plists
+initialize all the possible value pairs with nil so that way the order
+is set.
+
+A shard must be supplied.
+
+*** [generic function] remove-index (collection shard document &key &allow-other-keys)
+
+remove-index ((collection indexed-collection-mixin) shard document &key &allow-other-keys)
+
+Removes a data document from the UUID and key value indexes.
+
+A shard must be supplied.
+
+*** [generic function] existing-document ((collection indexed-collection-mixin) document &key(shard naive-impl:%loading-shard%)  key-values &allow-other-keys)
+
+*** [generic function] add-document ((collection indexed-collection-mixin) document &key (shard naive-impl:%loading-shard%) (replace-existing-p t) (update-index-p t) &allow-other-keys)
+
+Duplicates are not allowed for indexed collections!
+
+If the document has no hash and a document with the same keys exists
+in the collection the supplied document's hash will be set to that of
+the existing document. The existing document will then be replaced
+with the supplied document. This is done to maintain hash consistency
+of the store.
+
+If you set replace-existing-p to nil then an existing document wont be
+replaced by the supplied document. Basically nothing will be done.
+
+Indexes will be updated by default, if you want to stop index updates
+set update-index-p to nil. Just remember that if the document is
+really \"new\" to the collection the indexes will be updated in any
+case.
+
+*** [generic function] naive-reduce ((collection indexed-collection-mixin) &key index-values query function initial-value)
+
+Extends naive-reduce to be able to take advantage of indexing. Reduce
+is done on values retrieved by the supplier index.
+
+*** [generic function] query-data ((collection indexed-collection-mixin) &key index-values query &allow-other-keys)
+
+Extends query-data to be able to take advantage of indexing. Query is
+done on values retrieved by the supplier index.
+
+** Document Types
+
+*** [class] element
+
+A definition of an element of a document.
+
+NOTES:
+
+Elements can reference simple types, a complex document or documents
+based on other document-types.
+
+naive-store can be used as a hierarchical database or a flat databases
+or a mix.
+
+**** [accessor] name
+
+Name of the element. This should be a KEYWORD if you want data
+portability and some internals might expect a keyword.
+
+**** [accessor] type-def
+
+A user defined "thing" that defines the type specifics of an element.
+
+**** [accessor] key-p
+
+A property list of additional element attributes that are not data
+type specific.
+
+**** [class] document-type
+
+A class that can be use to represent a complex document.
+
+NOTES:
+
+The default implementation of cl-naive-store is unaware of
+document-types when reading and writing documents to and from
+file. This was by design, to place as little burden on reading and
+writing documents. Depending on the use of naive-store a user could
+customize the reading and writing methods of naive-store to use
+document-types for validation and file layout specifics.
+
+GUI's like cl-wfx use these to help with generic rendering of user
+input screens.
+
+See cl-naive-type-defs:*example-type-defs* for examples of type
+definitions to get a feel for the intended use.
+
+**** [accessor] store
+
+The store that this document-type belongs to.
+
+**** [accessor] name
+
+String representing a document-type name.
+
+**** [accessor] element-class
+
+The class that should be used to make element documents.
+NOTES:
+
+element-class is declaratively specified here because so that elements
+can be dynamicly created when definition type definitions are read
+from file. See naive-store-documents for usage examples.
+
+**** [accessor] label
+
+Human readable/formated short description.
+
+**** [accessor] elements
+
+-----
+
+Field definitions that represents a data unit.
+
+*** [class] document-type-collection-mixin
+
+Collection extention to make collection of a specific document-type.
+
+**** [accessor] document-type
+
+The document-type that this collection contains documents of.
+
+**** [generic function] get-document-type (store type-name)
+
+get-document-type ((store document-type-store-mixin) type-name)
+
+Returns a document-type document if found in the store.
+
+**** [generic function] add-document-type (store document-type)
+
+Adds a document-type to a store.
+
+** Document Type Defs
+
+*** [generic function] getx (document (element cl-naive-document-types:element) &key &allow-other-keys)
+
+(setf getx) (value document (element cl-naive-document-types:element)
+
+*** [generic function] getxe (document element type &key &allow-other-keys))
+
+(setf getxe) (value document element type &key &allow-other-keys)
+
+*** [generic function] validate-xe (document element type value &key &allow-other-keys))
+
+** Naive Documents
+
+*** [class] document-collection (indexed-collection-mixin document-type-collection-mixin collection)
+
+Document collection class used to specialize on for cl-naive-documents.
+
+*** [class] document-store (document-type-store-mixin store)
+
+document-store (document-type-store-mixin store)
+
+*** [struct] document
+A basic struct that represents a document object. A struct is used
+because there is meta data that we want to add to the actual document
+values and there is additional functionality like being able to know
+what has changed in the values during updates.
+
+- store = The store that the document comes from.
+- collection = The collection that the document comes from.
+- type-def = The document type specification that describes this document.
+- hash = The hash/UUID that uniquely identifies this document
+- elements = The actual key value pairs of the document.
+- changes = Is used to store setf values when using getx the preffered accessor for values.
+- This helps with comparing of values when persisting.
+- versions = older key value pairs that represent older versions of the document
+- deleted-p = indicates that the document was deleted.
+- persisted-p = indicates that the document has been peristed.
+
+*** [generic function] hash ((document document))
+
+*** [generic function] key-values ((collection document-collection) document &key &allow-other-keys)
+
+*** [generic function] document-values ((document document))
+
+*** [generic function] existing-document ((collection document-collection) document &key key-values &allow-other-keys)
+
+*** [generic function] persist-document ((collection document-collection) document &key allow-key-change-p delete-p &allow-other-keys)
+
+persist-document for document-collection is lenient in what it takes
+as a document, it can be of type document or a plist.
+
+*** [generic function] persist-document index-values ((collection document-collection) (values document) &key &allow-other-keys)
+
+*** [generic function] getx ((document document) accessor &key &allow-other-keys)
+
+(setf getx) (value (document document) accessor  &key (change-control-p t) &allow-other-keys)
+
+getx for documents knows about some of the internals of an document
+structue so you can get the collection.
+
+Special accessors:
+
+:hash = document-hash
+
+The convention is to append %% to these accessors, for two
+reasons. First to show that they are special, accessing meta data not
+actual values of document. Second to avoid any name classes with
+actual data members.
+
+- :collection%% = document-collection
+- :store%% = document-store or (store collection)
+- :universe%% = (universe store)
+- :type%% = type
+- :elements%% = document-elements
+- :changes%% = document-changes
+- :versions%% = document-versions
+- :deleted-p%% = document-deleted-p
+
+store and universe using getx.
+
+*** [generic function] digx ((place document) &rest indicators)
+
+(setf digx) (value (place document) &rest indicators)
+
+[[file:home.org][Home]]

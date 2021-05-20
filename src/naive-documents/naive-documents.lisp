@@ -94,13 +94,4 @@ persisted-p = indicates that the document has been peristed.
       (key-values%% (keys collection) (document-elements document))))
 
 
-(defmethod indexed-impl:index-values ((collection document-collection) document
-				      &key &allow-other-keys)
-  (let ((index-values))
-    (dolist (index (indexes collection))
-      (push
-       (loop for (a b) on (document-elements document) by #'cddr
-	  when (find a index :test 'equalp)
-	  :collect (list a b))
-       index-values))
-    index-values))
+

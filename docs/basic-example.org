@@ -1,0 +1,54 @@
+* Basic Example
+
+In this example only the bare minimum is used and documents added are **not persisted**.
+
+#+BEGIN_SRC lisp
+  ;;Setup to use cl-naive-store
+  (require 'cl-naive-store)
+  (defpackage :naive-examples (:use :cl :cl-getx :cl-naive-store))
+  (in-package :naive-examples)
+
+  ;;Create a universe
+  (defparameter *universe* (make-instance
+			    'universe
+			    :store-class 'store))
+
+  (let* (;;Create a store and add it to the universe
+	 (store (add-store *universe*
+			   (make-instance 'store
+					  :name "simple-store"
+					  :collection-class 'collection)))
+
+	 ;;Create a collection and add it to the store
+	 (collection
+	   (add-collection store
+			   (make-instance 'collection
+					  :name "simple-collection"
+					  ;;Specifying the key field, else its :key
+					  :keys '(id)))))
+
+    ;;Add some documents to the collection
+    (add-document collection (list :name "Piet" :surname "Gieter" :id 123))
+    (add-document collection (list :name "Sannie" :surname "Gieter" :id 321))
+    (add-document collection (list :name "Koos" :surname "Van" :id 999))
+
+    ;;Duplicates are handled by default, so this will not cause a duplicate document
+    (add-document collection (list :name "Piet" :surname "Gieter" :id 123))
+
+    ;;Query the collection
+    (query-data collection :query (lambda (document)
+				    (<= (getx document :id) 900))))
+#+END_SRC
+
+Output:
+
+You can see that Piet Gieter appears only once, because duplicates are handled.
+
+#+BEGIN_SRC lisp
+  ((:NAME "Piet" :SURNAME "Gieter" :ID 123)
+   (:NAME "Sannie" :SURNAME "Gieter" :ID 321))
+#+END_SRC
+
+To allow duplicates set handle-duplicates on the collection or store or universe level to :no.
+
+[[file:home.org][Home]] [[file:examples.org][Previous]] [[file:basic-example-with-persistence.org][Next]]

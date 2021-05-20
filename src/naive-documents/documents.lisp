@@ -1,16 +1,5 @@
 (in-package :cl-naive-documents)
 
-(defmethod existing-document ((collection document-collection) document
-			      &key key-values &allow-other-keys)
-  (or
-   (and (hash document) (index-lookup-hash collection (hash document)))
-   (let ((key-values
-	  (or key-values (key-values collection document))))
-       (cl-naive-indexed::try-better-value-match
-	 collection
-	 (index-lookup-values collection key-values)
-	 key-values))))
-
 (defmethod deleted-p ((document document))
   (document-deleted-p document))
 
@@ -54,14 +43,32 @@
 		   (getx prepped :elements)))))
 
 
-
 (defmethod persist-document ((collection document-collection) document
-			     &key allow-key-change-p delete-p file-name &allow-other-keys)
+			     &key shard allow-key-change-p delete-p file-name
+			       file-stream &allow-other-keys)
   "persist-document for document-collection is leniant in what it takes as a document, it can be of type document or a plist."
+
   (let ((*persisting-p* nil))
     (declare (special *persisting-p*))
 
-   ;; (break "~A" document)
+    (unless shard
+      (setf shard (get-shard collection (document-shard-mac collection document))))
+
+    (unless shard
+      (let* ((mac (document-shard-mac collection document))
+	     (shardx 
+	       (make-shard collection mac)))
+
+	;;Make sure there is nothing to load.
+	(cl-naive-store::load-shard collection shardx (location shardx))
+
+	
+	(cl-naive-store::set-shard-cache-safe% collection mac shardx)
+	(vector-push-extend shardx (shards collection))
+
+	(setf shard shardx)
+	(naive-impl::debug-log "created new shard in add-document" :file-p t :args mac)))
+    
     (unless (document-p document)
       (setf document (make-document 
 		      :store (store collection)
@@ -77,15 +84,16 @@
     (unless (document-type-def document)
       (setf (document-type-def document) (document-type collection)))
     
-    (let ((file (or file-name (ensure-location collection))))
+    (let ((file (or file-name (location shard))))
       (cond ((or delete-p (deleted-p document))
-	     (naive-impl:persist-delete-document collection document file))
+	     (naive-impl:persist-delete-document collection shard document file :shard shard))
 	    (t	   
 	     (let* ((existing-document
-		     (existing-document collection document))
+		     (existing-document collection document :shard shard))
 		    (original-document-parsed
 		     (naive-impl:persist-form
                       collection
+		      shard
 		      document
 		      :document))
 		    (merged-document
@@ -99,6 +107,7 @@
 		    (prepped-document-parsed
 		     (naive-impl:persist-form
 		      collection
+		      shard
 		      (or merged-document document)
 		      :document)))
 
@@ -123,12 +132,23 @@
 		     (setf (document-elements (or merged-document document))
 			   (document-changes (or merged-document document))))
 		 
-		 (setf (document-changes (or merged-document document)) nil)  
-		 (naive-impl:write-to-file file (naive-impl:persist-form
-						  collection
-						  (or merged-document document)
-						  :document))
+		 (setf (document-changes (or merged-document document)) nil)
+		 
+		 (if file-stream
+		     (naive-impl::write-to-stream
+		      file-stream
+		      (naive-impl:persist-form
+		       collection
+		       shard
+		       (or merged-document document)
+		       :document))
+		     (naive-impl:write-to-file file (naive-impl:persist-form
+						     collection
+						     shard
+						     (or merged-document document)
+						     :document)))
 
 		 (setf (document-persisted-p (or merged-document document)) t))
 
 	       (or merged-document document)))))))
+

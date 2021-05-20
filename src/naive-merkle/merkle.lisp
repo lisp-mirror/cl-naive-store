@@ -36,7 +36,6 @@
 	     :initform nil
 	     :accessor children)))
 
-
 (defun node-p (node)
   (if (listp node)
       (getf node :children)
@@ -45,7 +44,7 @@
 (defun leaf-p (node)
   (not (node-p node)))
 
-(defun recalc (node)  
+(defun recalc (node)
   (labels ((parent% (node)
 	     (let ((sum 0))
 	       (dolist (nd (children node))
@@ -53,8 +52,8 @@
 				      (merkle-hash nd)))))
 
 	       (setf (merkle-sum node) sum))
-	       (when (parent node)                 
-		 (parent% (parent node)))))      
+	       (when (parent node)
+		 (parent% (parent node)))))
     (parent% node)
     node))
 
@@ -73,7 +72,7 @@
 				 :merkle-hash hash
 				 :merkle-sum (or hash-sum hash)))))
     (when parent
-	(if (leaf-p parent)	    
+	(if (leaf-p parent)
 	      (setf (children parent) (list node))
 	      (setf (children parent) (append (children parent) (list node))))
 	(recalc parent))
@@ -90,10 +89,10 @@
 	       (if (parent node)
 		   (setf sum (- sum (or (merkle-sum node)
 					(merkle-hash node)))))
-	       
+
 	       (when (parent node)
 		 (parent% (parent node)))))
-      
+
       (parent% (parent node))
       sum)))
 
@@ -110,7 +109,7 @@
 		   (setf sum (- sum (or (merkle-sum node)
 					(merkle-hash node)))))
 		 (parent% (parent node)))))
-      
+
       (parent% (parent node))
       sum)))
 
@@ -123,10 +122,9 @@
 	 (funcall function tree))
 	((node-p tree)
 	 (funcall function tree)
-	 (map-tree (children tree) function))	
+	 (map-tree (children tree) function))
 	(t
 	 (error "Malformed tree:~%~% ~S" tree))))
-
 
 (defun branch (node)
   (let ((nodes))
@@ -161,7 +159,7 @@
 			(setf (getf parent :children)
 			      (append (getf parent :children)
 				      (list ref-node)))
-			(traverse-tree (children node) ref-node)))	
+			(traverse-tree (children node) ref-node)))
 		     (t
 		      (error "Malformed tree:~%~% ~S" node)))))
       (traverse-tree (children tree) ref-tree))
@@ -171,14 +169,14 @@
   (let ((tree (make-node (getf ref-tree :hash))))
     (labels ((traverse-tree (tree parent)
 	       (cond ((null tree))
-		     ((consp (car tree))                     
+		     ((consp (car tree))
 		      (traverse-tree (car tree) parent)
 		      (traverse-tree (cdr tree) parent))
 		     ((leaf-p tree)
 		      (make-node (getf tree :hash)
 				 :parent parent
-				 :hash-sum (getf tree :hash-sum))) 
-		     ((node-p tree)		      
+				 :hash-sum (getf tree :hash-sum)))
+		     ((node-p tree)
 		      (traverse-tree (getf tree :children)
 				     (make-node (getf tree :hash)
 						:parent parent
@@ -186,10 +184,9 @@
 						:children nil)))
 		     (t
 		      (error "Malformed tree:~%~% ~S" tree)))))
-      
+
       (traverse-tree (getf ref-tree :children) tree))
     tree))
-
 
 (defun make-hash (value)
   (ironclad:octets-to-integer
@@ -197,7 +194,7 @@
     :tiger
     (babel:string-to-octets
      (cl-naive-store:frmt
-      "~A" value) ))))
+      "~A" value)))))
 
 (defun make-document-hash (document)
   (make-hash
@@ -209,47 +206,34 @@
   (let ((merkle-tree))
     (labels ((traverse-doc (doc parent)
 	       (when (cl-naive-documents:document-p doc)
-	;;	 (break "fuy ~A" doc)
 		 (let* ((node (make-node
 			       (make-document-hash
 				doc)
 			       :parent parent)))
-		   
-		   (loop for (key value) on (cl-naive-documents:document-elements doc) by #'cddr
-		      when (cl-naive-documents:document-p value)
-			do
-			(traverse-doc value node))))))
-      (setf merkle-tree (make-node (make-document-hash document) ))
-      (traverse-doc document merkle-tree))
-   ;; (break "~A" merkle-tree)
-    merkle-tree))
 
+		   (loop :for (nil value) :on (cl-naive-documents:document-elements doc) :by #'cddr
+			 :when (cl-naive-documents:document-p value)
+			   :do (traverse-doc value node))))))
+      (setf merkle-tree (make-node (make-document-hash document)))
+      (traverse-doc document merkle-tree))
+    merkle-tree))
 
 #|
 
+(let ((buffer)
 
-(let ((buffer )
-      
       (crypt))
 
   (time
    (dotimes (x 1000000)
      (progn
        (setf buffer (babel:string-to-octets "fuck"))
-       
+
        (setf crypt (ironclad:digest-sequence :tiger buffer))
-       
+
        ;;(print crypt)
        (ironclad::octets-to-integer crypt)
-       ;;(print (ironclad:integer-to-octets (bit-smasher:octets->int crypt)))
-
-       )))
-
-  
-
-   
-  
-  )
+       ;;(print (ironclad:integer-to-octets (bit-smasher:octets->int crypt)))))))
 
 (let* ((tree)
        (two)
@@ -258,23 +242,22 @@
        (eleven)
        (thirteen))
 
-
   (setf tree (make-node 1))
   (setf two (make-node 2 :parent tree))
   (make-node 3 :parent two)
-  
+
   (make-node 4 :parent two)
 
   (setf seven (make-node 7 :parent tree))
   (make-node 8 :parent seven)
-  
+
   (setf nine (make-node 9 :parent tree))
   (make-node 10 :parent nine)
-  
+
   (setf eleven (make-node 11 :parent nine))
   (make-node 12 :parent eleven)
-  
-  (setf thirteen (make-node 13 :parent eleven)) 
+
+  (setf thirteen (make-node 13 :parent eleven))
 
   (format t "~A~%"  (calc thirteen))
   (format t "~A~%"  (calc-branch thirteen))
@@ -288,13 +271,6 @@
   (:HASH 9 :HASH-SUM 72 :CHILDREN
    ((:HASH 10 :HASH-SUM 10)
     (:HASH 11 :HASH-SUM 22 :CHILDREN
-     ((:HASH 12 :HASH-SUM 12) (:HASH 13 :HASH-SUM 13)))))))
-
-
-
-  )
-
-
-
+     ((:HASH 12 :HASH-SUM 12) (:HASH 13 :HASH-SUM 13))))))))
 
 |#

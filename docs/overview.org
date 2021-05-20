@@ -1,0 +1,180 @@
+* Overview
+
+** Functionality
+
+cl-naive-store is designed to be simple with minimal functionality to
+start with, additional packages add additional
+functionality. cl-naive-store.* packages can be layered to achieve complex
+behaviour. Each of the layers are customizable and if none of them
+does what you need then write your own layer.
+
+*** Functionality Matrix
+
+| Functionality | cl-naive-store | cl-naive-indexed | cl-naive-data-types | cl-naive-data-type-defs | cl-naive-items |
+| ------ | ------ | ------ | ------ | ------ | ------ |
+| Load data into memory | T |  |  |  |  |
+| Delete Data | T |  |  |  |  |
+| Persist data to file | T |  |  |  |  |
+| Query Data | T |  |  |  |  |
+| Single Key Value | T |  |  |  |  |
+| Unique Object Identifier |  | T |  |  |  |
+| Multiple Key Values |  | T |  |  |  |
+| Key Value Lookups |  | T |  |  |  |
+| Index Data |  | T |  |  |  |
+| Index Lookups |  | T |  |  |  |
+| Handles Duplicates Properly |  | T |  |  |  |
+| Data Type aware Universe |  |  | T |  |  |
+| Pre Defined Data Types |  |  |  | T |  |
+| Hierarchical Data Objects |  |  |  |  | T |
+| Cross Collection Reference Objects |  |  |  |  | T |
+| Object Version Tracking |  |  |  |  | T |
+| Object Value Change Tracking |  |  |  |  | T |
+
+** Data Universe
+
+There is a data-universe which contains a list of stores, which
+contains a list of collections, which contains a list of "objects".
+
+#+BEGIN_SRC mermaid :exports results :file universe.png
+  graph LR;
+      A[data-universe]-->B[stores];
+      B-->D[collections];
+      D-->E[objects]
+#+END_SRC
+
+#+RESULTS:
+[[file:universe.png]]
+
+When data is persisted the file folders/directories mirror the
+relationship above, which makes it possible to lazy load the data only
+when needed from disk. Querying an unloaded collection will cause the
+loading of a collection and in the case of cl-naive-items any
+referenced collections as well.
+
+: /store/collection/objects.log
+
+** In memory
+
+Data is loaded into memory for querying and lookups, that makes them
+fast.
+
+You can load the whole universe,a store, a collection or a shard at a
+time.
+
+** Lazy Loading
+
+Data is only loaded when needed and not before if you use the store
+correctly. It means that you will only have the data that users
+requested up to that point in memory. Data in memory can easily be
+garbage collected if not in use any more. cl-naive-store does not do
+garbage collection for you that is left to the user.
+
+** Documents
+
+"Documents" in cl-naive-store are property lists by default and when
+persisted the lists are written out to file as property lists so that
+they can be retrieved using lisp build in read function.
+
+Both the "document" type and its container type can easily be changed
+by overriding a couple of functions, look at the code of
+cl-naive-documents to see what is possible. **However** when choosing
+your own underlying document "type" the "data" of the "document" type
+you use should be translatable to **key-value pairs**, else you are
+going to end up writing your own db with all the overriding you will
+have to do.
+
+** Persistence
+
+cl-naive-store relies on the fact that objects are translatable to
+key-value pairs and writes plists to a file per collection. Note of
+caution here if you go and store unprintable values (ie not readable)
+in the db you are going to be very disappointed when you try to load
+the db again! cl-naive-store tries to protect you from that scenario
+but you can still override that.
+
+** Indexes
+
+cl-naive-indexed adds key, value and user defined indexes to the basic
+collection class. It also introduces the concept of a UUID (hash) for
+each object.
+
+Lookups can be done using the UUID or key value pairs.
+
+** Sharding
+
+Sharding is the breaking down of files into smaller files, in the case
+of naive-store that means that instead of one file per collection there
+could be many.
+
+Sharding is done based on the actual data in collections. The user
+specifies which elements of a document it wants to use for sharding on
+a collection. If none is specified no sharding is done.
+
+You should not set up sharding to use data that can change for a
+document, it will cause problems. For instance if you use
+company name to affect sharding for data by company/client then you
+should not be able to change the company name for the document. If you
+need to do it on rare occasions then you should delete the object and
+recreate it to keep your sanity.
+
+** Data Types
+
+cl-naive-store is mostly/blissfully unaware of user defined "document
+types" and value types. cl-naive-document-type adds document-type and
+element classes, extending the store and collection classes to store
+document types.
+
+Document types are ignored when doing persistence to and loading from
+disk, cl-naive-document-types just adds a place to store your document
+types and retrieve them at run time. Document types can be what ever
+you dream up!
+
+If you want document type validation based on your document type
+definitions you need to implement it yourself, overriding add-object
+and persist-object should be enough to add
+validation. cl-naive-document-type-defs offers some setf level
+validation.
+
+** Document Type Definitions
+
+If you don't feel like coming up with your own document type
+definitions cl-document-type-defs gives you some predefined element
+type definitions to use. If you find them peculiar it might help to
+note these where specifically designed to be used by a UI to know how
+to implement basic data interactions.
+
+For a in depth discussion look at [[file:document-type-definitions.org][Document Type Definitions]].
+
+** Naive Documents
+
+Naive Documents uses cl-naive-store, cl-naive-indexed,
+cl-naive-document-types, cl-naive-document-type-defs to create a more
+complex/fleshed out data store experience. Note that document types
+are still only used for their key and index definitions and no data
+type specific validation is done when loading or persisting data.
+
+Other peculiarities of Naive Documents:
+
+- Nothing stops you form adding "new" key values/types to your
+  document at any time, since they are not validated against a
+  document definition.
+- A document has key-values that are used to check for equality when
+  adding an object to a collection
+- A document keeps a set of old and new values while you are updating
+  values, this is cleared on persist.
+- A document is expected to be hierarchical in nature. IE a document
+  key-value pair can hold other documents (child documents). Child
+  documents come in two basic flavours, documents that have no
+  collection of their own, and documents referenced from other
+  collections. When a top level document is persisted only
+  "references" to the referenced child document are persisted.
+
+** BLOBS
+
+cl-naive-store knows how to deal with values that are blobs. Basically
+blobs are written to their own files and if file type is relevant the
+correct file type is used.
+
+There are no tests for blobs yet so use at own risk!
+
+[[file:home.org][Home]] [[file:home.org][Previous]] [[file:examples.org][Next]]
