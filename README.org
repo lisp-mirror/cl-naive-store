@@ -24,6 +24,10 @@ finally there. The 2021.5.18 version adds sharding to cl-naive-store
 and as a consequence of that the use of parallel processing internally
 and thread safety over all (fingers crossed!).
 
+There is more refinement that we would like to do in the future for
+the parallel processing but what we have now is fast enough and simple
+enough for a good start.
+
 ** Acknowledgements
 
 The latest version was financially supported by [[https://mts.co.za][Managing
