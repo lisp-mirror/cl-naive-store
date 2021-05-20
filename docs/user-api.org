@@ -9,17 +9,15 @@ described here in condjuction with the Implementor's Api.
 
 ** Naive Core
 
-*** Store
-
-**** [class] universe
+*** [class] universe
 
 Stores are held by a universe to make up a database.
 
-***** [accessor] stores
+**** [accessor] stores
 
 List of stores contained by this universe.
 
-***** [accessor] store-class
+**** [accessor] store-class
 
 The class that should be used to make stores.
 
@@ -28,39 +26,38 @@ NOTES:
 store-class is delcaritively specied here because stores are dynamically
 created when definition files are loaded.
 
-***** [accessor] location
+**** [accessor] location
 
 Directory path to stores.
 
------
-
-**** [class] store
+*** [class] store
 
 Document types and their associated collections are organized into
 groups called stores.
 
-***** [accessor] universe
+**** [accessor] universe
 
 The universe this store belongs to.
 
-***** [accessor] name
+**** [accessor] name
 
 Store name.
 
-***** [accessor] collection-class
+**** [accessor] collection-class
 
 The class that should be used to make collections.
 
-***** [accessor] collections
+**** [accessor] collections
 
 List of collections represented by this store.
 
-***** [accessor] Location
+**** [accessor] Location
 
 The directory path to the document-type files and collection files for
 this store.
 
 -----
+
 **** [class] shard
 
 Sharding is when you break the physical file that backs the collection
@@ -68,23 +65,23 @@ into smaller files based on data elements of a document. An instance
 of a shard class is used to load the documents belonging to the shard
 into memory.
 
-***** [accessor] mac
+**** [accessor] mac
 
 Mac to identify shard.
 
-***** [accessor] location
+**** [accessor] location
 
 The file path to this shard is stored.
 
-***** [accessor] documents
+**** [accessor] documents
 
 Documents belonging to shard stored in an adjustable array.
 
-***** [accessor] status
+**** [accessor] status
 
 Used internally during the loading of the documents in a shard to help with locking.
 
-***** [accessor] lock
+**** [accessor] lock
 
 Used internally to do shard specific locking.
 
@@ -94,19 +91,19 @@ Used internally to do shard specific locking.
 
 A collection of documents of a specific document-type.
 
-***** [accessor] store
+**** [accessor] store
 
 The store that this collection belongs to.
 
-***** [accessor] name
+**** [accessor] name
 
 The collection name.
 
-***** [accessor] location
+**** [accessor] location
 
 The directory path to where files for this collection are stored.
 
-***** [accessor] shards
+**** [accessor] shards
 
 A vector of shards.
 
@@ -116,7 +113,7 @@ Originally naive-store used lists but with the re-introduction of
 sharding, we chose to also introduce the use of lparrallel to speed
 up many functions and lparrallel has a preference for arrays.
 
-***** [accessor] keys
+**** [accessor] keys
 
 Keys need to be set to handle duplicates, the default is :key if :key
 is not found in the document then duplicates will occur.
@@ -127,47 +124,47 @@ For collections that use cl-naive-document-type there is a fallback
 the document-type is checked for keys as well and the collection's
 keys will be set to the keys set in the document-type elements.
 
-***** [accessor] shard-elements
+**** [accessor] shard-elements
 
 shard-elements is a list of document element keywords to use for sharding.
 
 -----
 
-**** [generic function] short-mac (shard)
+*** [generic function] short-mac (shard)
 
 Return a short string containing a prefix of the MAC.
 
-**** [function] match-shard (filename shards)
+*** [function] match-shard (filename shards)
 
 Check filename against a list of shards to find the matching shard.
 
-**** [generic function] get-shard (collection shard-mac &key &allow-other-keys)
+*** [generic function] get-shard (collection shard-mac &key &allow-other-keys)
 
 Get the shard object by its mac. Shard lookups are done so much that
 there is no choice but to cache them in a hashtable, but that
 hashtable needs to be thread safe so using safe functions to get and
 set.
 
-**** [generic function] make-shard (collection shard-mac))
+*** [generic function] make-shard (collection shard-mac))
 make-shard ((collection indexed-collection-mixin) shard-mac)
 
 Creates an instance of a shard using the supplied mac.
 
-**** [function] document-shard-mac (collection document)
+*** [function] document-shard-mac (collection document)
 
 Calculating a mac is expensive so caching shard value macs in a
 hashtable but that hashtable needs to be thread safe so using safe
 functions to get and set.
 
-**** [generic function] get-store (universe store-name)
+*** [generic function] get-store (universe store-name)
 
 Returns a store if found in the universe.
 
-**** [generic function] get-collection (store collection-name)
+*** [generic function] get-collection (store collection-name)
 
 Returns a collection document if found in the store.
 
-**** [generic function] persist (object &key &allow-other-keys)
+*** [generic function] persist (object &key &allow-other-keys)
 
 persist ((store store) &key &allow-other-keys)
 
@@ -180,30 +177,30 @@ Persists a collection definition and the documents in a
 collection. Path to file for data is this general format
 /universe/store-name/collection-name/collection-name.log
 
-**** [function] persist-collection (collection)
+*** [function] persist-collection (collection)
 
 Persists the documents in a collection in the order that they where
 added.
 
-**** [generic function] add-store (universe store)
+*** [generic function] add-store (universe store)
 
 add-store ((universe universe) (store store))
 
-**** [generic function] add-collection (store collection)
+*** [generic function] add-collection (store collection)
 
 add-collection ((store store) (collection collection))
 
 Adds a collection to a store.
 
-**** [generic function] clear-collection (collection)
+*** [generic function] clear-collection (collection)
 
 Clears documents indexes etc from collection.
 
-**** [generic function] remove-collection (store collection)
+*** [generic function] remove-collection (store collection)
 
 Removes a collection to a store.
 
-**** [generic function] load-data (collection &key force-reload-p &allow-other-keys)
+*** [generic function] load-data (collection &key force-reload-p &allow-other-keys)
 
 Loads the data documents of a collection from file or files if
 sharding is used. If the data is already loaded it wont reload it, if
@@ -247,9 +244,8 @@ not expected to return a count so dont waist time counting just check
 if there is at least one document in the container.
 
 -----
-*** Load
 
-**** [generic function] load-collections (store  &key with-data-p &allow-other-keys)
+*** [generic function] load-collections (store  &key with-data-p &allow-other-keys)
 
 load-collections ((store store) &key with-data-p &allow-other-keys)
 
@@ -268,9 +264,7 @@ data documents.
 
 -----
 
-*** Documents
-
-**** [generic function] document-values (document)
+*** [generic function] document-values (document)
 
 Returns a plist of document values.
 
@@ -283,14 +277,14 @@ documents like cl-naive-documents document struct.
 This helps keep the amount of specializations needed down
 considerably.
 
-**** [generic function] key-values (collection values &key &allow-other-keys)
+*** [generic function] key-values (collection values &key &allow-other-keys)
 
 key-values ((collection collection) values &key &allow-other-keys)
 
 Returns a set of key values from the values of a data document. Checks
 the collection keys or uses hash.
 
-**** [generic function] existing-document (collection document &key shard &allow-other-keys)
+*** [generic function] existing-document (collection document &key shard &allow-other-keys)
 
 Finds any documents with the same key values. This could return the
 exact same document or a similar document.
@@ -302,7 +296,7 @@ IMPL NOTES:
 This is an essential part of loading and persisting documents, take
 care when implementing.
 
-**** [generic function] deleted-p (document)
+*** [generic function] deleted-p (document)
 
 (setf deleted-p) (value document &key &allow-other-keys))
 
@@ -312,7 +306,7 @@ naive-store writes data to file sequentially and when deleting data
 documents it does not remove a data document from the underlying file
 it just marks it as deleted.
 
-**** [generic function] remove-document (collection document &key shard &allow-other-keys)
+*** [generic function] remove-document (collection document &key shard &allow-other-keys)
 
 remove-document ((collection collection) document &key shard &allow-other-keys)
 
@@ -321,7 +315,7 @@ Removes an document from the collection and its indexes. See add-document.
 Supplying a shard saves the function from trying to figure out which
 shard to remove the document from.
 
-**** [generic function] delete-document (collection document &key shard &allow-other-keys))
+*** [generic function] delete-document (collection document &key shard &allow-other-keys))
 
 delete-document ((collection collection) document &key shard &allow-other-keys)
 
@@ -331,7 +325,7 @@ and persists the deleted document to disk.
 Supplying a shard saves the function from trying to figure out which
 shard to remove the document from.
 
-**** [generic function] add-document (collection document &key shard &allow-other-keys)
+*** [generic function] add-document (collection document &key shard &allow-other-keys)
 
 add-document ((collection collection) document &key (shard naive-impl:%loading-shard%) (handle-duplicates-p t) (replace-existing-p t) &allow-other-keys)
 
@@ -376,7 +370,7 @@ Supplying a shard saves the function from trying to figure out which
 shard to add the document to. During loading of a shard
 naive-impl:%loading-shard% is used.
 
-**** [generic function] persist-document (collection document-form &key shard &allow-other-keys)
+*** [generic function] persist-document (collection document-form &key shard &allow-other-keys)
 
 persist-document ((collection collection) document &key shard (handle-duplicates-p t) delete-p &allow-other-keys)
 
@@ -388,9 +382,7 @@ function from trying to establish which shard on its own.
 
 -----
 
-*** Query
-
-**** [generic function] naive-reduce (collection &key query function initial-value &allow-other-keys)
+*** [generic function] naive-reduce (collection &key query function initial-value &allow-other-keys)
 
 naive-reduce ((hash-table hash-table) &key query function initial-value  &allow-other-keys)
 
@@ -408,7 +400,7 @@ naive-reduce :before ((collection collection) &key shards &allow-other-keys)
 
 Lazy loading data.
 
-**** [generic function] query-data (collection &key query &allow-other-keys)
+*** [generic function] query-data (collection &key query &allow-other-keys)
 
 query-data :before ((collection collection) &key shards &allow-other-keys)
 
@@ -428,7 +420,7 @@ Does lazy loading.
 
 Will only use shards supplied if supplied.
 
-**** [generic function] query-document (collection &key query &allow-other-keys)
+*** [generic function] query-document (collection &key query &allow-other-keys)
 
 query-document :before ((collection collection) &key shards &allow-other-keys)
 
@@ -449,46 +441,44 @@ NOTES:
 
 Does lazy loading.
 
------
-
 ** Naive Indexed
 
-**** [global parameter] *do-partial-indexing*
+*** [global parameter] *do-partial-indexing*
 
 When this is set to t (which is the default), indexing is done for the
 individual elements of the indexes as well.
 
-**** [class] indexed-shard (shard)
+*** [class] indexed-shard (shard)
 
-***** [accessor] hash-index
+**** [accessor] hash-index
 
 Hash table keyed on document uuid for quick retrieval of an document.
 
-***** [accessor] key-value-index
+**** [accessor] key-value-index
 
 Hash table keyed on document key values for quick retrieval of an document.
 Used when doing key value equality comparisons.
 
-**** [class] indexed-collection-mixin
+*** [class] indexed-collection-mixin
 
 Collection extension to add very basic indexes.
 
-***** [accessor] indexes
+**** [accessor] indexes
 
 List of index combinations. Also indexes members partially if
 *do-partial-indexing* is t, for example '((:emp-no :surname gender))
 is indexed as (:emp-no :surname :gender), (:emp-no :surname), :emp-no,
 :surname and :gender
 
-**** [generic function] make-shard ((collection indexed-collection-mixin) shard-mac)
+*** [generic function] make-shard ((collection indexed-collection-mixin) shard-mac)
 
 Extends make-shard to deal with indexed collections.
 
-**** [generic function] get-shard ((collection indexed-collection-mixin) shard-mac &key &allow-other-keys)
+*** [generic function] get-shard ((collection indexed-collection-mixin) shard-mac &key &allow-other-keys)
 
 Extends get-shard to deal with indexed collections.
 
-**** [generic function] hash (document)
+*** [generic function] hash (document)
 
 (setf hash) (value document)
 
@@ -498,7 +488,7 @@ will edit the document to add a hash identifier when adding documents
 to a collection. naive-store-indexed uses a UUID in its default
 implementation.
 
-**** [generic function] index-lookup-values  (collection values &key shards &allow-other-keys)
+*** [generic function] index-lookup-values  (collection values &key shards &allow-other-keys)
 
 index-lookup-values ((collection indexed-collection-mixin) values
 &key (shards (and naive-impl:%loading-shard% (list naive-impl:%loading-shard%)))
@@ -509,7 +499,7 @@ document-types then the order of values matter.
 
 Will use shards to limit the lookup to specific shards.
 
-**** [generic function] index-lookup-hash (collection hash &key shards &allow-other-keys)
+*** [generic function] index-lookup-hash (collection hash &key shards &allow-other-keys)
 
 index-lookup-hash ((collection indexed-collection-mixin) hash
 (shards (and naive-impl:%loading-shard%	(list naive-impl:%loading-shard%)))
@@ -517,7 +507,7 @@ index-lookup-hash ((collection indexed-collection-mixin) hash
 
 Looks up document in UUID hash index.
 
-**** [generic function] add-index (collection shard document &key &allow-other-keys)
+*** [generic function] add-index (collection shard document &key &allow-other-keys)
 
 add-index ((collection indexed-collection-mixin) shard document &key key-values &allow-other-keys)
 
@@ -536,7 +526,7 @@ is set.
 
 A shard must be supplied.
 
-**** [generic function] remove-index (collection shard document &key &allow-other-keys)
+*** [generic function] remove-index (collection shard document &key &allow-other-keys)
 
 remove-index ((collection indexed-collection-mixin) shard document &key &allow-other-keys)
 
@@ -544,9 +534,9 @@ Removes a data document from the UUID and key value indexes.
 
 A shard must be supplied.
 
-**** [generic function] existing-document ((collection indexed-collection-mixin) document &key(shard naive-impl:%loading-shard%)  key-values &allow-other-keys)
+*** [generic function] existing-document ((collection indexed-collection-mixin) document &key(shard naive-impl:%loading-shard%)  key-values &allow-other-keys)
 
-**** [generic function] add-document ((collection indexed-collection-mixin) document &key (shard naive-impl:%loading-shard%) (replace-existing-p t) (update-index-p t) &allow-other-keys)
+*** [generic function] add-document ((collection indexed-collection-mixin) document &key (shard naive-impl:%loading-shard%) (replace-existing-p t) (update-index-p t) &allow-other-keys)
 
 Duplicates are not allowed for indexed collections!
 
@@ -564,19 +554,19 @@ set update-index-p to nil. Just remember that if the document is
 really \"new\" to the collection the indexes will be updated in any
 case.
 
-**** [generic function] naive-reduce ((collection indexed-collection-mixin) &key index-values query function initial-value)
+*** [generic function] naive-reduce ((collection indexed-collection-mixin) &key index-values query function initial-value)
 
 Extends naive-reduce to be able to take advantage of indexing. Reduce
 is done on values retrieved by the supplier index.
 
-**** [generic function] query-data ((collection indexed-collection-mixin) &key index-values query &allow-other-keys)
+*** [generic function] query-data ((collection indexed-collection-mixin) &key index-values query &allow-other-keys)
 
 Extends query-data to be able to take advantage of indexing. Query is
 done on values retrieved by the supplier index.
 
 ** Document Types
 
-**** [class] element
+*** [class] element
 
 A definition of an element of a document.
 
@@ -644,9 +634,11 @@ Human readable/formated short description.
 
 **** [accessor] elements
 
+-----
+
 Field definitions that represents a data unit.
 
-**** [class] document-type-collection-mixin
+*** [class] document-type-collection-mixin
 
 Collection extention to make collection of a specific document-type.
 
@@ -664,63 +656,61 @@ Returns a document-type document if found in the store.
 
 Adds a document-type to a store.
 
------
-
 ** Document Type Defs
 
-**** [generic function] getx (document (element cl-naive-document-types:element) &key &allow-other-keys)
+*** [generic function] getx (document (element cl-naive-document-types:element) &key &allow-other-keys)
 
 (setf getx) (value document (element cl-naive-document-types:element)
 
-**** [generic function] getxe (document element type &key &allow-other-keys))
+*** [generic function] getxe (document element type &key &allow-other-keys))
 
 (setf getxe) (value document element type &key &allow-other-keys)
 
-**** [generic function] validate-xe (document element type value &key &allow-other-keys))
+*** [generic function] validate-xe (document element type value &key &allow-other-keys))
 
 ** Naive Documents
 
-**** [class] document-collection (indexed-collection-mixin document-type-collection-mixin collection)
+*** [class] document-collection (indexed-collection-mixin document-type-collection-mixin collection)
 
 Document collection class used to specialize on for cl-naive-documents.
 
-**** [class] document-store (document-type-store-mixin store)
+*** [class] document-store (document-type-store-mixin store)
 
 document-store (document-type-store-mixin store)
 
-**** [struct] document
+*** [struct] document
 A basic struct that represents a document object. A struct is used
 because there is meta data that we want to add to the actual document
 values and there is additional functionality like being able to know
 what has changed in the values during updates.
 
-store = The store that the document comes from.
-collection = The collection that the document comes from.
-type-def = The document type specification that describes this document.
-hash = The hash/UUID that uniquely identifies this document
-elements = The actual key value pairs of the doucument.
-changes = Is used to store setf values when using getx the preffered accessor for values.
-This helps with comparing of values when persisting.
-versions = older key value pairs that represent older versions of the document
-deleted-p = indicates that the document was deleted.
-persisted-p = indicates that the document has been peristed.
+- store = The store that the document comes from.
+- collection = The collection that the document comes from.
+- type-def = The document type specification that describes this document.
+- hash = The hash/UUID that uniquely identifies this document
+- elements = The actual key value pairs of the document.
+- changes = Is used to store setf values when using getx the preffered accessor for values.
+- This helps with comparing of values when persisting.
+- versions = older key value pairs that represent older versions of the document
+- deleted-p = indicates that the document was deleted.
+- persisted-p = indicates that the document has been peristed.
 
-**** [generic function] hash ((document document))
+*** [generic function] hash ((document document))
 
-**** [generic function] key-values ((collection document-collection) document &key &allow-other-keys)
+*** [generic function] key-values ((collection document-collection) document &key &allow-other-keys)
 
-**** [generic function] document-values ((document document))
+*** [generic function] document-values ((document document))
 
-**** [generic function] existing-document ((collection document-collection) document &key key-values &allow-other-keys)
+*** [generic function] existing-document ((collection document-collection) document &key key-values &allow-other-keys)
 
-**** [generic function] persist-document ((collection document-collection) document &key allow-key-change-p delete-p &allow-other-keys)
+*** [generic function] persist-document ((collection document-collection) document &key allow-key-change-p delete-p &allow-other-keys)
 
 persist-document for document-collection is lenient in what it takes
 as a document, it can be of type document or a plist.
 
-**** [generic function] persist-document index-values ((collection document-collection) (values document) &key &allow-other-keys)
+*** [generic function] persist-document index-values ((collection document-collection) (values document) &key &allow-other-keys)
 
-**** [generic function] getx ((document document) accessor &key &allow-other-keys)
+*** [generic function] getx ((document document) accessor &key &allow-other-keys)
 
 (setf getx) (value (document document) accessor  &key (change-control-p t) &allow-other-keys)
 
@@ -736,18 +726,18 @@ reasons. First to show that they are special, accessing meta data not
 actual values of document. Second to avoid any name classes with
 actual data members.
 
-:collection%% = document-collection
-:store%% = document-store or (store collection)
-:universe%% = (universe store)
-:type%% = type
-:elements%% = document-elements
-:changes%% = document-changes
-:versions%% = document-versions
-:deleted-p%% = document-deleted-p
+- :collection%% = document-collection
+- :store%% = document-store or (store collection)
+- :universe%% = (universe store)
+- :type%% = type
+- :elements%% = document-elements
+- :changes%% = document-changes
+- :versions%% = document-versions
+- :deleted-p%% = document-deleted-p
 
 store and universe using getx.
 
-**** [generic function]  digx ((place document) &rest indicators)
+*** [generic function] digx ((place document) &rest indicators)
 
 (setf digx) (value (place document) &rest indicators)
 

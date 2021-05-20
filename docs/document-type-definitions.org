@@ -31,7 +31,6 @@ Looks familiar? Well it should look and smell like a naivie-document-type
 *** :document-type :elements
 
 #+BEGIN_SRC lisp
-  ```
   ((:name "for use by programs, by convention KEYWORD to encourage data portability"
     :label "name for use by humans"
     :key-p "is this a key element"
@@ -41,15 +40,12 @@ Looks familiar? Well it should look and smell like a naivie-document-type
     :documentation "")
 
    ...)
-  ```
 #+END_SRC
 
 **** :element :attributes
 
 #+BEGIN_SRC lisp
-  ```
   (:property-name-1 'value :property-name-2 'value)
-  ```
 #+END_SRC
 
 **** :element :concrete-type
@@ -67,41 +63,33 @@ Complex concrete type examples:
 Type of document:
 
 #+BEGIN_SRC lisp
-  ```
   (:type (:document
 	  (:type "Employee"
 	   :accessor (:emp-no))))
-  ```
 #+END_SRC
 
 List of strings:
 
 #+BEGIN_SRC lisp
-  ```
   (:type (:list :string))
-  ```
 #+END_SRC
 
 List of document:s
 
 #+BEGIN_SRC lisp
-  ```
   (:type (:list
 	  (:document
 	   (:type "Child"
 	    :accessor (:name)))))
-  ```
 #+END_SRC
 
 A reference doc. (Document residing in a different place (ie collection))
 
 #+BEGIN_SRC lisp
-  ```
   (:type (:document
 	  (:type "Laptop"
 	   :collection "laptop-collection"
 	   :accessor (:id))))
-  ```
 #+END_SRC
 
 The convention is to stop at 2 layers of element type, any deeper
@@ -119,12 +107,10 @@ To be able to fully define reference types we need to also give defs
 of collections.
 
 #+BEGIN_SRC lisp
-  ```
   (:collection
    (:name "laptops"
     :label "Company Laptops"
     :data-type "laptop"))
-  ```
 #+END_SRC
 
 ** getx
@@ -142,7 +128,6 @@ must return 2 values the first indicates pass or fail the second is a
 message which is usually the reason for failure.
 
 #+BEGIN_SRC lisp
-  ```
   (:name :age
    :label "Age"
    :concrete-type :number
@@ -153,7 +138,6 @@ message which is usually the reason for failure.
 			       (values t nil)
 			       (values nil "Child is to old"))))
    :documentation "How old the child is")
-  ```
 #+END_SRC
 
 ** The full Example:
@@ -176,7 +160,6 @@ typedefs portably then you might have to consider sticking to what
 cl-document-type-defs offer, at least as a minimal baseline.
 
 #+BEGIN_SRC lisp
-  ```
   '((:document-type
      (:name "laptop"
       :label "Laptop"
@@ -284,6 +267,6 @@ cl-document-type-defs offer, at least as a minimal baseline.
      (:name "employees"
       :label "Company Employees"
       :data-type "employee")))
-  ```
 #+END_SRC
 
+[[file:home.org][Home]] [[file:overview.org][Previous]]

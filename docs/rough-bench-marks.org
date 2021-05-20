@@ -9,8 +9,6 @@ which 24gb was allocated to sbcl. sbcl but only used about 1.4gb for this
 example.
 
 #+BEGIN_SRC lisp
-  ```common_lisp
-
   "Adding 200000 documents to collections"
   Evaluation took:
   3.348 seconds of real time
@@ -62,8 +60,7 @@ example.
   100.00% CPU
   22,044,690 processor cycles
   26,434,848 bytes consed
-
-  ```
+  `
 #+END_SRC
 
 [[file:home.org][Home]]

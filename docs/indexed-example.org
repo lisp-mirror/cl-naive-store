@@ -3,7 +3,6 @@
 In this example we extend the basic functionality with indexing.
 
 #+BEGIN_SRC lisp
-  ```common_lisp
   ;;Setup to use cl-naive-store
   (require 'cl-naive-store)
   (defpackage :naive-examples (:use :cl :cl-naive-store :cl-naive-indexed))
@@ -62,14 +61,11 @@ In this example we extend the basic functionality with indexing.
 	  results)
 
     (reverse results))
-
-  ```
 #+END_SRC
 
 Output:
 
 #+BEGIN_SRC lisp
-  ```common_lisp
   (((:NAME "Koos" :SURNAME "Van" :ID 999 :HASH
 	   "8648DA3F-4589-415A-99F6-3F3F2EE9D2F2"))
    ((:NAME "Tannie" :SURNAME "Frikkedel" :ID 1001 :HASH
@@ -80,7 +76,6 @@ Output:
 	   "878C988C-711A-41BF-A598-BAC95AC51192")
     (:NAME "Piet" :SURNAME "Gieter" :ID 123 :HASH
 	   "B1464677-BDB0-495A-A050-D2965F770915")))
-  ```
 #+END_SRC
 
 In the returned list the first item is Koos that we looked up using the index. We used a full index lookup ie we used all the index values.
@@ -94,9 +89,7 @@ You will also notice that a :hash made up of a UUID like "8648DA3F-4589-415A-99F
 You could use
 
 #+BEGIN_SRC lisp
-  ```common_lisp
   (index-lookup-uuid "8648DA3F-4589-415A-99F6-3F3F2EE9D2F2")
-  ```
 #+END_SRC
 
 to lookup Koos by uuid value.

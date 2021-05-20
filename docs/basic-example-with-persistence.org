@@ -3,7 +3,6 @@
 In this example only the bare minimum is used and documents added are **persisted**.
 
 #+BEGIN_SRC lisp
-  ```common_lisp
   ;;Setup to use cl-naive-store
   (require 'cl-naive-store)
   (defpackage :naive-examples (:use :cl :cl-getx :cl-naive-store))
@@ -41,26 +40,20 @@ In this example only the bare minimum is used and documents added are **persiste
     (query-data collection :query (lambda (document)
 				    (<= (getx document :id) 900))))
 
-  ```
 #+END_SRC
 
 Output:
 
 #+BEGIN_SRC lisp
-  ```common_lisp
   ((:NAME "Piet" :SURNAME "Gieter" :ID 123)
    (:NAME "Sannie" :SURNAME "Gieter" :ID 321))
-
-  ```
 #+END_SRC
 
 To see the file created for the data go to ~/data-universe/simple-store/simple-collection/ there you should find a simple-collection.log file and you should see the following in the file
 
 #+BEGIN_SRC lisp
-  ```common_lisp
   (:NAME "Piet" :SURNAME "Gieter" :ID 123)
   (:NAME "Sannie" :SURNAME "Gieter" :ID 321)
-  ```
 #+END_SRC
 
 ** Lazy Loading:

@@ -4,7 +4,6 @@ Using cl-naive-documents gives you a lot of functionality out of the
 box but you need to do more work to set it up right.
 
 #+BEGIN_SRC lisp
-  ```common_lisp
   ;;Setup to use cl-naive-store
   (require 'cl-naive-store)
   (defpackage :naive-examples (:use :cl
@@ -136,14 +135,11 @@ box but you need to do more work to set it up right.
 	  results)
 
     (reverse results))
-
-  ```
 #+END_SRC
 
 Output:
 
 #+BEGIN_SRC lisp
-  ```common_lisp
   ((#S(document
        :STORE #<document-STORE {10172A8A73}>
        :COLLECTION #<document-COLLECTION {1017369EA3}>
@@ -194,7 +190,6 @@ Output:
 	 :VERSIONS NIL
 	 :DELETED-P NIL
 	 :PERSISTED-P T)))
-  ```
 #+END_SRC
 
 In the returned list the first document is Koos that we looked up using the index. We used a full index lookup ie we used all the index values.
@@ -208,8 +203,6 @@ You will notice that the employees are now represented by a complex struct. All 
 To see the file created for the data go to \~/data-universe/simple-store/simple-collection/ there you should find a simple-collection.log file and you should see the following in the file:
 
 #+BEGIN_SRC lisp
-  ```common_lisp
-
   (:STORE "simple-store" :COLLECTION "simple-collection" :DATA-TYPE "employee"
    :HASH "12866A48-A0E3-4237-BB15-9036550B63E6" :DELETED-P NIL :VALUES
 	  (:NAME "Piet" :SURNAME "Gieter" :EMP-NO 123))
@@ -225,13 +218,11 @@ To see the file created for the data go to \~/data-universe/simple-store/simple-
   (:STORE "simple-store" :COLLECTION "simple-collection" :DATA-TYPE "employee"
    :HASH "9C581722-D1C4-4E76-8D20-E2702D19C230" :DELETED-P NIL :VALUES
 	  (:NAME "Tannie" :SURNAME "Frikkedel" :EMP-NO 1001))
-  ```
 #+END_SRC
 
 To change a value for an employee you just set the value using getx. For example lets change Sannie's surname.
 
 #+BEGIN_SRC lisp
-  ```common_lisp
   (let ((sannie (first (index-lookup-values (get-collection
 					     (get-store *universe* "simple-store")
 					     "simple-collection")
@@ -241,13 +232,11 @@ To change a value for an employee you just set the value using getx. For example
     (setf (getx sannie :surname) "Potgieter")
 
     sannie)
-  ```
 #+END_SRC
 
 Which will give you
 
 #+BEGIN_SRC lisp
-  ```common_lisp
   #S(document
      :STORE #<document-STORE {10172A8A73}>
      :COLLECTION #<document-COLLECTION {1017369EA3}>
@@ -258,7 +247,6 @@ Which will give you
      :VERSIONS NIL
      :DELETED-P NIL
      :PERSISTED-P T)
-  ```
 #+END_SRC
 
 The update values can be found in :changes, and will stay there until

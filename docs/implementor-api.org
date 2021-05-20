@@ -11,38 +11,36 @@ to customise cl-naive-store.
 
 ** Naive Core
 
-*** Common
-
-**** [function] map-append (fn &rest lists)
+*** [function] map-append (fn &rest lists)
 
 Non distructive version of mapcan.
 
-**** [function] maphash-collect (fn hash-table &key append-p)
+*** [function] maphash-collect (fn hash-table &key append-p)
 
 Collects the results of a maphash. Pushes to a list by default, use
 append-p to append instead. NIL results are not collected.
 
-**** [function] frmt (control-string &rest args)
+*** [function] frmt (control-string &rest args)
 
 Short hand for (format nil ..).
 
-**** [function] trim-whitespacee (string)
+*** [function] trim-whitespacee (string)
 
 Removes white spaces from a string.
 
-**** [function] empty-p (value)
+*** [function] empty-p (value)
 
 Checks if value is null/nil or an empty string..
 
-**** [function] plist-to-values (values)
+*** [function] plist-to-values (values)
 
 Returns the values of a plist.
 
-**** [function] plist-to-pairs (values)
+*** [function] plist-to-pairs (values)
 
 Returns a list of key value pairs of a plist.
 
-**** [generic function] make-mac (value &key (key *mac-key*))
+*** [generic function] make-mac (value &key (key *mac-key*))
 
 Produces a mac from the value. Mac's should differ for different values.
 
@@ -50,23 +48,23 @@ NOTES:
 
 This is used to create shard filenames.
 
-**** [global parameter] %loading-shard%
+*** [global parameter] %loading-shard%
 
 Used during the loading of an individual shard. That way no heavy
 recursive locking has to be done.
 
-**** [generic function] gethash-safe (key hash &key lock recursive-p)
+*** [generic function] gethash-safe (key hash &key lock recursive-p)
 (setf gethash-safe) (new-value key hash &key lock recursive-p)
 
 Puts lock around hash get access for those cl implementations that
 dont have a thread safe hashtable.
 
-**** [generic function] remhash-safe (key hash &key lock recursive-p)
+*** [generic function] remhash-safe (key hash &key lock recursive-p)
 
 Puts lock around hash remove access for those cl implementations that
 dont have a thread safe hashtable.
 
-**** [global parameter] *disable-parallel-p*
+*** [global parameter] *disable-parallel-p*
 
 Depending on the data and how naive-store is used switching of
 parallel processing could produce better performance. This does not
@@ -80,7 +78,7 @@ So if you are customising cl-naive-store use do-sequence for simple
 parallel processing or make sure that your customization obeys
 *disable-parallel-p* where possible.
 
-**** [macro] do-sequence ((element-var sequence &key index-var (parallel-p nil)) &body body)
+*** [macro] do-sequence ((element-var sequence &key index-var (parallel-p nil)) &body body)
 
 Iterates over the sequence applying body. In the body you can use the
 element-var and/or the index-var if supplied.
@@ -107,16 +105,16 @@ Uses loop or lparallel:pdotimes depending on parallel-p value.
 To get the best out of do-sequence use the parallel option if the
 sequence is large (> 1000) or the body is excecution heavy.
 
-*** Files
+-----
 
-**** [macro] with-file-lock ((path &key interval) &body body)
+*** [macro] with-file-lock ((path &key interval) &body body)
 
 Get an exclusive lock on a file. If lock cannot be obtained, keep
 trying after waiting a while.
 
 Source: Giovanni Gigante https://sourceforge.net/p/cl-cookbook/patches/8/|*"
 
-**** [macro] file-to-string (file)
+*** [macro] file-to-string (file)
 
 Reads a file and returns the contents as a string.
 
@@ -124,34 +122,34 @@ NOTES: You could achieve the same with with-output-to-string, but now
 you dont have to worry about supplying a string that can be written
 to.
 
-**** [macro] with-open-file-lock ((stream file &key (direction :output) (if-exists :append) (if-does-not-exist :create)) &body body)
+*** [macro] with-open-file-lock ((stream file &key (direction :output) (if-exists :append) (if-does-not-exist :create)) &body body)
 
 Opens a file with a file lock and writes to the file.
 
-**** [function] write-to-file (file object &key (if-exists :append))
+*** [function] write-to-file (file object &key (if-exists :append))
 
 Writes to file using with-open-file-lock.
 
-**** [function] write-list-items-to-file (file list &key (if-exists :append))
+*** [function] write-list-items-to-file (file list &key (if-exists :append))
 
 Does not wrap items in ().
 
-**** [function] write-to-file (file object &key (if-exists :append))
+*** [function] write-to-file (file object &key (if-exists :append))
 
 Writes to file using with-open-file-lock.
 
-**** [function] write-to-stream (stream object)
+*** [function] write-to-stream (stream object)
 
 Writes to stream with fresh-lines.
 
-**** [function] sexp-from-file (pathname)
+*** [function] sexp-from-file (pathname)
 (setf sexp-from-file) (new-sexp pathname)
 
 Read sexp from file.
 
-*** Persist Document
+-----
 
-**** [generic function] type-of-doc-element (collection sexp)
+*** [generic function] type-of-doc-element (collection sexp)
 
 Reports if the sexp represents a special form.
 
@@ -179,9 +177,9 @@ Transcribes document to list form for peristance.
 
 Marks document as deleted.
 
-*** Parse Document
+----
 
-**** [function] load-document-reference-collection (universe document-ref)
+*** [function] load-document-reference-collection (universe document-ref)
 
 When documents are persisted to file any document values that are
 referencing an document in a different collection is first sanitized
@@ -192,15 +190,15 @@ When documents are read from a file the references need to be
 converted to documents but for that to happen the collection
 containing the referenced documents need to be loaded first.
 
-**** [generic function] find-document-by-hash (collection hash)
+*** [generic function] find-document-by-hash (collection hash)
 
 Finds the document that matches the hash.
 
-**** [generic function] type-of-sexp (collection sexp)
+*** [generic function] type-of-sexp (collection sexp)
 
 Reports if the sexp represents a special form, like a blob or reference.
 
-**** [generic function] compose-special (collection sexp type)
+*** [generic function] compose-special (collection sexp type)
 
 compose-special (collection sexp (type (eql :document)))
 compose-special (collection sexp (type (eql :blob)))
@@ -209,24 +207,24 @@ compose-special (collection sexp (type (eql :reference)))
 
 Does special processing to compose a specific type of document or element.
 
-**** [generic function] compose-parse (collection sexp doc)
+*** [generic function] compose-parse (collection sexp doc)
 
 Processes document form for compose-document.
 
-**** [generic function] compose-document (collection shard document-form &key &allow-other-keys)
+*** [generic function] compose-document (collection shard document-form &key &allow-other-keys)
 
 The loading of documents happens in a two step process. First
 documents are read with (*read-eval* nil). Then the sexp representing
 a raw document is processed to compose the required in memory
 representation.
 
-*** Logging
+-----
 
-**** [global parameter] *break-on-error-log*
+*** [global parameter] *break-on-error-log*
 
 Causes a break when logging errors of type :error and :warning.
 
-**** [function] write-log (location type message)
+*** [function] write-log (location type message)
 
 Writes errors to location.
 
@@ -240,11 +238,11 @@ Note:
 
 Not writing stuff to .log files because that is what persist uses!!!.
 
-**** [global parameter] *debug-log-p*
+*** [global parameter] *debug-log-p*
 
 Switches debug logging or off for debug-log
 
-**** [function] debug-log (format-control-string &rest arguments-and-keys)
+*** [function] debug-log (format-control-string &rest arguments-and-keys)
 
 Used for internal debug-logging.
 
@@ -252,13 +250,13 @@ arguments-and-keys may end with [:file-p f] [:path p].
 
 ** Naive Indexed
 
-**** [generic function] cl-murmurhash:murmurhash ((s uuid:uuid) &key (seed cl-murmurhash:*default-seed*) mix-only)
+*** [generic function] cl-murmurhash:murmurhash ((s uuid:uuid) &key (seed cl-murmurhash:*default-seed*) mix-only)
 
-**** [generic function] index-values (collection values &key &allow-other-keys)
+*** [generic function] index-values (collection values &key &allow-other-keys)
 
 Returns a set of index values from the values of a data document.
 
-**** [generic function] push-value-index (collection index-values document &key shard &allow-other-keys)
+*** [generic function] push-value-index (collection index-values document &key shard &allow-other-keys)
 
 Uses lists within the key-value-index hash-table to store/group
 documents that match a key value combination.
@@ -267,41 +265,39 @@ On updates of documents could end up with duplicate documents returned
 by the index lookup. The speed more than makes up for the occasional
 duplicate for now!
 
-**** [generic function] remove-value-index (collection shad index-values document &key &allow-other-keys)
+*** [generic function] remove-value-index (collection shad index-values document &key &allow-other-keys)
 
 Removes a value index.
 
 ** Documents
 
-*** Persist Document
+*** [generic function] naive-impl:type-of-doc-element ((collection document-collection) element)
 
-**** [generic function] naive-impl:type-of-doc-element ((collection document-collection) element)
+*** [generic function]  naive-impl:persist-form ((collection document-collection) blob (element-type (eql :blob))			 &key root parent &allow-other-keys)
 
-**** [generic function]  naive-impl:persist-form ((collection document-collection) blob (element-type (eql :blob))			 &key root parent &allow-other-keys)
+*** [generic function]  naive-impl:persist-form ((collection document-collection) document (element-type (eql :reference-form)) &key root parent &allow-other-keys)
 
-**** [generic function]  naive-impl:persist-form ((collection document-collection) document (element-type (eql :reference-form)) &key root parent &allow-other-keys)
+*** [generic function] naive-impl:persist-form ((collection document-collection) document (element-type (eql :child-document)) &key root parent &allow-other-keys)
 
-**** [generic function] naive-impl:persist-form ((collection document-collection) document (element-type (eql :child-document)) &key root parent &allow-other-keys)
+*** [generic function] naive-impl:persist-form ((collection document-collection) document (element-type (eql :document))
 
-**** [generic function] naive-impl:persist-form ((collection document-collection) document (element-type (eql :document))
+*** [generic function] naive-impl:persist-parse ((collection document-collection) element doc &key root parent &allow-other-keys)
 
-**** [generic function] naive-impl:persist-parse ((collection document-collection) element doc &key root parent &allow-other-keys)
+-----
 
-*** Parse Document
-
-**** [function] document-values-p (list)
+*** [function] document-values-p (list)
 
 Checks if plist contains :values keyword which would indicate the
 plist represents an document.
 
-**** [generic function] naive-impl:type-of-sexp ((collection document-collection) document-form)
+*** [generic function] naive-impl:type-of-sexp ((collection document-collection) document-form)
 
-**** [generic function] naive-impl:compose-special ((collection document-collection) shard sexp (type (eql :document)))
+*** [generic function] naive-impl:compose-special ((collection document-collection) shard sexp (type (eql :document)))
 
-**** [generic function] naive-impl:compose-special ((collection document-collection) shard sexp (type (eql :document)))
+*** [generic function] naive-impl:compose-special ((collection document-collection) shard sexp (type (eql :document)))
 
-**** [generic function] naive-impl:compose-special ((collection document-collection) shard sexp (type (eql :blob)))
+*** [generic function] naive-impl:compose-special ((collection document-collection) shard sexp (type (eql :blob)))
 
-**** [generic function] naive-impl:compose-document ((collection document-collection) shard document-form &key &allow-other-keys)
+*** [generic function] naive-impl:compose-document ((collection document-collection) shard document-form &key &allow-other-keys)
 
 [[file:home.org][Home]]

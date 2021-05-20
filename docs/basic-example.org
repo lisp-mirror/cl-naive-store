@@ -3,7 +3,6 @@
 In this example only the bare minimum is used and documents added are **not persisted**.
 
 #+BEGIN_SRC lisp
-  ```common_lisp
   ;;Setup to use cl-naive-store
   (require 'cl-naive-store)
   (defpackage :naive-examples (:use :cl :cl-getx :cl-naive-store))
@@ -39,19 +38,15 @@ In this example only the bare minimum is used and documents added are **not pers
     ;;Query the collection
     (query-data collection :query (lambda (document)
 				    (<= (getx document :id) 900))))
-
-  ```
 #+END_SRC
+
 Output:
 
 You can see that Piet Gieter appears only once, because duplicates are handled.
 
 #+BEGIN_SRC lisp
-  ```common_lisp
   ((:NAME "Piet" :SURNAME "Gieter" :ID 123)
    (:NAME "Sannie" :SURNAME "Gieter" :ID 321))
-
-  ```
 #+END_SRC
 
 To allow duplicates set handle-duplicates on the collection or store or universe level to :no.

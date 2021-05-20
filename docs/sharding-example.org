@@ -3,8 +3,6 @@
 In this example we will use sharding with document types.
 
 #+BEGIN_SRC lisp
-  ```common_lisp
-
   ;;Setup to use cl-naive-store
   (require 'cl-naive-store)
   (defpackage :naive-examples (:use :cl
@@ -426,15 +424,11 @@ In this example we will use sharding with document types.
 	     results)))
 
     (print results))
-
-  ```
 #+END_SRC
 
 Output:
 
 #+BEGIN_SRC lisp
-  ```common_lisp
-
   "Loading Existing Data."
   Evaluation took:
   0.003 seconds of real time
@@ -497,8 +491,6 @@ Output:
   26,434,848 bytes consed
 
   ((:HOW-MANY-DAVISES-IN-CHILE? 89) (:HOW-MANY-DAVISES? 16416) (:QUERY-ALL 202))
-
-  ```
 #+END_SRC
 
 [[file:home.org][Home]] [[file:documents-example.org][Previous]]
