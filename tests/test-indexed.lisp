@@ -7,7 +7,7 @@
 #-sbcl (ignore-errors (delete-package :naive-examples))
 
 (defpackage :naive-examples
-  (:use :cl :cl-getx :cl-naive-store :cl-naive-indexed))
+  (:use :cl :cl-getx :cl-naive-store.naive-core :cl-naive-store.naive-indexed))
 (in-package :naive-examples)
 
 (defclass indexed-collection (indexed-collection-mixin collection)
@@ -40,7 +40,7 @@
 					 :name "simple-store"
        					 :collection-class 'indexed-collection)))
 
-(defparameter *collection* 
+(defparameter *collection*
   (add-collection *store* (make-instance (collection-class *store*)
 					 :name "simple-collection"
 					 ;; Specifying the key element, else its :key
@@ -49,7 +49,6 @@
 					 :indexes '((:name :surname)))))
 
 ;; Add some documents to the collection
-  
 
 (persist-document *collection* (list :name "Piet" :surname "Gieter" :id 123))
 (assert (= 1 (length (documents *collection*))))
@@ -62,15 +61,14 @@
 (persist-document *collection* (list :name "Tannie" :surname "Frikkedel" :id 1001))
 (assert (= 4 (length (documents *collection*)))) ; updated 1001
 
-
 (let ((results '()))
-  
+
   ;; Lookup koos using index values and add it to results
   (push (index-lookup-values *collection* '((:name "Koos") (:surname "Van")))
 	results)
   (assert (first results))
   (assert (= 1 (length results)))
-  
+
   ;; Lookup Frikkedel using index values and add it to results
   (push (index-lookup-values *collection* '(:surname "Frikkedel"))
 	results)

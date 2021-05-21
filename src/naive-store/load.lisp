@@ -1,4 +1,4 @@
-(in-package :cl-naive-store)
+(in-package :cl-naive-store.naive-core)
 
 (defun find-collection-files (collection)
   (let ((path (cl-fad:merge-pathnames-as-file

@@ -6,9 +6,8 @@
 #-sbcl (ignore-errors (delete-package :naive-examples))
 
 (defpackage :naive-examples
-  (:use :cl :cl-getx :cl-naive-store))
+  (:use :cl :cl-getx :cl-naive-store.naive-core))
 (in-package :naive-examples)
-
 
 (defvar *universe* nil)
 
@@ -37,7 +36,7 @@
 					 :name "simple-store"
        					 :collection-class 'collection)))
 
-(defparameter *collection* 
+(defparameter *collection*
   (add-collection *store* (make-instance (collection-class *store*)
 					 :name "simple-collection"
 					 :keys '(:id)))) ; Specifying the key element, else its :key

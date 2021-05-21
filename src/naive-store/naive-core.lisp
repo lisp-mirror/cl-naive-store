@@ -1,4 +1,4 @@
-(in-package :cl-naive-store)
+(in-package :cl-naive-store.naive-core)
 
 (defclass shard ()
   ((mac :initarg :mac
@@ -169,7 +169,7 @@ files are loaded. (see store notes for more about this.).")
   (:documentation "Return a short string containing a prefix of the MAC"))
 
 (defmethod short-mac ((shard shard))
-  (let ((mac (cl-naive-store::mac shard)))
+  (let ((mac (cl-naive-store.naive-core::mac shard)))
     (subseq mac 0 (min 8 (length mac)))))
 
 (defgeneric (setf status) (new-status shard))
@@ -244,7 +244,7 @@ files are loaded. (see store notes for more about this.).")
 		 :status :new))
 
 (defmethod get-shard (collection shard-mac &key &allow-other-keys)
-  (cl-naive-store::get-shard-cache-safe% collection shard-mac)
+  (cl-naive-store.naive-core::get-shard-cache-safe% collection shard-mac)
   #|
   (find (or shard-mac (name collection))
   (shards collection)
@@ -535,7 +535,7 @@ If you change the underlying container for (shards collection) or the container 
 		  (push nil all-shards-p))))
 
 	(do-sequence (mac shard-macs)
-	  (let ((shard-found (cl-naive-store::get-shard-cache-safe% collection mac)))
+	  (let ((shard-found (cl-naive-store.naive-core::get-shard-cache-safe% collection mac)))
 	    (if shard-found
 		(push shard-found all-shards-p)
 		(push nil all-shards-p)))))

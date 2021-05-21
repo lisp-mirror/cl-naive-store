@@ -5,7 +5,7 @@ In this example only the bare minimum is used and documents added are **persiste
 #+BEGIN_SRC lisp
   ;;Setup to use cl-naive-store
   (require 'cl-naive-store)
-  (defpackage :naive-examples (:use :cl :cl-getx :cl-naive-store))
+  (defpackage :naive-examples (:use :cl :cl-getx :cl-naive-store.naive-core))
   (in-package :naive-examples)
 
   ;;Create a universe

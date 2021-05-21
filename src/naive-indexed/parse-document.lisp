@@ -1,10 +1,10 @@
-(in-package :cl-naive-indexed)
+(in-package :cl-naive-store.naive-indexed)
 
 (defmethod naive-impl:find-document-by-hash ((collection indexed-collection-mixin) hash
 					     &key shards &allow-other-keys)
   (naive-impl::debug-log "indexed:find-document-by-hash :document ~A" (name collection))
-  
-  (let ((doc 
+
+  (let ((doc
 	  (index-lookup-hash
 	   collection
 	   hash :shards shards)))
@@ -19,10 +19,9 @@
   (naive-impl::debug-log "Indexed:Compose-special :document ~A sexp ~S shard ~S"
 			 (name collection)
 			 sexp
-			 (subseq (cl-naive-store::mac shard) 0 8))
+			 (subseq (cl-naive-store.naive-core::mac shard) 0 8))
   (if (getx sexp :deleted-p)
       (remove-document collection sexp :shard shard)
       ;;TODO: Where to get handle-duplicates-p ???
       (add-document collection sexp :shard shard)))
-
 

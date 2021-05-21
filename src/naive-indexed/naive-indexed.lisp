@@ -1,4 +1,4 @@
-(in-package :cl-naive-indexed)
+(in-package :cl-naive-store.naive-indexed)
 
 ;;TODO: Doing partial-indexing doubles the time it takes to load a database
 ;;Try to delay or spool of partial indexing on different thread.
@@ -51,7 +51,7 @@ Used when doing key value equality comparisons."))
 		 :status :new))
 
 (defmethod get-shard ((collection indexed-collection-mixin) shard-mac &key &allow-other-keys)
-  (cl-naive-store::get-shard-cache-safe% collection shard-mac))
+  (cl-naive-store.naive-core::get-shard-cache-safe% collection shard-mac))
 
 (defgeneric hash (document)
   (:documentation "Returns the hash identifier for a data document. Data documents need a hash identifier to work with naive-store-indexed. naive-store-indexed will edit the document to add a hash identifier when adding documents to a collection. naive-store-indexed uses a UUID in its default implementation."))
@@ -225,9 +225,9 @@ Indexes will be updated by default, if you want to stop index updates set update
 	      (make-shard collection mac)))
 
 	;;Make sure there is nothing to load.
-	(cl-naive-store::load-shard collection shardx (location shardx))
+	(cl-naive-store.naive-core::load-shard collection shardx (location shardx))
 
-	(cl-naive-store::set-shard-cache-safe% collection mac shardx)
+	(cl-naive-store.naive-core::set-shard-cache-safe% collection mac shardx)
 	(vector-push-extend shardx (shards collection))
 
 	(setf shard shardx)

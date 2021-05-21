@@ -1,17 +1,18 @@
 * Naive Documents Example
 
-Using cl-naive-documents gives you a lot of functionality out of the
+Using cl-naive-store.naive-documents gives you a lot of functionality out of the
 box but you need to do more work to set it up right.
 
 #+BEGIN_SRC lisp
   ;;Setup to use cl-naive-store
   (require 'cl-naive-store)
-  (defpackage :naive-examples (:use :cl
-			       :cl-getx :cl-naive-store
-			       :cl-naive-indexed
-				    :cl-naive-document-types
-			       :cl-naive-document-type-defs
-				    :cl-naive-documents))
+  (defpackage :naive-examples (:use
+			       :cl
+			       :cl-getx :cl-naive-store.naive-core
+			       :cl-naive-store.naive-indexed
+			       :cl-naive-store.document-types
+			       :cl-naive-store.document-type-defs
+			       :cl-naive-store.naive-documents))
   (in-package :naive-examples)
 
   ;;Create a data definition for an employee
@@ -59,7 +60,7 @@ box but you need to do more work to set it up right.
 		      'element
 		      :name (getf element :name)
 		      :key-p (getf element :key-p)
-		      :type-def (getf element :type-def)
+		      :document-type (getf element :document-type)
 		      :attributes (getf element :attributes))))))
 
     (setf document-type (add-document-type
@@ -86,35 +87,35 @@ box but you need to do more work to set it up right.
 		      (make-document
 		       :store (store collection)
 		       :collection collection
-		       :type-def "employee"
+		       :document-type "employee"
 		       :elements (list :name "Piet" :surname "Gieter" :emp-no 123)))
 
     (persist-document collection
 		      (make-document
 		       :store (store collection)
 		       :collection collection
-		       :type-def "employee"
+		       :document-type "employee"
 		       :elements (list :name "Sannie" :surname "Gieter" :emp-no 321)))
 
     (persist-document collection
 		      (make-document
 		       :store (store collection)
 		       :collection collection
-		       :type-def "employee"
+		       :document-type "employee"
 		       :elements (list :name "Koos" :surname "Van" :emp-no 999)))
 
     (persist-document collection
 		      (make-document
 		       :store (store collection)
 		       :collection collection
-		       :type-def "employee"
+		       :document-type "employee"
 		       :elements (list :name "Frikkie" :surname "Frikkedel" :emp-no 1001)))
 
     (persist-document collection
 		      (make-document
 		       :store (store collection)
 		       :collection collection
-		       :type-def "employee"
+		       :document-type "employee"
 		       :elements (list :name "Tannie" :surname "Frikkedel" :emp-no 1001)))
 
     ;;Lookup koos using index values and add it to results

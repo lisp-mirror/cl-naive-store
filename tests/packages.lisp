@@ -1,13 +1,14 @@
 (in-package :common-lisp-user)
 
-(defpackage :cl-naive-store-tests
-  (:use :cl
-	:cl-getx
-	:cl-naive-store
-	:cl-naive-indexed
-	:cl-naive-document-types
-	:cl-naive-document-type-defs
-	:cl-naive-documents)
+(defpackage :cl-naive-store.tests
+  (:use
+   :cl
+   :cl-getx
+   :cl-naive-store.naive-core
+   :cl-naive-store.naive-indexed
+   :cl-naive-store.document-types
+   :cl-naive-store.document-type-defs
+   :cl-naive-store.naive-documents)
   (:export
    :*universe*
 
@@ -20,6 +21,5 @@
    :test-lazy-loading
    :test-simple
    :test-simple-duplicates
-   
-   :test-passed-p
-   ))
+
+   :test-passed-p))

@@ -1,4 +1,4 @@
-(require 'cl-naive-store)
+(require 'cl-naive-store.naive-core)
 
 ;; SBCL is idiotic again, it signals an error when compiling a file
 ;; containing this delete-package form.  You'll have to delete the
@@ -7,11 +7,10 @@
 
 (defpackage :naive-examples
   (:use :cl
-   :cl-getx :cl-naive-store
-   :cl-naive-indexed :cl-naive-document-types
-   :cl-naive-document-type-defs :cl-naive-documents))
+   :cl-getx :cl-naive-store.naive-core
+   :cl-naive-store.naive-indexed :cl-naive-store.document-types
+   :cl-naive-store.document-type-defs :cl-naive-store.naive-documents))
 (in-package :naive-examples)
-
 
 (defvar *universe* nil)
 
@@ -35,7 +34,6 @@
 		   :location (test-location)
 		   :store-class 'document-store)))
 
-
 ;; Create a data definition for an employee
 ;; It looks like a lot but dont panic its simple.
 (defparameter *employee-document-type*
@@ -43,16 +41,16 @@
     :label "Employee"
     :elements ((:name :emp-no
 		:label "Employee No"
-		:db-type :string
+		:concrete-type :string
 		:key-p t
 		:attributes (:display t :editable t))
 	       (:name :name
 		:label "Name"
-		:db-type :string
+		:concrete-type :string
 		:attributes (:display t :editable t))
 	       (:name :surname
 		:label "Surname"
-		:db-type :string
+		:concrete-type :string
 		:attributes (:display t :editable t)))
     :documentation "This type represents a simple employee master."))
 
@@ -66,7 +64,7 @@
 	    (make-instance 'element
 			   :name (getf element :name)
 			   :key-p (getf element :key-p)
-			   :type-def (getf element :type-def)
+			   :concrete-type (getf element :concrete-type)
 			   :attributes (getf element :attributes)))
 	  (getf *employee-document-type* :elements)))
 
@@ -87,15 +85,12 @@
 					 ;; Specifying the elements to set up indexes for.
 					 :indexes '((:name :surname)))))
 
-
-
-
 ;; Add some documents to the *collection*
 (persist-document *collection*
 		  (make-document
 		   :store (store *collection*)
 		   :collection *collection*
-		   :type-def "employee"
+		   :document-type "employee"
 		   :elements (list :name "Piet" :surname "Gieter" :emp-no 123)))
 (assert (= 1 (length (documents *collection*))))
 
@@ -103,7 +98,7 @@
 		  (make-document
 		   :store (store *collection*)
 		   :collection *collection*
-		   :type-def "employee"
+		   :document-type "employee"
 		   :elements (list :name "Sannie" :surname "Gieter" :emp-no 321)))
 (assert (= 2 (length (documents *collection*))))
 
@@ -111,7 +106,7 @@
 		  (make-document
 		   :store (store *collection*)
 		   :collection *collection*
-		   :type-def "employee"
+		   :document-type "employee"
 		   :elements (list :name "Koos" :surname "Van" :emp-no 999)))
 (assert (= 3 (length (documents *collection*))))
 
@@ -119,7 +114,7 @@
 		  (make-document
 		   :store (store *collection*)
 		   :collection *collection*
-		   :type-def "employee"
+		   :document-type "employee"
 		   :elements (list :name "Frikkie" :surname "Frikkedel" :emp-no 1001)))
 (assert (= 4 (length (documents *collection*))))
 
@@ -127,16 +122,15 @@
 		  (make-document
 		   :store (store *collection*)
 		   :collection *collection*
-		   :type-def "employee"
+		   :document-type "employee"
 		   :elements (list :name "Tannie" :surname "Frikkedel" :emp-no 1001)))
 ;; employe no 1001 is updated, not added:
 (assert (= 4 (length (documents *collection*))))
 
-
 (let ((results '()))
 
   ;; Lookup koos using index values and add it to results
-  (push (index-lookup-values *collection* (list (list :name "Koos" )
+  (push (index-lookup-values *collection* (list (list :name "Koos")
 						(list :surname "Van")))
 	results)
   (assert (first results))
@@ -157,13 +151,12 @@
   (assert (= 3 (length results)))
 
   (let ((sannie (first (index-lookup-values *collection*
-					    (list (list :name "Sannie" )
+					    (list (list :name "Sannie")
 						  (list :surname "Gieter"))))))
 
     (setf (getx sannie :surname) "Potgieter")
     ;; TODO: check the updated document is saved
     (push sannie results))
-
 
   (print :success)
   (pprint (reverse results)))

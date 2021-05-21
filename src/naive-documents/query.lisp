@@ -1,10 +1,10 @@
-(in-package :cl-naive-documents)
+(in-package :cl-naive-store.naive-documents)
 
 ;;TODO: Changed getx to return changes instead of values when available... dont know what subtle
 ;;bugs this will create in software currently using naive-store.... making this note as a reminder
 ;;for when strange thing start happending.
 (defmethod getx ((document document) accessor &key &allow-other-keys)
-  "getx for documents knows about some of the internals of an document structue so you can get the collection. 
+  "getx for documents knows about some of the internals of an document structue so you can get the collection.
 
 Special accessors:
 
@@ -22,7 +22,7 @@ The convention is to append %% to these accessors, for two reasons. First to sho
 :deleted-p%% = document-deleted-p
 
 store and universe using getx."
-  
+
   (cond ((equalp accessor :hash)
 	 (document-hash document))
 	((equalp accessor :collection%%)
@@ -36,8 +36,8 @@ store and universe using getx."
 	 (and (document-collection document)
 	      (store (document-collection document))
 	      (universe (store (document-collection document)))))
-	((equalp accessor :type-def%%)
-	 (document-type-def document))
+	((equalp accessor :document-type%%)
+	 (document-document-type document))
 	((equalp accessor :elements%%)
 	 (document-elements document))
 	((equalp accessor :changes%%)
@@ -51,8 +51,7 @@ store and universe using getx."
 
 (defmethod (setf getx) (value (document document) accessor
 			&key (change-control-p t) &allow-other-keys)
-  
-  
+
   (cond ((equalp accessor :hash)
 	 (setf (document-hash document) value))
 	((equalp accessor :collection%%)
@@ -61,8 +60,8 @@ store and universe using getx."
 	 (setf (document-store document) value))
 	((equalp accessor :universe%%)
 	 (error "Not allowed set universe%%."))
-	((equalp accessor :type-def%%)
-	 (setf (document-type-def document) value))
+	((equalp accessor :document-type%%)
+	 (setf (document-document-type document) value))
 	((equalp accessor :elements%%)
 	 (setf (document-elements document) value))
 	((equalp accessor :changes%%)
@@ -70,26 +69,25 @@ store and universe using getx."
 	((equalp accessor :deleted-p%%)
 	 (setf (document-deleted-p document) value))
 	(t
-	 
-	 (when change-control-p    
+
+	 (when change-control-p
 	   (unless (document-changes document)
-	     (setf (document-changes document) (copy-list (document-elements document))))    
+	     (setf (document-changes document) (copy-list (document-elements document))))
 	   (setf (getf (document-changes document) accessor) value))
-	 
-	(unless change-control-p
-	  (setf (getf (document-elements document) accessor) value))))
+
+	 (unless change-control-p
+	   (setf (getf (document-elements document) accessor) value))))
   value)
 
+(defmethod getx ((document document) (element cl-naive-store.document-types:element) &key &allow-other-keys)
+  (let ((concrete-type (concrete-type-get-set element)))
+    (getxe document element concrete-type)))
 
-(defmethod getx ((document document) (element cl-naive-document-types:element) &key &allow-other-keys)
-  (let ((db-type (db-type-get-set element)))
-    (getxe document element db-type)))
-
-(defmethod (setf getx) (value (document document) (element cl-naive-document-types:element)
+(defmethod (setf getx) (value (document document) (element cl-naive-store.document-types:element)
 			&key &allow-other-keys)
 
-  (let ((db-type (db-type-get-set element)))
-    (setf (getxe document element db-type) value)))
+  (let ((concrete-type (concrete-type-get-set element)))
+    (setf (getxe document element concrete-type) value)))
 
 ;;TODO: Is this still needed???
 (defun naive-dig (place indicators)
@@ -101,7 +99,7 @@ store and universe using getx."
 	 (next-place (if (document-p val)
 			 (document-values val)
 			 val)))
-    
+
     (if indicators
 	(naive-dig next-place indicators)
 	(if (document-p place)
@@ -123,16 +121,15 @@ store and universe using getx."
     (if indicators
 	(if (document-p val)
 	    (set-naive-dig next-place indicators value)
-	    (setf (getf place indicator) 
+	    (setf (getf place indicator)
 		  (set-naive-dig next-place indicators value)))
 	(if (document-p place)
 	    (setf (getx place indicator) value)
 	    (setf (getf place indicator) value)))
     place))
 
-
 (defmethod digx ((place document) &rest indicators)
-   (naive-dig place indicators))
+  (naive-dig place indicators))
 
 (defmethod (setf digx) (value (place document) &rest indicators)
   (set-naive-dig place indicators value))
@@ -142,7 +139,7 @@ store and universe using getx."
   (let ((exists nil))
     (dolist (document document-list)
       (dolist (element element-values)
-	(if (equalp (getx document (getf element :name)) (getx element :value)) 
+	(if (equalp (getx document (getf element :name)) (getx element :value))
 	    (push t exists)
 	    (push nil exists)))
       (unless (position nil exists)
@@ -156,7 +153,7 @@ store and universe using getx."
 			(document-values list-document))
 		    (or (document-changes document)
 			(document-values document)))
-        
+
 	(setf exists document-list)))
     exists))
 

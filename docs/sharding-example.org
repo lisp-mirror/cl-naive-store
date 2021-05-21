@@ -5,12 +5,13 @@ In this example we will use sharding with document types.
 #+BEGIN_SRC lisp
   ;;Setup to use cl-naive-store
   (require 'cl-naive-store)
-  (defpackage :naive-examples (:use :cl
-			       :cl-getx :cl-naive-store
-			       :cl-naive-indexed
-				    :cl-naive-document-types
-			       :cl-naive-document-type-defs
-				    :cl-naive-documents))
+  (defpackage :naive-examples (:use
+			       :cl
+			       :cl-getx :cl-naive-store.naive-core
+			       :cl-naive-store.naive-indexed
+			       :cl-naive-store.document-types
+			       :cl-naive-store.document-type-defs
+			       :cl-naive-store.naive-documents))
   (in-package :naive-examples)
 
   ;;A helper function
@@ -91,7 +92,7 @@ In this example we will use sharding with document types.
 		      'element
 		      :name (getf element :name)
 		      :key-p (getf element :key-p)
-		      :type-def (getf element :type-def)
+		      :document-type (getf element :document-type)
 		      :attributes (getf element :attributes))))))
 
     (setf employee-document-type (add-document-type
@@ -111,7 +112,7 @@ In this example we will use sharding with document types.
 		      'element
 		      :name (getf element :name)
 		      :key-p (getf element :key-p)
-		      :type-def (getf element :type-def)
+		      :document-type (getf element :document-type)
 		      :attributes (getf element :attributes))))))
 
     (setf asset-document-type (add-document-type
@@ -364,13 +365,13 @@ In this example we will use sharding with document types.
 			 (make-document
 			  :store (store employee-collection)
 			  :collection employee-collection
-			  :type-def employee-document-type
+			  :document-type employee-document-type
 			  :elements (list
 				     :asset (add-document asset-collection
 							  (make-document
 							   :store (store asset-collection)
 							   :collection asset-collection
-							   :type-def asset-document-type
+							   :document-type asset-document-type
 							   :elements (list :description x :asset-no x)))
 				     :country (random-from-list emp-country)
 				     :surname (random-from-list emp-surnames)

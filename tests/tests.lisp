@@ -1,4 +1,4 @@
-(in-package :cl-naive-store-tests)
+(in-package :cl-naive-store.tests)
 
 (defun get-temp ()
   (handler-case
@@ -36,52 +36,52 @@
      :label "Asset Register"
      :elements ((:name :asset-no
 		 :label "Asset No"
-		 :db-type :string
+		 :concrete-type :string
 		 :key-p t
 		 :attributes (:display t :editable t))
 		(:name :description
 		 :label "Description"
-		 :db-type :string
+		 :concrete-type :string
 		 :attributes (:display t :editable t)))
      :documentation "This type represents a simple employee master.")
     (:name "employee"
      :label "Employee"
      :elements ((:name :emp-no
 		 :label "Employee No"
-		 :db-type :string
+		 :concrete-type :string
 		 :key-p t
 		 :attributes (:display t :editable t))
 		(:name :gender
 		 :label "Gender"
-		 :db-type (:type :string
-			   :complex-type :value-list
-			   :elements ("Male"
-				      "Female"))
+		 :concrete-type (:type :string
+				 :complex-type :value-list
+				 :elements ("Male"
+					    "Female"))
 		 :attributes (:display t :editable t))
 		(:name :race
 		 :label "Race"
-		 :db-type (:type :string
-			   :complex-type :value-list
-			   :elements ("African"
-				      "White"
-				      "Indian"
-				      "Chinese"
-				      "Coloured"))
+		 :concrete-type (:type :string
+				 :complex-type :value-list
+				 :elements ("African"
+					    "White"
+					    "Indian"
+					    "Chinese"
+					    "Coloured"))
 		 :attributes (:display t :editable t))
 
 		(:name :name
 		 :label "Name"
-		 :db-type :string
+		 :concrete-type :string
 		 :attributes (:display t :editable t))
 		(:name :surname
 		 :label "Surname"
-		 :db-type :string
+		 :concrete-type :string
 		 :attributes (:display t :editable t))
 		(:name :asset
 		 :label "Asset"
-		 :db-type (:type :document
-			   :complex-type :document
-			   :elements)
+		 :concrete-type (:type :document
+				 :complex-type :document
+				 :elements)
 		 :attributes (:display t :editable t)))
      :documentation "This type represents a simple employee master.")))
 
@@ -90,9 +90,9 @@
 
 	(types))
 
-    (dolist (type-def document-type-defs)
+    (dolist (document-type document-type-defs)
       (let ((elements))
-	(dolist (element (getf type-def :elements))
+	(dolist (element (getf document-type :elements))
 	  (setf
 	   elements
 	   (append elements
@@ -100,15 +100,15 @@
 			  'element
 			  :name (getf element :name)
 			  :key-p (getf element :key-p)
-			  :type-def (getf element :type-def)
+			  :concrete-type (getf element :concrete-type)
 			  :attributes (getf element :attributes))))))
 
 	(push (add-document-type
 	       store
 	       (make-instance
 		'document-type
-		:name (getf type-def :name)
-		:label (getf type-def :label)
+		:name (getf document-type :name)
+		:label (getf document-type :label)
 		:elements elements))
 	      types)))
     (reverse types)))
@@ -220,9 +220,9 @@ which contain the actual data. Each collection will have its own directory and f
 			 (make-document
 			  :store (store asset-collection)
 			  :collection asset-collection
-			  :type-def (if (stringp (document-type asset-collection))
-					(document-type asset-collection)
-					(name (document-type asset-collection)))
+			  :document-type (if (stringp (document-type asset-collection))
+					     (document-type asset-collection)
+					     (name (document-type asset-collection)))
 			  :elements (list :description x :asset-no x)))
 			(list :description x :asset-no x)))
 	     (document (list
@@ -247,9 +247,9 @@ which contain the actual data. Each collection will have its own directory and f
 			      (make-document
 			       :store (store collection)
 			       :collection collection
-			       :type-def (if (stringp (document-type collection))
-					     (document-type collection)
-					     (name (document-type collection)))
+			       :document-type (if (stringp (document-type collection))
+						  (document-type collection)
+						  (name (document-type collection)))
 			       :elements document))
 		(add-document collection document)))))))
 
@@ -425,9 +425,9 @@ which contain the actual data. Each collection will have its own directory and f
 			      (make-document
 			       :store (store collection)
 			       :collection collection
-			       :type-def (if (stringp (document-type collection))
-					     (document-type collection)
-					     (name (document-type collection)))
+			       :document-type (if (stringp (document-type collection))
+						  (document-type collection)
+						  (name (document-type collection)))
 			       :elements (document-elements document)))
 	    (persist-document collection
 			      (list
@@ -521,9 +521,9 @@ which contain the actual data. Each collection will have its own directory and f
 				(make-document
 				 :store (store collection)
 				 :collection collection
-				 :type-def (if (stringp (document-type collection))
-					       (document-type collection)
-					       (name (document-type collection)))
+				 :document-type (if (stringp (document-type collection))
+						    (document-type collection)
+						    (name (document-type collection)))
 				 :elements document)
 				:shard (if *use-shards* (gethash race shards)))
 		  ;;To speed up loading of documents I am switching of duplicate handling.
@@ -689,19 +689,19 @@ Only peristed if persist-p is t."
 		  :initial-value initial-value)))
 
 (defun indexed-query-examples ()
-  (let ((cl-naive-store-tests::*collection-class* 'cl-naive-store-tests::collection-indexed)
+  (let ((cl-naive-store.tests::*collection-class* 'cl-naive-store.tests::collection-indexed)
 	(results))
 
-    (cl-naive-store-tests::monster-size-example t)
+    (cl-naive-store.tests::monster-size-example t)
     (format t "Key value Lookup surname Davis")
     (time (push (list
 		 :how-many-davises?
-		 (length (cl-naive-store-tests::key-values-lookup  (list :surname "Davis"))))
+		 (length (cl-naive-store.tests::key-values-lookup  (list :surname "Davis"))))
 		results))
     (format t "Key value Lookup Indian males.")
     (time (push (list
 		 :how-many-indian-males?
-		 (length (cl-naive-store-tests::key-values-lookup
+		 (length (cl-naive-store.tests::key-values-lookup
 			  (list (list :race "Indian")
 				(list :gender "Male")))))
 		results))
@@ -709,7 +709,7 @@ Only peristed if persist-p is t."
     (format t "Indexed Query Indian males with the surname Davis")
     (time (push (list
 		 :how-many-indian-davises?
-		 (length (cl-naive-store-tests::indexed-query
+		 (length (cl-naive-store.tests::indexed-query
 			  (list (list :race "Indian")
 				(list :gender "Male"))
 			  (lambda (document)
@@ -719,7 +719,7 @@ Only peristed if persist-p is t."
     (format t "Indexed Reduce, sum of emp-no's for Indian males with the surname Davis")
     (time (push (list
 		 :sum-emp-no-indian-davise
-		 (cl-naive-store-tests::indexed-reduce
+		 (cl-naive-store.tests::indexed-reduce
 		  (list (list :race "Indian")
 			(list :gender "Male"))
 		  (lambda (document)
@@ -746,16 +746,16 @@ Only peristed if persist-p is t."
   (let ((*document-type* 'document)
 	(results))
 
-    (cl-naive-store-tests::monster-size-example t)
+    (cl-naive-store.tests::monster-size-example t)
     (format t "Key value Lookup surname Davis")
     (time (push (list
 		 :how-many-davises?
-		 (length (cl-naive-store-tests::key-values-lookup  (list :surname "Davis"))))
+		 (length (cl-naive-store.tests::key-values-lookup  (list :surname "Davis"))))
 		results))
     (format t "Key value Lookup Indian males.")
     (time (push (list
 		 :how-many-indian-males?
-		 (length (cl-naive-store-tests::key-values-lookup
+		 (length (cl-naive-store.tests::key-values-lookup
 			  (list (list :race "Indian")
 				(list :gender "Male")))))
 		results))
@@ -763,7 +763,7 @@ Only peristed if persist-p is t."
     (format t "Indexed Query Indian males with the surname Davis")
     (time (push (list
 		 :how-many-indian-davises?
-		 (length (cl-naive-store-tests::indexed-query
+		 (length (cl-naive-store.tests::indexed-query
 			  (list (list :race "Indian")
 				(list :gender "Male"))
 			  (lambda (document)
@@ -773,7 +773,7 @@ Only peristed if persist-p is t."
     (format t "Indexed Reduce, sum of emp-no's for Indian males with the surname Davis")
     (time (push (list
 		 :sum-emp-no-indian-davise
-		 (cl-naive-store-tests::indexed-reduce
+		 (cl-naive-store.tests::indexed-reduce
 		  (list (list :race "Indian")
 			(list :gender "Male"))
 		  (lambda (document)
@@ -868,16 +868,16 @@ or signal an error."
 (define-test test-all (&optional (*monster-size* 100000))
   (tear-down-universe)
   (reporting-test-results
-    (progn
-      (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-examples))
-      (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-simple))
-      (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-simple-indexed))
-      (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-simple-documents))
-      (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster))
-      (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-indexed))
-      (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-indexed-queries))
-      (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-documents))
-      (cl-naive-store-tests::test-passed-p (cl-naive-store-tests::test-all-monster-document-queries)))))
+   (progn
+     (cl-naive-store.tests::test-passed-p (cl-naive-store.tests::test-all-examples))
+     (cl-naive-store.tests::test-passed-p (cl-naive-store.tests::test-all-simple))
+     (cl-naive-store.tests::test-passed-p (cl-naive-store.tests::test-all-simple-indexed))
+     (cl-naive-store.tests::test-passed-p (cl-naive-store.tests::test-all-simple-documents))
+     (cl-naive-store.tests::test-passed-p (cl-naive-store.tests::test-all-monster))
+     (cl-naive-store.tests::test-passed-p (cl-naive-store.tests::test-all-monster-indexed))
+     (cl-naive-store.tests::test-passed-p (cl-naive-store.tests::test-all-monster-indexed-queries))
+     (cl-naive-store.tests::test-passed-p (cl-naive-store.tests::test-all-monster-documents))
+     (cl-naive-store.tests::test-passed-p (cl-naive-store.tests::test-all-monster-document-queries)))))
 
 #+sbcl
 (eval-when (:compile-toplevel :load-toplevel :execute)

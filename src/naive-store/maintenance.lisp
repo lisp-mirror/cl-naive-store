@@ -1,4 +1,4 @@
-(in-package :cl-naive-store)
+(in-package :cl-naive-store.naive-core)
 
 ;;TODO: add functionality to do sanitize when loading data for the first time.
 
@@ -7,7 +7,7 @@
 
 (defmethod sanitize-data-file ((collection collection) &key &allow-other-keys)
   (let ((documents (query-data
-		  collection))
+		    collection))
 	(log-file (cl-fad:merge-pathnames-as-file
 		   (pathname (location collection))
 		   (make-pathname :name (name collection)
@@ -21,21 +21,21 @@
 		   (make-pathname :name (name collection)
 				  :type "old")))
 	(old-old-file (cl-fad:merge-pathnames-as-file
-		   (pathname (location collection))
-		   (make-pathname :name (name collection)
-				  :type "old.old"))))
+		       (pathname (location collection))
+		       (make-pathname :name (name collection)
+				      :type "old.old"))))
     (when (probe-file
 	   old-file)
       (fad:copy-file old-file old-old-file :overwrite t))
 
     (fad:copy-file log-file old-file :overwrite t)
-    
+
     (when documents
       (dolist (document documents)
-	
-	(cl-naive-store::persist-document collection  document
-				 :file-name new-file
-				 :new-file-p t))
+
+	(cl-naive-store.naive-core::persist-document collection  document
+						     :file-name new-file
+						     :new-file-p t))
       (fad:copy-file new-file
 		     log-file
 		     :overwrite t))))
@@ -44,7 +44,7 @@
   (:documentation "Sanitize all collections of a universe. See sanitize-data-file for details."))
 
 (defmethod sanitize-universe (universe &key &allow-other-keys)
-     (load-stores universe)
+  (load-stores universe)
 
   (dolist (store (stores universe))
     (dolist (collection (collections store))

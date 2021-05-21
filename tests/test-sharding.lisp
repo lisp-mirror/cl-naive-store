@@ -7,11 +7,10 @@
 
 (defpackage :naive-examples
   (:use :cl
-   :cl-getx :cl-naive-store
-   :cl-naive-indexed :cl-naive-document-types
-   :cl-naive-document-type-defs :cl-naive-documents))
+   :cl-getx :cl-naive-store.naive-core
+   :cl-naive-store.naive-indexed :cl-naive-store.document-types
+   :cl-naive-store.document-type-defs :cl-naive-store.naive-documents))
 (in-package :naive-examples)
-
 
 ;; To be able to have reproducible and checkable tests, we'll use a
 ;; deterministic way to generate employee attributes.  For this, we
@@ -67,7 +66,6 @@
 (eval-when (:load-toplevel :execute)
   (assert (= 1 (gcd (length *countries*) (length  *surnames*)))))
 
-
 ;;;
 ;;; Universe
 ;;;
@@ -98,11 +96,11 @@
 ;;; Utilities
 ;;;
 
-(defun field (name label &key (type :string) (keyp nil))
-  "A little helper function to generate simply data definition fields." 
+(defun element (name label &key (type :string) (keyp nil))
+  "A little helper function to generate simple document types elements."
   `(:name ,name
     :label ,label
-    :db-type ,type
+    :concrete-type ,type
     :key-p ,keyp
     :attributes (:display t :editable t)))
 
@@ -112,7 +110,7 @@
 	    (make-instance 'element
 			   :name       (getf element :name)
 			   :key-p      (getf element :key-p)
-			   :type-def   (getf element :type-def)
+			   :concrete-type   (getf element :concrete-type)
 			   :attributes (getf element :attributes)))
 	  (getf document-type-description :elements)))
 
@@ -120,7 +118,7 @@
   "Convert the DOCUMENT-TYPE-DESCRIPTION and its ELEMENTS into a DOCUMENT-TYPE instance."
   (make-instance 'document-type
 		 :name  (getf document-type-description :name)
-		 :label (getf document-type-description :label)                    
+		 :label (getf document-type-description :label)
 		 :elements elements))
 
 ;;;
@@ -141,14 +139,14 @@
   `(:name "employee"
     :label "Employee"
     :elements ,(list
-		(field :emp-no   "Employee No"   :keyp   t)
-		(field :country  "Country")
-		(field :name     "Name")
-		(field :surname  "Surname")
-		(field :asset    "Asset"
-		       :type '(:type :document
-			       :complex-type :document
-			       :elements)))
+		(element :emp-no   "Employee No"   :keyp   t)
+		(element :country  "Country")
+		(element :name     "Name")
+		(element :surname  "Surname")
+		(element :asset    "Asset"
+			 :type '(:type :document
+				 :complex-type :document
+				 :elements)))
     :documentation "This type represents a simple employee master.")
   "Data definition for an employee.")
 
@@ -160,7 +158,7 @@
 		     (make-document-type *employee-document-type-description*
 					 *employee-elements*)))
 
-(defparameter *employee-collection* 
+(defparameter *employee-collection*
   (add-collection *store*
 		  (make-instance (collection-class *store*)
 				 :name "simple-collection"
@@ -179,8 +177,8 @@
 (defparameter *asset-document-type-description*
   `(:name "asset-register"
     :label "Asset Register"
-    :elements ,(list (field :asset-no "Asset No" :keyp t) 
-		     (field :description "Description"))
+    :elements ,(list (element :asset-no "Asset No" :keyp t)
+		     (element :description "Description"))
     :documentation "This type represents a simple employee master.")
   "Data definition for an asset. Assets are linked to employees")
 
@@ -192,25 +190,24 @@
 		     (make-document-type *asset-document-type-description*
 					 *asset-elements*)))
 
-(defparameter *asset-collection* 
+(defparameter *asset-collection*
   (add-collection *store* (make-instance (collection-class *store*)
 					 :name "asset-collection"
 					 :document-type *asset-document-type*
 					 :keys '(:asset-no))))
 
-
 (let ((results      '())
-      (emp-country  0)        
+      (emp-country  0)
       (emp-surname  0)
       (size         100000))
-  
+
   ;; Try to load the data first, maybe it has been persisted before.
   (format *trace-output* "~&Loading Existing Data.~%")
   (time (load-data *employee-collection*))
 
   ;; If the data was peristed before and successfully loaded dont add it again.
   (unless (data-loaded-p *employee-collection*)
-    
+
     ;; Adding documents without persisting will do a bulk persist later which is much faster.
     (format *trace-output* "~&Adding ~D documents to collections~%" size)
     (time
@@ -223,27 +220,27 @@
 	   (setf emp-surname 0)
 	   (setf emp-country (mod (1+ emp-country) (length *countries*))))
 	 (add-document *employee-collection*
-		       (make-document 
+		       (make-document
 			:store (store *employee-collection*)
 			:collection *employee-collection*
-			:type-def *employee-document-type*		
+			:document-type *employee-document-type*
 			:elements (list
 				   :asset (add-document *asset-collection*
-							(make-document 
+							(make-document
 							 :store (store *asset-collection*)
 							 :collection *asset-collection*
-							 :type-def *asset-document-type*
+							 :document-type *asset-document-type*
 							 :elements (list :description emp-no
 									 :asset-no emp-no)))
 				   :country country
 				   :surname surname
 				   :name (format nil "Slave No ~A" emp-no)
 				   :emp-no emp-no))))))
-    
+
     ;; Bulk Persist assets
     (format *trace-output* "~&Persisting ~D assets to collections~%" size)
     (time (persist *asset-collection*))
-    
+
     ;; Bulk Persist employees
     (format *trace-output* "~&Persisting ~D employees to collections~%" size)
     (time (persist *employee-collection*)))
@@ -264,7 +261,7 @@
     (push (list :query-all (length data)) results))
 
   (format *trace-output* "~&Fetching an index set.~%")
-  (let ((data (time (query-data *employee-collection*                              
+  (let ((data (time (query-data *employee-collection*
 				:index-values (list (list :surname "Davis")))))
 	(expected (multiple-value-bind (n r) (truncate size (length *surnames*))
 		    (+ n
@@ -273,10 +270,10 @@
 			   1)))))	; 14285
     (assert (= expected (length data)))
     (push (list :how-many-davises? (length data)) results))
-  
+
   (format *trace-output* "~&Doing a query against an index set.~&")
   (let ((data (time (query-data *employee-collection*
-				:query (lambda (emp)                                         
+				:query (lambda (emp)
 					 (string-equal (getx emp :country) "Chile"))
 				:index-values (list (list :surname "Davis")))))
 	(expected (multiple-value-bind (n r) (truncate size (* (length *countries*) (length *surnames*)))

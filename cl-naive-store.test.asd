@@ -14,5 +14,5 @@
   #+asdf-unicode :utf-8
   #+asdf3 :perform #+asdf3 (asdf:test-op
                             (operation system)
-                            (uiop:symbol-call "CL-NAIVE-STORE-TESTS" "TEST-ALL"
+                            (uiop:symbol-call "CL-NAIVE-STORE.TESTS" "TEST-ALL"
 					      #|monster-size|# 1000)))

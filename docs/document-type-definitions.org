@@ -1,6 +1,6 @@
 * Document Type Definitions
 
-cl-naive-document-type-defs is a "declaritive" implementation (I am
+cl-naive-store.document-type-defs is a "declaritive" implementation (I am
 using the word loosly) of cl-naive-document-type (abstract data
 type???).
 

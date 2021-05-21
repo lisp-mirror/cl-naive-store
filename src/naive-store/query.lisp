@@ -1,4 +1,4 @@
-(in-package :cl-naive-store)
+(in-package :cl-naive-store.naive-core)
 
 ;;;; Query and naive-reduce exists to hide the structure/internals of the
 ;;;; collection from the user, so its for convenience all the functionality
@@ -17,7 +17,7 @@ Does lazy loading."))
 (defmethod naive-reduce :before ((collection collection) &key shards &allow-other-keys)
   "Lazy loading data."
   (if shards
-      (cl-naive-store::load-shards collection shards)
+      (cl-naive-store.naive-core::load-shards collection shards)
       (load-data collection)))
 
 (defvar *query-lock* (bt:make-lock))
@@ -28,7 +28,7 @@ Does lazy loading."))
 
     (do-sequence (shard (or shards
 			    (shards collection))
-		  :parallel-p t)
+			:parallel-p t)
 
       (let ((result (naive-reduce (documents shard)
 				  :query query
@@ -86,7 +86,7 @@ Does lazy loading."))
   (if shards
       (progn ; only load the specified shards.
 	(naive-impl::debug-log "query-data -shards" :file-p t)
-	(cl-naive-store::load-shards collection shards))
+	(cl-naive-store.naive-core::load-shards collection shards))
       (progn
 	(naive-impl::debug-log "query-data -collection" :file-p t)
 	(load-data collection))))
@@ -123,7 +123,7 @@ Does lazy loading."))
 (defmethod query-document :before ((collection collection) &key shards &allow-other-keys)
   "Lazy loading data."
   (if shards
-      (cl-naive-store::load-shards collection shards)
+      (cl-naive-store.naive-core::load-shards collection shards)
       (load-data collection)))
 
 (defmethod query-document ((collection collection) &key query shards &allow-other-keys)

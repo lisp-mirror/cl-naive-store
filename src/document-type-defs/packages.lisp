@@ -1,9 +1,9 @@
 (in-package :common-lisp-user)
 
-(defpackage :cl-naive-document-type-defs
-  (:use :cl :cl-getx :cl-naive-store)
+(defpackage :cl-naive-store.document-type-defs
+  (:use :cl :cl-getx :cl-naive-store.naive-core)
   (:export
    :*example-type-defs*
-   :getxe   
+   :getxe
    :validate-xe
-   :db-type-get-set))
+   :concrete-type-get-set))

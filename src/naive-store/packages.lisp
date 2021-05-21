@@ -1,6 +1,6 @@
 (in-package :common-lisp-user)
 
-(defpackage :cl-naive-store
+(defpackage :cl-naive-store.naive-core
   (:use :cl :cl-getx)
   (:export
 

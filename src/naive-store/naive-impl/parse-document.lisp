@@ -1,6 +1,5 @@
 (in-package :naive-impl)
 
-
 ;;(defparameter *task-pool-x* (make-instance 'cl-naive-task-pool:task-pool :thread-pool-size 8))
 
 (defun load-document-reference-collection (universe document-ref)
@@ -16,26 +15,26 @@ When documents are read from a file the references need to be converted to docum
 
     (if shard-mac
 	(let ((shard (get-shard collection shard-mac)))
-	  (cl-naive-store::load-shard collection shard nil))
+	  (cl-naive-store.naive-core::load-shard collection shard nil))
 
 	(load-data collection :parallel-p nil))
-    
+
     collection))
 
 (defgeneric find-document-by-hash (collection hash &key shards &allow-other-keys)
   (:documentation "Finds the document that matches the hash."))
 
-;;TODO: Deal with shards. 
+;;TODO: Deal with shards.
 (defmethod find-document-by-hash (collection hash &key shards &allow-other-keys)
 
   (do-sequence (shard (if shards shards
 			  (shards collection)) :parallel-p nil)
-    
-    (do-sequence (document (documents shard))    
+
+    (do-sequence (document (documents shard))
       (when (string-equal
 	     (digx document :hash)
 	     hash)
-	
+
 	(return-from find-document-by-hash document)))))
 
 ;;TODO: Implment hash-table.
@@ -44,7 +43,7 @@ When documents are read from a file the references need to be converted to docum
 
 (defmethod type-of-sexp (collection sexp)
   (declare (ignorable collection))
-  
+
   (cond ((and (listp sexp)
 	      (equalp (car sexp) :blob%))
 	 :blob)
@@ -53,10 +52,10 @@ When documents are read from a file the references need to be converted to docum
 	 :hash-table)
 	((and (listp sexp)
 	      (atom (car sexp))
-	      (symbolp (car sexp))             
+	      (symbolp (car sexp))
 	      (cl-getx:getx sexp :reference%))
 	 :reference)
-	
+
 	(t nil)))
 
 (defgeneric compose-special (collection shard sexp type)
@@ -71,7 +70,7 @@ When documents are read from a file the references need to be converted to docum
 
 (defmethod compose-special (collection shard sexp (type (eql :blob)))
   (declare (ignorable collection) (ignorable shard) (ignorable type))
-  
+
   (read-blob (cdr sexp)))
 
 (defmethod compose-special (collection shard sexp (type (eql :hash-table)))
@@ -82,7 +81,7 @@ When documents are read from a file the references need to be converted to docum
   (declare (ignorable shard))
 
   (naive-impl::debug-log "core:Compose-special :reference ~A" (name collection))
-  
+
   (let* ((ref-collection (load-document-reference-collection
 			  (universe (store collection))
 
@@ -92,7 +91,7 @@ When documents are read from a file the references need to be converted to docum
 			  ;; contains :collection  and :store, don't
 			  ;; override it to the current one (which is
 			  ;; BEING loaded).
-			  
+
 			  (if (and (digx sexp :collection)
 				   (digx sexp :store))
 			      sexp
@@ -100,19 +99,17 @@ When documents are read from a file the references need to be converted to docum
 				     :store (name (store collection))
 				     sexp))))
 	 (ref-document (and collection
-			    (find-document-by-hash 
+			    (find-document-by-hash
 			     ref-collection
 			     (digx sexp :hash)
-			     :shards (shards ref-collection)
-			     ))))
+			     :shards (shards ref-collection)))))
 
-    
     (unless ref-document
       (write-log (location (universe (store collection)))
 		 :error (list "Could not resolve reference ~S~%" sexp)))
 
     (naive-impl::debug-log "END core:Compose-special :reference ~A" (name collection))
-    
+
     ref-document))
 
 ;;Made this a seperate method so simple units tests can test basic parsing.
@@ -124,18 +121,18 @@ When documents are read from a file the references need to be converted to docum
 
 (defmethod compose-parse (collection shard sexp doc)
   (cond ((null sexp)
-	 (nreverse doc))                   
-        ((consp (car sexp))                    
+	 (nreverse doc))
+        ((consp (car sexp))
 	 (compose-parse collection shard (cdr sexp)
-		(if (type-of-sexp collection (car sexp))
-                    (cons
-		     (compose-special collection shard (car sexp)
-				      (type-of-sexp collection (car sexp)))
-		     doc)
-		    (cons (compose-parse collection shard (car sexp) nil) doc))))
+			(if (type-of-sexp collection (car sexp))
+			    (cons
+			     (compose-special collection shard (car sexp)
+					      (type-of-sexp collection (car sexp)))
+			     doc)
+			    (cons (compose-parse collection shard (car sexp) nil) doc))))
 	(t
 	 (compose-parse collection shard (cdr sexp)
-		(cons (car sexp) doc)))))
+			(cons (car sexp) doc)))))
 
 (defmethod compose-document (collection shard document-form &key &allow-other-keys)
   (naive-impl::debug-log "core:Compose-document ~A" (name collection))
@@ -143,6 +140,6 @@ When documents are read from a file the references need to be converted to docum
 	  (compose-special collection
 			   shard
 			   (compose-parse collection shard document-form nil)
-			   :document)))    
+			   :document)))
     (naive-impl::debug-log "END core:Compose-document ~A" (name collection))
     doc))

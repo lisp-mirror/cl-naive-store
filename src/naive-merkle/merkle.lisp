@@ -29,9 +29,9 @@
 		:accessor merkle-hash
 		:documentation "Then original hash of the document.")
    (merkle-sum :initarg :merkle-sum
-		:initform nil
-		:accessor merkle-sum
-		:documentation "Then computed hash of the document")
+	       :initform nil
+	       :accessor merkle-sum
+	       :documentation "Then computed hash of the document")
    (children :initarg :children
 	     :initform nil
 	     :accessor children)))
@@ -52,8 +52,8 @@
 				      (merkle-hash nd)))))
 
 	       (setf (merkle-sum node) sum))
-	       (when (parent node)
-		 (parent% (parent node)))))
+	     (when (parent node)
+	       (parent% (parent node)))))
     (parent% node)
     node))
 
@@ -72,10 +72,10 @@
 				 :merkle-hash hash
 				 :merkle-sum (or hash-sum hash)))))
     (when parent
-	(if (leaf-p parent)
-	      (setf (children parent) (list node))
-	      (setf (children parent) (append (children parent) (list node))))
-	(recalc parent))
+      (if (leaf-p parent)
+	  (setf (children parent) (list node))
+	  (setf (children parent) (append (children parent) (list node))))
+      (recalc parent))
     node))
 
 (defun calc (node)
@@ -106,8 +106,8 @@
 
 	       (when (and (parent node) (parent (parent node)))
 		 (if (parent node)
-		   (setf sum (- sum (or (merkle-sum node)
-					(merkle-hash node)))))
+		     (setf sum (- sum (or (merkle-sum node)
+					  (merkle-hash node)))))
 		 (parent% (parent node)))))
 
       (parent% (parent node))
@@ -147,8 +147,8 @@
 		      (traverse-tree (cdr node) parent))
 		     ((leaf-p node)
 		      (let ((ref-node (list :hash (merkle-hash node)
-						  :hash-sum (merkle-sum node)
-						  :children nil)))
+					    :hash-sum (merkle-sum node)
+					    :children nil)))
 			(setf (getf parent :children)
 			      (append (getf parent :children)
 				      (list ref-node)))))
@@ -193,26 +193,26 @@
    (ironclad:digest-sequence
     :tiger
     (babel:string-to-octets
-     (cl-naive-store:frmt
+     (cl-naive-store.naive-core:frmt
       "~A" value)))))
 
 (defun make-document-hash (document)
   (make-hash
-   (cl-naive-store:key-values
-    (cl-naive-documents:document-collection document)
+   (cl-naive-store.naive-core:key-values
+    (cl-naive-store.naive-documents:document-collection document)
     document)))
 
 (defun calc-document (document)
   (let ((merkle-tree))
     (labels ((traverse-doc (doc parent)
-	       (when (cl-naive-documents:document-p doc)
+	       (when (cl-naive-store.naive-documents:document-p doc)
 		 (let* ((node (make-node
 			       (make-document-hash
 				doc)
 			       :parent parent)))
 
-		   (loop :for (nil value) :on (cl-naive-documents:document-elements doc) :by #'cddr
-			 :when (cl-naive-documents:document-p value)
+		   (loop :for (nil value) :on (cl-naive-store.naive-documents:document-elements doc) :by #'cddr
+			 :when (cl-naive-store.naive-documents:document-p value)
 			   :do (traverse-doc value node))))))
       (setf merkle-tree (make-node (make-document-hash document)))
       (traverse-doc document merkle-tree))
@@ -222,55 +222,55 @@
 
 (let ((buffer)
 
-      (crypt))
+(crypt))
 
-  (time
-   (dotimes (x 1000000)
-     (progn
-       (setf buffer (babel:string-to-octets "fuck"))
+(time
+(dotimes (x 1000000)
+(progn
+(setf buffer (babel:string-to-octets "fuck"))
 
-       (setf crypt (ironclad:digest-sequence :tiger buffer))
+(setf crypt (ironclad:digest-sequence :tiger buffer))
 
-       ;;(print crypt)
-       (ironclad::octets-to-integer crypt)
-       ;;(print (ironclad:integer-to-octets (bit-smasher:octets->int crypt)))))))
+;;(print crypt)
+(ironclad::octets-to-integer crypt)
+;;(print (ironclad:integer-to-octets (bit-smasher:octets->int crypt)))))))
 
 (let* ((tree)
-       (two)
-       (seven)
-       (nine)
-       (eleven)
-       (thirteen))
+(two)
+(seven)
+(nine)
+(eleven)
+(thirteen))
 
-  (setf tree (make-node 1))
-  (setf two (make-node 2 :parent tree))
-  (make-node 3 :parent two)
+(setf tree (make-node 1))
+(setf two (make-node 2 :parent tree))
+(make-node 3 :parent two)
 
-  (make-node 4 :parent two)
+(make-node 4 :parent two)
 
-  (setf seven (make-node 7 :parent tree))
-  (make-node 8 :parent seven)
+(setf seven (make-node 7 :parent tree))
+(make-node 8 :parent seven)
 
-  (setf nine (make-node 9 :parent tree))
-  (make-node 10 :parent nine)
+(setf nine (make-node 9 :parent tree))
+(make-node 10 :parent nine)
 
-  (setf eleven (make-node 11 :parent nine))
-  (make-node 12 :parent eleven)
+(setf eleven (make-node 11 :parent nine))
+(make-node 12 :parent eleven)
 
-  (setf thirteen (make-node 13 :parent eleven))
+(setf thirteen (make-node 13 :parent eleven))
 
-  (format t "~A~%"  (calc thirteen))
-  (format t "~A~%"  (calc-branch thirteen))
-  (format t "~A" (merkle-hash tree))
+(format t "~A~%"  (calc thirteen))
+(format t "~A~%"  (calc-branch thirteen))
+(format t "~A" (merkle-hash tree))
 
 (print (tree-to-reference-tree tree))
 
 '(:HASH 1 :HASH-SUM 972 :CHILDREN
- ((:HASH 2 :HASH-SUM 4 :CHILDREN ((:HASH 3 :HASH-SUM 3) (:HASH 4 :HASH-SUM 4)))
-  (:HASH 7 :HASH-SUM 7 :CHILDREN ((:HASH 8 :HASH-SUM 8)))
-  (:HASH 9 :HASH-SUM 72 :CHILDREN
-   ((:HASH 10 :HASH-SUM 10)
-    (:HASH 11 :HASH-SUM 22 :CHILDREN
-     ((:HASH 12 :HASH-SUM 12) (:HASH 13 :HASH-SUM 13))))))))
+((:HASH 2 :HASH-SUM 4 :CHILDREN ((:HASH 3 :HASH-SUM 3) (:HASH 4 :HASH-SUM 4)))
+(:HASH 7 :HASH-SUM 7 :CHILDREN ((:HASH 8 :HASH-SUM 8)))
+(:HASH 9 :HASH-SUM 72 :CHILDREN
+((:HASH 10 :HASH-SUM 10)
+(:HASH 11 :HASH-SUM 22 :CHILDREN
+((:HASH 12 :HASH-SUM 12) (:HASH 13 :HASH-SUM 13))))))))
 
 |#

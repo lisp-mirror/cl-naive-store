@@ -1,5 +1,5 @@
 (defpackage :naive-impl
-  (:use :cl :cl-getx :cl-naive-store)
+  (:use :cl :cl-getx :cl-naive-store.naive-core)
   (:export
 
    ;;COMMON

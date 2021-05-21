@@ -1,12 +1,12 @@
 (in-package :common-lisp-user)
 
-(defpackage :cl-naive-document-types
-  (:use :cl :cl-naive-store :cl-getx)
+(defpackage :cl-naive-store.document-types
+  (:use :cl :cl-naive-store.naive-core :cl-getx)
   (:export
-   
+
    :element
    :name
-   :type-def
+   :document-type
    :key-p
    :attributes
 
@@ -19,7 +19,7 @@
 
    :document-type-collection-mixin
    ;;:document-type
-   
+
    :document-type-store-mixin
    :document-type-class
    :document-types

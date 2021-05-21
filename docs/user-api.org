@@ -272,7 +272,7 @@ NOTES:
 
 Exists to ease the compatibility of various implementation
 functions. Basically it blurs the line between plists and more complex
-documents like cl-naive-documents document struct.
+documents like cl-naive-store.naive-documents document struct.
 
 This helps keep the amount of specializations needed down
 considerably.
@@ -583,7 +583,7 @@ or a mix.
 Name of the element. This should be a KEYWORD if you want data
 portability and some internals might expect a keyword.
 
-**** [accessor] type-def
+**** [accessor] document-type
 
 A user defined "thing" that defines the type specifics of an element.
 
@@ -658,9 +658,9 @@ Adds a document-type to a store.
 
 ** Document Type Defs
 
-*** [generic function] getx (document (element cl-naive-document-types:element) &key &allow-other-keys)
+*** [generic function] getx (document (element cl-naive-store.document-types:element) &key &allow-other-keys)
 
-(setf getx) (value document (element cl-naive-document-types:element)
+(setf getx) (value document (element cl-naive-store.document-types:element)
 
 *** [generic function] getxe (document element type &key &allow-other-keys))
 
@@ -672,7 +672,7 @@ Adds a document-type to a store.
 
 *** [class] document-collection (indexed-collection-mixin document-type-collection-mixin collection)
 
-Document collection class used to specialize on for cl-naive-documents.
+Document collection class used to specialize on for cl-naive-store.naive-documents.
 
 *** [class] document-store (document-type-store-mixin store)
 
@@ -686,7 +686,7 @@ what has changed in the values during updates.
 
 - store = The store that the document comes from.
 - collection = The collection that the document comes from.
-- type-def = The document type specification that describes this document.
+- document-type = The document type specification that describes this document.
 - hash = The hash/UUID that uniquely identifies this document
 - elements = The actual key value pairs of the document.
 - changes = Is used to store setf values when using getx the preffered accessor for values.

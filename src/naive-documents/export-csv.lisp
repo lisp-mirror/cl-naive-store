@@ -1,17 +1,16 @@
-(in-package :cl-naive-documents)
-
+(in-package :cl-naive-store.naive-documents)
 
 (defun write-pair-csv (pair stream first-p)
   (unless (or (blob-p (second pair))
 	      (lambda-p (second pair)))
     (unless first-p
       (write-string "|"  stream))
-    
+
     (write (format nil "~A" (first pair))
 	   :stream stream)
     (write-string "|"  stream)
 
-    (if (and (second pair) (listp (second pair)))			    
+    (if (and (second pair) (listp (second pair)))
 	(treemap-csv (second pair) stream nil)
 	(if (document-p (second pair))
 	    (treemap-csv (second pair) stream nil)
@@ -21,28 +20,28 @@
 		    (write (second pair) :stream stream))
 		(write "null" :stream stream))))))
 
-(defun treemap-csv (tree stream first-p) 
+(defun treemap-csv (tree stream first-p)
   (cond ((null tree) nil)
 	((document-p tree)
-	 
+
 	 (unless first-p
 	   (write-string "|"  stream))
-	 
+
 	 (write-pair-csv (list :hash (format nil "~A" (document-hash tree)))
-		     stream
-		     t)
-	 
+			 stream
+			 t)
+
 	 (write-pair-csv (list
-		      :document-type (document-type-def tree))
-		     stream
-		     nil)
-	 
+			  :document-type (document-document-type tree))
+			 stream
+			 nil)
+
 	 (dolist (pair (parse-document tree))
-	     (write-pair-csv pair stream nil)))
+	   (write-pair-csv pair stream nil)))
         ((consp tree)
-	
+
 	 (let ((first-pp t))
-	   
+
 	   (mapcar (lambda (child)
 		     (when (and (not first-pp)
 				first-p)
@@ -56,8 +55,6 @@
   (let ((out (make-string-output-stream))
 	(str))
     (treemap-csv document-list out t)
-     (setf str (get-output-stream-string out))
-     (close out)
-     str)
-  
-  )
+    (setf str (get-output-stream-string out))
+    (close out)
+    str))

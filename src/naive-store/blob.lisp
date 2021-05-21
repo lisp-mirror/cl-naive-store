@@ -1,4 +1,4 @@
-(in-package :cl-naive-store)
+(in-package :cl-naive-store.naive-core)
 
 (defstruct blob
   "Represents a unit of data that is large enough to warent its own file or would cause reading problems for the default naive-store file layout which is essentially plists."

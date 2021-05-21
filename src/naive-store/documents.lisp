@@ -1,11 +1,11 @@
-(in-package :cl-naive-store)
+(in-package :cl-naive-store.naive-core)
 
 (defgeneric document-values (document)
   (:documentation "Returns a plist of document values.
 
 NOTES:
 
-Exists to ease the compatibility of various implementation functions. Basically it blurs the line between plists and more complex documents like cl-naive-documents document struct.
+Exists to ease the compatibility of various implementation functions. Basically it blurs the line between plists and more complex documents like cl-naive-store.naive-documents document struct.
 
 This helps keep the amount of specializations needed down considerably."))
 
@@ -179,7 +179,7 @@ The shard the document should belong to can be passed in as well."))
   (declare (ignorable document))
   ;;Loads collection if not loaded yet.
   (if shard
-      (cl-naive-store::load-shard collection shard nil)
+      (cl-naive-store.naive-core::load-shard collection shard nil)
       (load-data collection)))
 
 (defmethod persist-document ((collection collection) document
@@ -196,7 +196,7 @@ The shard the document should belong to can be passed in as well."))
       ;;Make sure there is nothing to load.
       (load-shard collection shardx (location shardx))
 
-      (cl-naive-store::set-shard-cache-safe% collection mac shardx)
+      (cl-naive-store.naive-core::set-shard-cache-safe% collection mac shardx)
       (vector-push-extend shardx (shards collection))
 
       (setf shard shardx)

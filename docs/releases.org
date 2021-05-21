@@ -73,73 +73,6 @@ All the functions that need to use shards now has a shard or shards parameter.
 
 Lots of bug fixes and internalized modules.
 
-** Incompatibility Issues:
-
-cl-naive-indexed, cl-naive-document-types, cl-naive-document-types,
-cl-naive-documents and cl-naive-store-tests will not appear in
-quicklisp anymore because they don't have their own .asd files.
-
-Loading cl-naive-store now loads all modules by default, to do
-conditional loading you need to use to add to various features to
-*features* before you load cl-naive-store.
-
-** Other Work Done:
-
-Empty source files where removed.
-
-Removed top-level-p every where.
-
-Added maintenance back into asd
-
-Added tests for reference objects to tests
-
-Added getx for document-type and element
-
-Disabled validate-xe it needs a lot more work.
-
-Added murmurhash for local-time:timestamp
-
-Dropped write-object and kin
-
-Changed some errors to write to log instead
-
-Added more checks on ensure path for collections.
-
-** Bug fixes
-
-Fixed sed replace that blurred the line between document-type of
-collection and document-type-def of document.
-
-Fixed getsfx to getxe replacement missed previously
-
-Fixed persist-document to return document
-
-Fixed reference check in type-of-doc-element
-
-Fixed perist-form for references
-
-Fixed perist-parse to check for types in the right place
-
-Fixed find-document-by-hash for naive-indexed
-
-Removed duplicate getx for naive-documents that was clobbering normal
-behaviour
-
-Fixed method confusion for getx of (document document) (element
-element) vs document (element element)
-
-Fixed load parsing of child and reference documents where they where
-not picked up by the type check.
-
-Fixed type-defs parameter order for various functions.
-
-Fixed checking for real changes in persist-document,
-document-persisted-p was unreliable.
-
-Fixed collection-class init for document-types
-
-Fixed init args for document-store class
-
 * Version 2020.07.16
 
 A majour code refactoring exercise was under taken and backward
@@ -159,68 +92,11 @@ Only listing the public/user api issues in broad strokes. Thousands of
 lines of code was changed, deleted or replaced so a list of changes is
 not really practical.
 
-** Incompatibility Issues:
-
-- data-items was renamed to documents
-- data-types where renamed to document-types
-- add-data-object was renamed to add-document
-- persist-data-object was renamed to persist-document
-- data-type was renamed to document-type
-- field war renamed to element
-
-** Other Work Done:
-
-The implementor's api was mostly rewritten.
-
-** Bug fixes
-
-Lots
-
 * Version 2020.07.08
 
 A majour code refactoring exercise was under taken. Not only was code
 improved where possible new functionality was added and in a few cases
 removed.
-
-** Incompatibility Issues:
-
-- load-store-collections was renamed to load-collections
-
-- loaded-p slot was removed form collection, store and universe. Use data-loaded-p in the future.
-
-- Removed handle-duplicates on universe, store and collection and replaced it with keys slot on collection that defaults to :key. This simplifies behaviour for handling duplicates, and also speeds up handling of duplicates. If no keys is set to nil then duplicates are allowed, if :key is not found in the object duplicates will occur.
-
-- Removed must-handle-duplicates since it was part and parcel of handle-duplicates.
-
-** Other Work Done:
-
-- collection-container-loaded-p was added to use :around load-data method.
-
-- data-loaded-p was added to test if a collection, store or universe was truely/completely loaded.
-
-- Added :before method for query-data query-data-object and naive-reduce to ensure data is lazy loaded.
-
-- find-object-by-hash was added to help with different collection containers.
-
-- set-print-reabability and print-readability-p was to set on *print-readably* for write-object
-
-- Exported write-object so that it can be specialized if needed.
-
-- Moved lazy loading when querying to :before methods.
-
-- Updated and changed a lot of doc strings.
-
-- Refactored code al over the place.
-
-- Adjusted tests to cope with compatibility breaks.
-
-- Stripped out experimental avl tree stuff.
-
-- Refactored the code naive-store-items persist.lisp heavily.
-
-** Bug fixes
-
-- Fixed add-object in core to replace object when key values match to an existing object and not to just ignore it.
 
 * Version 2019.9.14
 

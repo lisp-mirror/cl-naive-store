@@ -1,4 +1,4 @@
-(in-package :cl-naive-store)
+(in-package :cl-naive-store.naive-core)
 
 (defgeneric persist (object &key &allow-other-keys)
   (:documentation "Persist is used to write \"stuff\" to files."))

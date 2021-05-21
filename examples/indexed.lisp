@@ -1,6 +1,7 @@
 ;;Setup to use cl-naive-store
 (require 'cl-naive-store)
-(defpackage :naive-examples (:use :cl :cl-getx :cl-naive-store :cl-naive-indexed))
+(defpackage :naive-examples (:use :cl :cl-getx :cl-naive-store.naive-core
+			     :cl-naive-store.naive-indexed))
 (in-package :naive-examples)
 
 ;;Create a class that inherits form indexed-collection-mixin and collection.
@@ -8,32 +9,30 @@
   ())
 
 ;;Create a universe
-(defparameter *universe* (make-instance 
+(defparameter *universe* (make-instance
 			  'universe
 			  :location "~/data-universe/" ;Setting the location on disk.
 			  :store-class 'store))
-
 
 (let* (;;Create a store and add it to the universe
        (store (add-store *universe*
 			 (make-instance 'store
 					:name "simple-store"
        					:collection-class 'collection)))
-       
+
        ;;Create a collection and add it to the store
-       (collection 
-	(add-collection store
-			(make-instance 'indexded-collection
-				       :name "simple-collection"
-				       ;;Specifying the key element, else its :key
-				       :keys '(:id)
-				       ;;Specifying the elements to set up indexes for.
-				       :indexes '((:name :surname)))))
+       (collection
+	 (add-collection store
+			 (make-instance 'indexded-collection
+					:name "simple-collection"
+					;;Specifying the key element, else its :key
+					:keys '(:id)
+					;;Specifying the elements to set up indexes for.
+					:indexes '((:name :surname)))))
        (results))
-      
+
   ;;Add some documents to the collection
-  
-  
+
   (persist-document collection (list :name "Piet" :surname "Gieter" :id 123))
   (persist-document collection (list :name "Sannie" :surname "Gieter" :id 321))
   (persist-document collection (list :name "Koos" :surname "Van" :id 999))
@@ -42,7 +41,7 @@
 
   ;;Lookup koos using index values and add it to results
   (push
-   (index-lookup-values collection (list (list :name "Koos" )
+   (index-lookup-values collection (list (list :name "Koos")
 					 (list :surname "Van")))
    results)
 
@@ -53,7 +52,7 @@
 
   ;;Query the collection, query-data will load the data from file if the collection is empty,
   ;;and add it to the results
-  (push (query-data collection :query (lambda (document)				    
+  (push (query-data collection :query (lambda (document)
 					(<= (getx document :id) 900)))
 	results)
 

@@ -1,4 +1,4 @@
-(in-package :cl-naive-indexed)
+(in-package :cl-naive-store.naive-indexed)
 
 (defun indexed-values (collection index-values shards)
   (let ((data))
@@ -42,7 +42,7 @@
 	  (do-sequence (shard (if shards
 				  shards
 				  (shards collection))
-			:parallel-p t)
+			      :parallel-p t)
 
 	    (let ((result (query-data (documents shard)
 				      :query query)))

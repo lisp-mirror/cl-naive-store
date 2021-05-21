@@ -10,7 +10,7 @@ does what you need then write your own layer.
 
 *** Functionality Matrix
 
-| Functionality | cl-naive-store | cl-naive-indexed | cl-naive-data-types | cl-naive-data-type-defs | cl-naive-items |
+| Functionality | naive-core | naive-indexed | document-types | document-type-defs | naive-documents |
 | ------ | ------ | ------ | ------ | ------ | ------ |
 | Load data into memory | T |  |  |  |  |
 | Delete Data | T |  |  |  |  |
@@ -77,11 +77,11 @@ they can be retrieved using lisp build in read function.
 
 Both the "document" type and its container type can easily be changed
 by overriding a couple of functions, look at the code of
-cl-naive-documents to see what is possible. **However** when choosing
-your own underlying document "type" the "data" of the "document" type
-you use should be translatable to **key-value pairs**, else you are
-going to end up writing your own db with all the overriding you will
-have to do.
+cl-naive-store.naive-documents to see what is possible. **However**
+when choosing your own underlying document "type" the "data" of the
+"document" type you use should be translatable to **key-value pairs**,
+else you are going to end up writing your own db with all the
+overriding you will have to do.
 
 ** Persistence
 
@@ -94,7 +94,7 @@ but you can still override that.
 
 ** Indexes
 
-cl-naive-indexed adds key, value and user defined indexes to the basic
+cl-naive-store.naive-indexed adds key, value and user defined indexes to the basic
 collection class. It also introduces the concept of a UUID (hash) for
 each object.
 
@@ -125,14 +125,14 @@ element classes, extending the store and collection classes to store
 document types.
 
 Document types are ignored when doing persistence to and loading from
-disk, cl-naive-document-types just adds a place to store your document
+disk, cl-naive-store.document-types just adds a place to store your document
 types and retrieve them at run time. Document types can be what ever
 you dream up!
 
 If you want document type validation based on your document type
 definitions you need to implement it yourself, overriding add-object
 and persist-object should be enough to add
-validation. cl-naive-document-type-defs offers some setf level
+cl-naive-store.document-type-defs offers some setf level
 validation.
 
 ** Document Type Definitions
@@ -147,8 +147,8 @@ For a in depth discussion look at [[file:document-type-definitions.org][Document
 
 ** Naive Documents
 
-Naive Documents uses cl-naive-store, cl-naive-indexed,
-cl-naive-document-types, cl-naive-document-type-defs to create a more
+Naive Documents uses cl-naive-store.naive-core, cl-naive-store.naive-indexed,
+cl-naive-store.document-types, cl-naive-store.document-type-defs to create a more
 complex/fleshed out data store experience. Note that document types
 are still only used for their key and index definitions and no data
 type specific validation is done when loading or persisting data.

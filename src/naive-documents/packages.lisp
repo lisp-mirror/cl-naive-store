@@ -1,22 +1,23 @@
 (in-package :common-lisp-user)
 
-(defpackage :cl-naive-documents
-  (:use :cl
-	:cl-getx
-	:cl-naive-store
-	:cl-naive-indexed
-	:cl-naive-document-types
-	:cl-naive-document-type-defs)
+(defpackage :cl-naive-store.naive-documents
+  (:use
+   :cl
+   :cl-getx
+   :cl-naive-store.naive-core
+   :cl-naive-store.naive-indexed
+   :cl-naive-store.document-types
+   :cl-naive-store.document-type-defs)
   (:export
 
    ;;Items
    :document-collection
    :document-store
-   
+
    :document
    :make-document
    :document-hash
-   :document-type-def
+   :document-document-type
    :document-elements
    :document-changes
    :document-versions
@@ -26,7 +27,7 @@
    :document-p
 
    :document-values
-   
+
    :document-of-type-p
    :getxo
    :getxn
