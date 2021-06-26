@@ -45,7 +45,7 @@
 	    ;;TODO: Reconsider this!!!
 
 	    ;;Reading the file and releasing it as soon as possible ... not sure it is a good
-	    ;;idea ... there is no difference in spead. It also doubles the memory use!!!
+	    ;;idea ... there is no difference in speed. It also doubles the memory use!!!
 	    (setf sexps
 		  (loop :for document-form = (read in nil)
 			:while document-form

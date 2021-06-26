@@ -1,15 +1,16 @@
 * cl-naive-store
 
-cl-naive-store is a persisted, in memory (lazy loading), indexed,
-document store for Common Lisp.
+cl-naive-store is a database (document store to more precise) which is
+persisted, in memory (lazy loading), indexed and written completely in
+Common Lisp.
 
-The naive bit comes from the fact that data is persisted as plist in
-files to make them human and machine readable and that there is no
-rocket science code.
+The naive bit comes from the fact that data is persisted
+as plists in files to make them human and machine readable, also there
+is no rocket science code.
 
-The store was also designed to be customisable, just about anything
-can be customised, have a look at the implementation api to get an
-idea of what is possible.
+The store was designed to be customisable, just about anything can be
+customised, have a look at the implementation api to get an idea of
+what is possible.
 
 ** Layered Design
 

@@ -340,7 +340,9 @@ which contain the actual data. Each collection will have its own directory and f
 
 	    test-results))
 
-    (push (list :simple-query-result-count-51 (= (length query-results) 51) (length query-results) query-results)
+    (push (list :simple-query-result-count-51 (= (length query-results) 51)
+		(length query-results)
+		query-results)
 	  test-results)
 
     test-results))
@@ -535,8 +537,7 @@ which contain the actual data. Each collection will have its own directory and f
       (time (persist collection)))))
 
 (defun monster-size-example (persist-p)
-  "This example sets up a store and populates a collection with a *monster-size* data documents and then queries
-the collection to retrieve the the 50 documents that have a :emp-no >= 50.
+  "This example sets up a store and populates a collection with a *monster-size* data documents and then queries the collection to retrieve the the 50 documents that have a :emp-no >= 50.
 Only peristed if persist-p is t."
   ;;Clear any residual
   (tear-down-universe)
