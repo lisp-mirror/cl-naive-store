@@ -120,7 +120,7 @@ The following .asd files can be used to load different functionality:
 
 ** Documentation
 
-Documentation can be found in the docs folder in the repository.
+The documentation can be found in the docs folder in the repository.
 
 ** Examples
 
