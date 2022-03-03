@@ -40,10 +40,6 @@ folder as org-mode files.
 
 ** Acknowledgements
 
-The latest version was financially supported by [[https://mts.co.za][Managing
-Transformation Solutions (Pty) Ltd]], thank you for your continued
-support of open source software!
-
 I must also give a big shout out to Pascal J. Bourguignon for code
 reviews, threading code, test code and a whole lot more. His guidance
 was invaluable, even if I did not always listen to him. */Pascal does
