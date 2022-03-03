@@ -106,38 +106,15 @@ full example.
 To be able to fully define reference types we need to also give defs
 of collections.
 
+Collections are specified separate from a document type definition
+because different collections could use the same document type
+definition.
+
 #+BEGIN_SRC lisp
   (:collection
    (:name "laptops"
     :label "Company Laptops"
     :data-type "laptop"))
-#+END_SRC
-
-** getx
-
-cl-naive-type defs offer us the opportunity to use an element-def as
-the accessor to the value of the element in the document. getx is used
-to achieve this, the specialization makes full use of the the type
-defs to implement much more complex/intelligent getting and setting of
-the values. It does that by calling getxe that has specializations
-that understand complex types and what to do.
-
-Simple validation at setf time is also offered by supplying a function
-to setf-validate in attributes of an element. Validation functions
-must return 2 values the first indicates pass or fail the second is a
-message which is usually the reason for failure.
-
-#+BEGIN_SRC lisp
-  (:name :age
-   :label "Age"
-   :concrete-type :number
-   :attributes (:display t :editable t
-		:setf-validate ;;setf-validate-is called for (setf getxe)
-			 (lambda (age)
-			   (if (<= age 21)
-			       (values t nil)
-			       (values nil "Child is to old"))))
-   :documentation "How old the child is")
 #+END_SRC
 
 ** The full Example:
@@ -149,15 +126,27 @@ You can use type-defs to bootstrap an application, creating stores and
 collections on the fly. They also come in very handy when you
 implement a GUI because they are so rich in information.
 
-cl-naive-store does not use type-defs. All it does is give you
-cl-document-types which gives you a place to load your defs and access
-them at run time. It will also persist the type defs for you.
+cl-naive-store does not use type-defs internally. All it does is give
+you cl-document-types which gives you a place to load your defs and
+access them at run time. It will also persist the type defs for you.
 
 cl-document-types requirements are minimal and its up to you to load
 your type-defs into the store so that means you can do with or
 structure your type defs any way you want. But if you want to share
 typedefs portably then you might have to consider sticking to what
 cl-document-type-defs offer, at least as a minimal baseline.
+
+There are a couple of helper functions to get you started using type
+defs.
+
+This full example is referred to as a "definitions collection"" because it
+contains multiple document type definitions and collection definitions.
+
+If you are going to use your definitions collection to startup and
+load a database try to order the type and collection definitions in
+the sequence that they need to be loaded. IE if you reference
+documents in another collection, that collection should be loaded
+before loading the referencing collection.
 
 #+BEGIN_SRC lisp
   '((:document-type
@@ -230,6 +219,11 @@ cl-document-type-defs offer, at least as a minimal baseline.
 		  :concrete-type :string
 		  :attributes (:display t :editable t)
 		  :documentation "Name of employee")
+                 (:name :surname
+		  :label "Surname"
+		  :concrete-type :string
+		  :attributes (:display t :editable t)
+		  :documentation "Surname of employee")
 		 (:name :sex
 		  :label "Gender"
 		  :concrete-type :key-word
@@ -266,7 +260,80 @@ cl-document-type-defs offer, at least as a minimal baseline.
     (:collection
      (:name "employees"
       :label "Company Employees"
-      :data-type "employee")))
+      :data-type "employee"
+      :indexes ((:gender) (:surname)))))
 #+END_SRC
+
+** Helper Functions
+
+To get you stated on your journey using type defs there are a couple
+of helper functions to use type defs to bootstrap a store.
+
+*** Individual type defs.
+
+The folowing ions deals with individual type defs.
+
+**** [generic function] make-elements (document-type document-type-def)
+
+Convert the elements of the document-type-def into a list of element
+instances.
+
+*** [generic function] definition-keys (document-type document-type-def)
+
+Get keys form document-type-def.
+
+**** [generic function] implement-document-definition (store document-type-def &key collection-name indexes)
+
+Adds a document-type based on the definition to the store. Not all
+document-types are stored in their own collections so the user needs
+to explicitly indicate if a collection is required.
+
+Then indexes for a collection can also be specified, the keys are
+calculated from the type def.
+
+Returns (values document-type [collection])
+
+*** Collection of type defs.
+
+The following helper functions deals with a definitions collection
+like in the full example.
+
+**** [generic function] implement-definitions-colllection (store definitions-collection)
+
+Takes a definitions collection and bootstraps the definitions and
+collections for a store.
+
+Boostrap means collection and data types are loaded for the store.
+
+Any peristed data is not loaded for the collections! If data should be
+load use laod-data-p."
+
+** getx
+
+cl-naive-type defs offer us the opportunity to use an element-def as
+the accessor to the value of the element in the document. getx is used
+to achieve this, the specialization makes full use of the the type
+defs to implement much more complex/intelligent getting and setting of
+the values. It does that by calling getxe that has specializations
+that understand complex types and what to do.
+
+Simple validation at setf time is also offered by supplying a function
+to setf-validate in attributes of an element. Validation functions
+must return 2 values the first indicates pass or fail the second is a
+message which is usually the reason for failure.
+
+#+BEGIN_SRC lisp
+  (:name :age
+   :label "Age"
+   :concrete-type :number
+   :attributes (:display t :editable t
+		:setf-validate ;;setf-validate-is called for (setf getxe)
+			 (lambda (age)
+			   (if (<= age 21)
+			       (values t nil)
+			       (values nil "Child is to old"))))
+   :documentation "How old the child is")
+#+END_SRC
+
 
 [[file:home.org][Home]] [[file:overview.org][Previous]]

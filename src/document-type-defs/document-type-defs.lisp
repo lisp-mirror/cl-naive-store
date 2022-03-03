@@ -107,21 +107,21 @@ cl-document-types requirements are minimal and its up to you to load your type-d
      (:name "laptop"
       :label "Laptop"
       :elements ((:name :id
-		  :label "Serial No"
-		  :key-p t
-		  :concrete-type :string
-		  :attributes (:display t :editable t)
-		  :documentation "Unique no that identifies the laptop.")
-		 (:name :make
-		  :label "Manufaturer"
-		  :concrete-type :string
-		  :attributes (:display t :editable t)
-		  :documentation "Then manufaturer of the laptop.")
-		 (:name :model
-		  :label "Model"
-		  :concrete-type :string
-		  :attributes (:display t :editable t)
-		  :documentation "Model of the laptop."))
+                  :label "Serial No"
+                  :key-p t
+                  :concrete-type :string
+                  :attributes (:display t :editable t)
+                  :documentation "Unique no that identifies the laptop.")
+                 (:name :make
+                  :label "Manufaturer"
+                  :concrete-type :string
+                  :attributes (:display t :editable t)
+                  :documentation "Then manufaturer of the laptop.")
+                 (:name :model
+                  :label "Model"
+                  :concrete-type :string
+                  :attributes (:display t :editable t)
+                  :documentation "Model of the laptop."))
       :attributes ()
       :documentation "List of laptops the company owns."))
 
@@ -134,28 +134,28 @@ cl-document-types requirements are minimal and its up to you to load your type-d
      (:name "child"
       :label "Child"
       :elements ((:name :name
-		  :label "Name"
-		  :key-p t
-		  :concrete-type :string
-		  :attributes (:display t :editable t)
-		  :documentation "Name of child")
-		 (:name :sex
-		  :label "Gender"
-		  :concrete-type :key-word
-		  :value-list (:male :female)
-		  :attributes (:display t :editable t)
-		  :documentation "Gender of the child, can only be male or female.")
-		 (:name :age
-		  :label "Age"
-		  :concrete-type :number
-		  :attributes (:display t :editable t
-			       ;;setf-validate-is called for (setf getxe)
-			       :setf-validate
-			       (lambda (age)
-				 (if (<= age 21)
-				     (values t nil)
-				     (values nil "Child is to old"))))
-		  :documentation "How old the child is"))
+                  :label "Name"
+                  :key-p t
+                  :concrete-type :string
+                  :attributes (:display t :editable t)
+                  :documentation "Name of child")
+                 (:name :sex
+                  :label "Gender"
+                  :concrete-type :key-word
+                  :value-list (:male :female)
+                  :attributes (:display t :editable t)
+                  :documentation "Gender of the child, can only be male or female.")
+                 (:name :age
+                  :label "Age"
+                  :concrete-type :number
+                  :attributes (:display t :editable t
+                               ;;setf-validate-is called for (setf getxe)
+                               :setf-validate
+                               (lambda (age)
+                                 (if (<= age 21)
+                                     (values t nil)
+                                     (values nil "Child is to old"))))
+                  :documentation "How old the child is"))
       :attributes ()
       :documentation "List of laptops the company owns."))
 
@@ -163,46 +163,46 @@ cl-document-types requirements are minimal and its up to you to load your type-d
      (:name "employee"
       :label "Employee"
       :elements ((:name :emp-
-		  :label "Employee Number"
-		  :key-p t
-		  :concrete-type :number
-		  :attributes (:display t :editable t)
-		  :documentation "Unique identifier of employee.")
-		 (:name :name
-		  :label "Name"
-		  :concrete-type :string
-		  :attributes (:display t :editable t)
-		  :documentation "Name of employee")
-		 (:name :sex
-		  :label "Gender"
-		  :concrete-type :key-word
-		  :value-list (:male :female)
-		  :attributes (:display t :editable t)
-		  :documentation "Gender of the child, can only be male or female.")
-		 (:name :dependents
-		  :label "Children"
-		  :concrete-type (:type (:list
-					 (:document
-					  (:type "Child"
-					   :accessor (:name)))))
-		  :attributes (:display t :editable t)
-		  :documentation "List of the employees children")
-		 (:name :laptop
-		  :label "Laptop"
-		  :concrete-type (:type (:document
-					 (:type "laptop"
-					  :collection "laptop-collection"
-					  :accessor (:id))))
-		  :attributes (:display t :editable t)
-		  :documentation "Laptop allocated to employee")
-		 (:name :first-born
-		  :label "First Born Child"
-		  :concrete-type (:type (:document
-					 (:type "child"
-					  :collection "employees"
-					  :accessor (:emp-no :dependents :name))))
-		  :attributes (:display t :editable t)
-		  :documentation "List of the employees children"))
+                  :label "Employee Number"
+                  :key-p t
+                  :concrete-type :number
+                  :attributes (:display t :editable t)
+                  :documentation "Unique identifier of employee.")
+                 (:name :name
+                  :label "Name"
+                  :concrete-type :string
+                  :attributes (:display t :editable t)
+                  :documentation "Name of employee")
+                 (:name :sex
+                  :label "Gender"
+                  :concrete-type :key-word
+                  :value-list (:male :female)
+                  :attributes (:display t :editable t)
+                  :documentation "Gender of the child, can only be male or female.")
+                 (:name :dependents
+                  :label "Children"
+                  :concrete-type (:type (:list
+                                         (:document
+                                          (:type "Child"
+                                           :accessor (:name)))))
+                  :attributes (:display t :editable t)
+                  :documentation "List of the employees children")
+                 (:name :laptop
+                  :label "Laptop"
+                  :concrete-type (:type (:document
+                                         (:type "laptop"
+                                          :collection "laptop-collection"
+                                          :accessor (:id))))
+                  :attributes (:display t :editable t)
+                  :documentation "Laptop allocated to employee")
+                 (:name :first-born
+                  :label "First Born Child"
+                  :concrete-type (:type (:document
+                                         (:type "child"
+                                          :collection "employees"
+                                          :accessor (:emp-no :dependents :name))))
+                  :attributes (:display t :editable t)
+                  :documentation "List of the employees children"))
       :attributes ()
       :documentation "List of laptops the company owns."))
 
@@ -211,25 +211,133 @@ cl-document-types requirements are minimal and its up to you to load your type-d
       :label "Company Employees"
       :document-type "employee"))))
 
+(defgeneric make-elements (document-type document-type-def)
+  (:documentation "Convert the elements of the document-type-def into a list of ELEMENT instances."))
+
+(defmethod make-elements (document-type document-type-def)
+  (declare (ignore document-type))
+  (mapcar (lambda (element)
+            (make-instance 'cl-naive-store.document-types:element
+                           :name (getf element :name)
+                           :key-p (getf element :key-p)
+                           :concrete-type (getf element :concrete-type)
+                           :attributes (getf element :attributes)))
+          (getf document-type-def :elements)))
+
+(defgeneric definition-keys (document-type document-type-def)
+  (:documentation "Get keys form document-type-def."))
+
+(defmethod definition-keys (document-type document-type-def)
+  (declare (ignore document-type))
+  (mapcar (lambda (element)
+            (getf element :name))
+          (getf document-type-def :elements)))
+
+(defgeneric implement-document-definition (store document-type-def &key collection-name indexes)
+  (:documentation "Adds a document-type based on the definition to the
+  store. Not all document-types are stored in their own collections so
+  the user needs to explicitly indicate if a collection is
+  required.
+
+  Then indexes for a collection can also be specified, the keys are
+  calculated from the type def.
+
+  Returns (values document-type [collection])
+"))
+
+(defmethod implement-document-definition (store document-type-def &key collection-name indexes)
+  (let ((document-type (make-instance
+                        'cl-naive-store.document-types:document-type
+                        :name (getf document-type-def :name)
+                        :label (getf document-type-def :label))))
+
+    (setf (cl-naive-store.document-types:elements document-type)
+          (make-elements document-type document-type-def))
+
+    (if collection-name
+        (values document-type
+                (add-collection
+                 store
+                 (make-instance 'cl-naive-store.naive-documents:document-collection
+                                :name collection-name
+                                :document-type (add-document-type
+                                                store
+                                                document-type)
+                                :keys (definition-keys document-type
+                                                       document-type-def)
+                                ;;Specifying the elements to set up indexes for.
+                                :indexes indexes)))
+        (values document-type nil))))
+
+(defgeneric implement-definitions-collection (store definitions-collection
+                                              &key load-data-p load-data-parallel-p)
+  (:documentation "Takes a definitions collection and bootstraps the
+  definitions and collections for a store.
+
+Boostrap means collection and data types are loaded for the store.
+
+Any peristed data is not loaded for the collections! If data should be
+load use laod-data-p."))
+
+(defmethod implement-definitions-colllection (store definitions-collection
+                                              &key load-data-p (load-data-parallel-p nil))
+  "We run through the collection of definitons first to add all the
+type defs to the store, because we need the definitions to create the
+collections. Then we map accross the list of discovered collections
+from the first itteration and create any collections.
+"
+  (let ((collections))
+    (mapcar (lambda (def)
+              (if (equal (car def) :document-type)
+                  (add-document-type
+                   store
+                   (make-instance
+                    'cl-naive-store.document-types:document-type
+                    :name (getf (getx def :document-type) :name)
+                    :label (getf (getx def :document-type) :label)
+                    :elements (make-elements nil (getx def :document-type))))
+                  (push def collections)))
+            definitions-collection)
+
+    (mapcar (lambda (def)
+              (when (equal (car def) :collection)
+                (let* ((document-type (cl-naive-store.naive-core:get-document-type
+                                       store
+                                       (getf (second def) :data-type)))
+                       (collection
+                         (add-collection
+                          store
+                          (make-instance 'cl-naive-store.naive-documents:document-collection
+                                         :name (getf (getx def :collection) :name)
+                                         :document-type document-type
+
+                                         :keys (definition-keys document-type
+                                                                def)
+                                         ;;Specifying the elements to set up indexes for.
+                                         :indexes (getf (getx def :collection) :indexes)))))
+                  (when load-data-p
+                    (load-data collection :parallel-p load-data-parallel-p)))))
+            collections)))
+
 (defun concrete-type-get-set (element)
   (cond ((listp (getx element :concrete-type))
-	 (cond ((equalp (getx (getx element :concrete-type) :complex-type)
-			:value-list)
-		(getx (getx element :concrete-type) :type))
-	       ((equalp (getx (getx element :concrete-type) :complex-type)
-			:key-value-list)
-		(getx (getx element :concrete-type) :type))
-	       (t
-		(getx (getx element :concrete-type) :complex-type))))
-	(t
-	 (getx element :concrete-type))))
+         (cond ((equalp (getx (getx element :concrete-type) :complex-type)
+                        :value-list)
+                (getx (getx element :concrete-type) :type))
+               ((equalp (getx (getx element :concrete-type) :complex-type)
+                        :key-value-list)
+                (getx (getx element :concrete-type) :type))
+               (t
+                (getx (getx element :concrete-type) :complex-type))))
+        (t
+         (getx element :concrete-type))))
 
 (defmethod getx (document (element cl-naive-store.document-types:element) &key &allow-other-keys)
   (let ((concrete-type (concrete-type-get-set element)))
     (getxe document element concrete-type)))
 
 (defmethod (setf getx) (value document (element cl-naive-store.document-types:element)
-			&key &allow-other-keys)
+                        &key &allow-other-keys)
   (let ((concrete-type (concrete-type-get-set element)))
     (setf (getxe document element concrete-type) value)))
 
@@ -254,21 +362,21 @@ cl-document-types requirements are minimal and its up to you to load your type-d
 
 (defun setxe-read* (value document element type-test read-error)
   (let* ((name (getx element :name))
-	 (*read-eval* nil)
-	 (final-val))
+         (*read-eval* nil)
+         (final-val))
 
     (if value
-	(if (stringp value)
-	    (if (not (empty-p value))
-		(setf final-val (read-from-string value)))
-	    (setf final-val value))
-	(setf final-val value))
+        (if (stringp value)
+            (if (not (empty-p value))
+                (setf final-val (read-from-string value)))
+            (setf final-val value))
+        (setf final-val value))
 
     (if final-val
-	(if  (apply type-test (list final-val))
-	     (setf (getx document name) final-val)
-	     (error (frmt read-error final-val)))
-	(setf (getx document name) final-val))))
+        (if  (apply type-test (list final-val))
+             (setf (getx document name) final-val)
+             (error (frmt read-error final-val)))
+        (setf (getx document name) final-val))))
 
 (defgeneric validate-xe (document element type value &key &allow-other-keys))
 
@@ -281,7 +389,7 @@ cl-document-types requirements are minimal and its up to you to load your type-d
 ;;TODO: how to do collection checking, additional parameters/keys
 ;;when and how to pass
 (defmethod (setf getxe) :around (value document element type
-				 &key &allow-other-keys)
+                                 &key &allow-other-keys)
   (declare (ignorable value document element type))
   ;;TODO: Figure out what to do in validate-xe
   ;;it is no longer clear if it is needed or what it
@@ -289,188 +397,188 @@ cl-document-types requirements are minimal and its up to you to load your type-d
   (call-next-method))
 
 (defmethod (setf getxe) (value document element type
-			 &key &allow-other-keys)
+                         &key &allow-other-keys)
   (declare (ignorable type))
   (setf (getx document (getx element :name)) (frmt "~A" value)))
 
 (defmethod (setf getxe) (value document element (type (eql :symbol))
-			 &key &allow-other-keys)
+                         &key &allow-other-keys)
   (setxe-read* value document element #'symbolp  "~S is not a symbol!"))
 
 (defmethod (setf getxe) (value document element (type (eql :keyword)) &key &allow-other-keys)
   (setxe-read* value document element #'keywordp  "~S is not a keyword!"))
 
 (defmethod (setf getxe) (value document element (type (eql :number))
-			 &key &allow-other-keys)
+                         &key &allow-other-keys)
   (setxe-read* value document element #'numberp "~R is not a number!"))
 
 (defmethod (setf getxe) (value document element (type (eql :integer))
-			 &key &allow-other-keys)
+                         &key &allow-other-keys)
   (setxe-read* value document element #'numberp "~R is not an integer!"))
 
 (defmethod (setf getxe) (value document element (type (eql :date-time))
-			 &key &allow-other-keys)
+                         &key &allow-other-keys)
   (let* ((name (getx element :name)))
     (if (stringp value)
-	(if (> (length value) 18)
-	    (setf (getx document name) (local-time:parse-timestring value))
-	    (if (= (length value) 16)
-		(setf (getx document name)
-		      (local-time:parse-timestring
-		       (format nil "~A~A" value
-			       (subseq (format nil "~A" (local-time:now)) 16))))
-		(setf (getx document name) value)))
-	(setf (getx document name) value))))
+        (if (> (length value) 18)
+            (setf (getx document name) (local-time:parse-timestring value))
+            (if (= (length value) 16)
+                (setf (getx document name)
+                      (local-time:parse-timestring
+                       (format nil "~A~A" value
+                               (subseq (format nil "~A" (local-time:now)) 16))))
+                (setf (getx document name) value)))
+        (setf (getx document name) value))))
 
 (defmethod (setf getxe) (value document element (type (eql :date))
-			 &key &allow-other-keys)
+                         &key &allow-other-keys)
   (set-getxe* value document element))
 
 (defmethod (setf getxe) (value document element (type (eql :time))
-			 &key &allow-other-keys)
+                         &key &allow-other-keys)
   (set-getxe* value document element))
 
 (defmethod (setf getxe) (value document element (type (eql :boolean))
-			 &key &allow-other-keys)
+                         &key &allow-other-keys)
 
   (let* ((split (split-sequence:split-sequence #\, value))
-	 (val (if (equalp (car split) "true")
-		  t)))
+         (val (if (equalp (car split) "true")
+                  t)))
     (set-getxe* element document val)))
 
 (defmethod (setf getxe) (value document element (type (eql :lambda)) &key &allow-other-keys)
   (setxe-read* value document element #'consp "~S is not a cons!"))
 
 (defmethod (setf getxe) (value document element (type (eql :collection))
-			 &key &allow-other-keys)
+                         &key &allow-other-keys)
 
   (let ((name (getx element :name))
-	(final-val))
+        (final-val))
     (if (not (empty-p value))
-	(setf final-val value))
+        (setf final-val value))
     (setf (getx document name) final-val)))
 
 (defmethod (setf getxe) (value document element (type (eql :document))
-			 &key &allow-other-keys)
+                         &key &allow-other-keys)
 
   (let ((name (getx element :name))
-	(final-val))
+        (final-val))
     (if (not (empty-p value))
-	(setf final-val value))
+        (setf final-val value))
     (setf (getx document name) final-val)))
 
 (defmethod validate-xe (document element (type (eql :collection-contained-document)) value
-			&key &allow-other-keys)
+                        &key &allow-other-keys)
   (let* ((valid (find value document)))
     (values valid (if (not valid)
-		      (frmt "Value ~A not found in ~A" value
-			    (digx element :concrete-type :collection))))))
+                      (frmt "Value ~A not found in ~A" value
+                            (digx element :concrete-type :collection))))))
 
 (defmethod validate-xe (document element (type (eql :collection)) value
-			&key &allow-other-keys)
+                        &key &allow-other-keys)
 
   (let* ((valid (find value document)))
 
     (values valid (if (not valid)
-		      (frmt "Value ~A not found in ~A" value
-			    (digx element :concrete-type :collection))))))
+                      (frmt "Value ~A not found in ~A" value
+                            (digx element :concrete-type :collection))))))
 
 (defmethod validate-xe (document element (type (eql :document)) value
-			&key &allow-other-keys)
+                        &key &allow-other-keys)
 
   (let* ((valid (find value document)))
     (values valid (if (not valid)
-		      (frmt "Value ~A not found in ~A" value
-			    (digx element :concrete-type :collection))))))
+                      (frmt "Value ~A not found in ~A" value
+                            (digx element :concrete-type :collection))))))
 
 (defmethod (setf getxe) (value document element (type (eql :value-string-list))
-			 &key &allow-other-keys)
+                         &key &allow-other-keys)
   (let* ((name (getx element :name))
-	 (delimiter (if (stringp (digx element :concrete-type :delimiter))
-			(coerce (digx element :concrete-type :delimiter)
-				'character)
-			(coerce (eval (digx element :concrete-type :delimiter))
-				'character)))
-	 (type (digx element :concrete-type :type))
-	 (split (split-sequence:split-sequence delimiter value))
-	 (list))
+         (delimiter (if (stringp (digx element :concrete-type :delimiter))
+                        (coerce (digx element :concrete-type :delimiter)
+                                'character)
+                        (coerce (eval (digx element :concrete-type :delimiter))
+                                'character)))
+         (type (digx element :concrete-type :type))
+         (split (split-sequence:split-sequence delimiter value))
+         (list))
     (dolist (x split)
 
       (unless (empty-p x)
-	(if (equalp type :keyword)
-	    (setf list (append list
-			       (list (intern (string-upcase
-					      (remove #\: (naive-impl:trim-whitespace x)))
-					     :KEYWORD))))
-	    (setf list (append list (list (naive-impl:trim-whitespace x)))))))
+        (if (equalp type :keyword)
+            (setf list (append list
+                               (list (intern (string-upcase
+                                              (remove #\: (naive-impl:trim-whitespace x)))
+                                             :KEYWORD))))
+            (setf list (append list (list (naive-impl:trim-whitespace x)))))))
     (setf (getx document name) list)))
 
 (defmethod validate-xe (value document element (type (eql :value-list))
-			&key &allow-other-keys)
+                        &key &allow-other-keys)
 
   (let* ((list (or (and (digx element :concrete-type :values-script)
-			(eval (digx element :concrete-type :values-script)))
-		   (digx element :concrete-type :values)))
-	 (*read-eval* nil)
-	 (valid))
+                        (eval (digx element :concrete-type :values-script)))
+                   (digx element :concrete-type :values)))
+         (*read-eval* nil)
+         (valid))
 
     (if (functionp list)
-	(setf list (funcall (eval (digx element :concrete-type :values-script)) document)))
+        (setf list (funcall (eval (digx element :concrete-type :values-script)) document)))
 
     (setf valid (find (if (not (or (equalp (digx element :concrete-type :type) :string)
-				   (equalp (digx element :concrete-type :type) :link)
-				   (equalp (digx element :concrete-type :type) :text)))
-			  (if (and value (not (empty-p value)))
-			      (read-from-string value))
-			  value)
-		      list :test #'equalp))
+                                   (equalp (digx element :concrete-type :type) :link)
+                                   (equalp (digx element :concrete-type :type) :text)))
+                          (if (and value (not (empty-p value)))
+                              (read-from-string value))
+                          value)
+                      list :test #'equalp))
 
     (values valid (if (not valid)
-		      (frmt "Value not one of ~S" list)))))
+                      (frmt "Value not one of ~S" list)))))
 
 (defmethod (setf getxe) (value document element (type (eql :value-list))
-			 &key &allow-other-keys)
+                         &key &allow-other-keys)
   (let* ((name (getx element :name))
-	 (list (or (and (digx element :concrete-type :values-script)
-			(eval (digx element :concrete-type :values-script)))
-		   (digx element :concrete-type :values)))
-	 (*read-eval* nil)
-	 (val))
+         (list (or (and (digx element :concrete-type :values-script)
+                        (eval (digx element :concrete-type :values-script)))
+                   (digx element :concrete-type :values)))
+         (*read-eval* nil)
+         (val))
 
     (if (functionp list)
-	(setf list (funcall (eval (digx element :concrete-type :values-script)) document)))
+        (setf list (funcall (eval (digx element :concrete-type :values-script)) document)))
 
     (setf val (find (if (not (or (equalp (digx element :concrete-type :type) :string)
-				 (equalp (digx element :concrete-type :type) :link)
-				 (equalp (digx element :concrete-type :type) :text)))
-			(if (and value (not (empty-p value)))
-			    (read-from-string value))
-			value)
-		    list :test #'equalp))
+                                 (equalp (digx element :concrete-type :type) :link)
+                                 (equalp (digx element :concrete-type :type) :text)))
+                        (if (and value (not (empty-p value)))
+                            (read-from-string value))
+                        value)
+                    list :test #'equalp))
 
     (setf (getx document name) val)))
 
 (defmethod (setf getxe) (value document element (type (eql :key-value-list))
-			 &key &allow-other-keys)
+                         &key &allow-other-keys)
   (setf (getxe (digx element :concrete-type :type) element document) value))
 
 ;;TODO: Check for dulplicates?
 (defmethod (setf getxe) (value document element (type (eql :collection-documents))
-			 &key &allow-other-keys)
+                         &key &allow-other-keys)
   (set-getxe* value document element))
 
 (defmethod (setf getxe) (value document element (type (eql :contained-document))
-			 &key &allow-other-keys)
+                         &key &allow-other-keys)
   (let ((name (getx element :name))
-	(final-val))
+        (final-val))
 
     (setf final-val value)
     (setf (getx document name) final-val)))
 
 (defmethod (setf getxe) (value document element (type (eql :collection-contained-document))
-			 &key &allow-other-keys)
+                         &key &allow-other-keys)
   (let ((name (getx element :name))
-	(final-val))
+        (final-val))
 
     (setf final-val value)
     (setf (getx document name) final-val)))
