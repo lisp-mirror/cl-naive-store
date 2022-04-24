@@ -6,9 +6,4 @@
    :*example-type-defs*
    :getxe
    :validate-xe
-   :concrete-type-get-set
-
-   :make-elements
-   :definition-keys
-   :implement-document-definition
-   :implement-definitions-colllection))
+   :concrete-type-get-set))

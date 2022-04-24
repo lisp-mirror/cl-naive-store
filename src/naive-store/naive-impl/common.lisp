@@ -14,10 +14,10 @@ Source: On Lisp"
 
      (lambda (key value)
        (let ((result (funcall fn key value)))
-	 (when result
-	   (if append-p
-	       (setf result (append results (list result)))
-	       (push result results)))))
+         (when result
+           (if append-p
+               (setf result (append results (list result)))
+               (push result results)))))
      hash-table)
     results))
 
@@ -39,19 +39,19 @@ Source: On Lisp"
    (equal value "")
    (if (stringp value)
        (let ((stripped-value (trim-whitespace value)))
-	 (or (string-equal stripped-value "NIL")
-	     (string-equal stripped-value "NULL")
-	     (equal stripped-value ""))))))
+         (or (string-equal stripped-value "NIL")
+             (string-equal stripped-value "NULL")
+             (equal stripped-value ""))))))
 
 (defun plist-to-values (values)
   "Returns the values of a plist."
   (loop :for (nil b) :on values :by #'cddr
-	:collect b))
+        :collect b))
 
 (defun plist-to-pairs (values)
   "Returns a list of key value pairs of a plist."
   (loop :for (a b) :on values :by #'cddr
-	:collect (list a b)))
+        :collect (list a b)))
 
 (defparameter *mac-key* 5873965167969913164)
 
@@ -63,21 +63,16 @@ NOTES:
 This is used to create shard filenames."))
 
 (defmethod make-mac (value &key (key *mac-key*))
-
   (let* ((mac (ironclad:make-blake2-mac (ironclad:integer-to-octets key)))
-	 (array (babel:string-to-octets
-		 (frmt
-		  "~S" value))))
+         (array (babel:string-to-octets
+                 (frmt
+                  "~S" value))))
 
     (ironclad:update-mac mac array)
 
     (ironclad:byte-array-to-hex-string
      (ironclad:produce-mac
       mac))))
-
-(setf lparallel:*kernel* (lparallel:make-kernel
-                          ;; In ccl, cl-cpus:get-number-of-processors returns 0.
-                          (max 2 (cl-cpus:get-number-of-processors))))
 
 (defparameter %loading-shard% nil
   "Used during the loading of an individual shard. That way no heavy recursive locking has to be done.")
@@ -98,9 +93,9 @@ This is used to create shard filenames."))
   #+(not (or sbcl ecl))
   (if recursive-p
       (bt:with-recursive-lock-held (lock)
-	(gethash key hash))
+        (gethash key hash))
       (bt:with-lock-held (lock)
-	(gethash key hash)))
+        (gethash key hash)))
 
   #+(or sbcl ecl)
   (gethash key hash))
@@ -110,9 +105,9 @@ This is used to create shard filenames."))
   #+(not (or sbcl ecl))
   (if recursive-p
       (bt:with-recursive-lock-held (lock)
-	(setf (gethash key hash) value))
+        (setf (gethash key hash) value))
       (bt:with-lock-held (lock)
-	(setf (gethash key hash) value)))
+        (setf (gethash key hash) value)))
   #+(or sbcl ecl)
   (setf (gethash key hash) value))
 
@@ -121,11 +116,30 @@ This is used to create shard filenames."))
   #+(not (or sbcl ecl))
   (if recursive-p
       (bt:with-recursive-lock-held (lock)
-	(remhash key hash))
+        (remhash key hash))
       (bt:with-lock-held (lock)
-	(remhash key hash)))
+        (remhash key hash)))
   #+(or sbcl ecl)
   (remhash key hash))
+
+(defparameter *query-cache* (make-hash-table
+                             :test 'equalp
+                             #+(or sbcl ecl) :synchronized
+                             #+(or sbcl ecl) nil))
+
+(defun get-query-cache (key)
+  (gethash-safe key *query-cache*))
+
+(defun set-query-cache (key value)
+  (setf (gethash-safe key *query-cache*) value))
+
+(setf lparallel:*kernel* (lparallel:make-kernel
+                          ;; In ccl, cl-cpus:get-number-of-processors returns 0.
+                          (max 2 (cl-cpus:get-number-of-processors))
+                          :context #'(lambda (x)
+                                       (let ((*query-cache* *query-cache*))
+                                         (declare (ignorable *query-cache*))
+                                         (funcall x)))))
 
 (defparameter *disable-parallel-p* nil
   "Depending on the data and how naive-store is used switching of parallel processing could produce better performance. This does not disable parallel loading of shards but it does disable all other parallel processing.
@@ -139,26 +153,26 @@ So if you are customising cl-naive-store use do-sequence for simple parallel pro
 (defun call-do-sequence (thunk with-index-p sequence &key parallel-p)
   (if (and (not *disable-parallel-p*) parallel-p)
       (lparallel:pdotimes (index (length sequence))
-	(let ((element (elt sequence index)))
-	  (if with-index-p
-	      (funcall thunk element index)
-	      (funcall thunk element))))
+        (let ((element (elt sequence index)))
+          (if with-index-p
+              (funcall thunk element index)
+              (funcall thunk element))))
       (etypecase sequence
-	(list
-	 (loop for index from 0
-	       for element in sequence
-	       do (if with-index-p
-		      (funcall thunk element index)
-		      (funcall thunk element))))
-	(vector
-	 (loop for index from 0
-	       for element across sequence
-	       do (if with-index-p
-		      (funcall thunk element index)
-		      (funcall thunk element)))))))
+        (list
+         (loop for index from 0
+               for element in sequence
+               do (if with-index-p
+                      (funcall thunk element index)
+                      (funcall thunk element))))
+        (vector
+         (loop for index from 0
+               for element across sequence
+               do (if with-index-p
+                      (funcall thunk element index)
+                      (funcall thunk element)))))))
 
 (defmacro do-sequence ((element-var sequence &key index-var (parallel-p nil))
-		       &body body)
+                       &body body)
   "Iterates over the sequence applying body. In the body you can use the element-var and/or the index-var if supplied.
 
 If you set parallel-p then the body is executed asyncronously. Asyncronous excecution places restraints on how special variables can be used within the body.
@@ -175,8 +189,8 @@ To get the best out of do-sequence use the parallel option if the sequence is la
 
   `(call-do-sequence
     (lambda (,element-var
-	     ,@(when index-var
-		 (list index-var)))
+             ,@(when index-var
+                 (list index-var)))
       ,@body)
     ,(when index-var t)
     ,sequence

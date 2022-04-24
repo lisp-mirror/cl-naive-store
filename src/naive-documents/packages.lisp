@@ -14,6 +14,7 @@
    :document-collection
    :document-store
 
+   :document-collection
    :document
    :make-document
    :document-hash

@@ -3,9 +3,10 @@
   :version "2021.5.18"
   :author "Phil Marneweck"
   :licence "MIT"
-  :depends-on ("cl-naive-store.naive-core"
-               "cl-naive-store.document-types")
+  :depends-on (:cl-naive-store.naive-core
+               :cl-naive-store.document-types
+               :cl-naive-store.document-types)
   :components
   ((:file "src/document-type-defs/packages")
    (:file "src/document-type-defs/document-type-defs"
-	:depends-on ("src/document-type-defs/packages"))))
+    :depends-on ("src/document-type-defs/packages"))))

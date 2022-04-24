@@ -115,9 +115,11 @@ definition.
    (:name "laptops"
     :label "Company Laptops"
     :data-type "laptop"))
-#+END_SRC
 
 ** The full Example:
+:PROPERTIES:
+:CUSTOM_ID: full-example
+:END:
 
 Because tyge-defs uses cl lists you are well on your way to a domain
 specific language, your imagination is your only limitation.
@@ -264,49 +266,6 @@ before loading the referencing collection.
       :indexes ((:gender) (:surname)))))
 #+END_SRC
 
-** Helper Functions
-
-To get you stated on your journey using type defs there are a couple
-of helper functions to use type defs to bootstrap a store.
-
-*** Individual type defs.
-
-The folowing ions deals with individual type defs.
-
-**** [generic function] make-elements (document-type document-type-def)
-
-Convert the elements of the document-type-def into a list of element
-instances.
-
-*** [generic function] definition-keys (document-type document-type-def)
-
-Get keys form document-type-def.
-
-**** [generic function] implement-document-definition (store document-type-def &key collection-name indexes)
-
-Adds a document-type based on the definition to the store. Not all
-document-types are stored in their own collections so the user needs
-to explicitly indicate if a collection is required.
-
-Then indexes for a collection can also be specified, the keys are
-calculated from the type def.
-
-Returns (values document-type [collection])
-
-*** Collection of type defs.
-
-The following helper functions deals with a definitions collection
-like in the full example.
-
-**** [generic function] implement-definitions-colllection (store definitions-collection)
-
-Takes a definitions collection and bootstraps the definitions and
-collections for a store.
-
-Boostrap means collection and data types are loaded for the store.
-
-Any peristed data is not loaded for the collections! If data should be
-load use laod-data-p."
 
 ** getx
 

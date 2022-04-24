@@ -19,7 +19,8 @@
    :remhash-safe
    :*disable-parallel-p*
    :do-sequence
-
+   :set-query-cache
+   :get-query-cache
    ;;LOGGING
 
    :*break-on-error-log*
