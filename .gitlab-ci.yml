@@ -1,0 +1,25 @@
+image: registry.gitlab.com/harag/sbcl-docker-gitlab-ci
+
+stages:
+  - test
+
+before_script:
+  - cd ~/src
+  - git clone https://gitlab-ci-token:$CI_JOB_TOKEN@gitlab.com/Harag/cl-naive-tests.git
+  - git clone https://gitlab-ci-token:$CI_JOB_TOKEN@gitlab.com/Harag/cl-naive-webserver.git
+  - git clone https://gitlab-ci-token:$CI_JOB_TOKEN@gitlab.com/Harag/cl-naive-atomic.git
+  - git clone https://gitlab-ci-token:$CI_JOB_TOKEN@gitlab.com/Harag/cl-naive-queue.git
+  - git clone https://gitlab-ci-token:$CI_JOB_TOKEN@gitlab.com/Harag/cl-naive-store.git
+
+test:
+  stage: test
+  script:
+    - make -C cl-naive-store test DEPENDENCYDIR=~/src/  ARTDIR=$CI_PROJECT_DIR/
+
+  artifacts:
+    when: always
+    paths:
+      - junit-results.xml
+    reports:
+      junit: junit-results.xml
+
