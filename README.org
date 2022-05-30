@@ -148,7 +148,7 @@ Have a look at the issues in gitlab, future development is tagged accordingly.
 Go to the tests folder
 
 #+BEGIN_EXAMPLE
-cd cl-naive-store/tests/
+cd cl-naive-store/
 #+END_EXAMPLE
 
 Run make with any of the following
