@@ -16,7 +16,7 @@ what is possible.
 
 The package is considered stable.
 
-Over the next couple of months the package will be rolled out in
+Over the next couple of months the package will be used in
 commercial software and should get a good shake down during that
 process.
 
@@ -26,17 +26,8 @@ MIT the doc is [[file:src/naive-store/LICENSE][here]].
 
 ** News
 
-What was supposed to take weeks ended up taking months, but we are
-finally there. The 2021.5.18 version adds sharding to cl-naive-store
-and as a consequence of that the use of parallel processing internally
-and thread safety over all (fingers crossed!).
-
-There is more refinement that we would like to do in the future for
-the parallel processing but what we have now is fast enough and simple
-enough for a good start.
-
-All the documentation from the wiki has been placed into a docs/
-folder as org-mode files.
+cl-naive-store.utils was added to help with loading database from
+definitions.
 
 ** Acknowledgements
 
@@ -92,8 +83,9 @@ Functionality was broken down into these packages:
 - cl-naive-store.naive-documents
 - cl-naive-store.naive-indexed
 - cl-naive-store.naive-merkle
+- cl-naive-store.utils
 - cl-naive-store.test
-
+  
 The following .asd files can be used to load different functionality:
 
 - cl-naive-store.naive-core.asd loads the most basic functionality for
@@ -115,6 +107,9 @@ The following .asd files can be used to load different functionality:
   documents-types, document-type-defs and document functionality.
 
 - cl-naive-store.asd loads the whole shebang.
+
+- cl-naive-store.utils for utility functions to load database from
+  definition files.
 
 - cl-naive-store.test.asd loads tests
 
