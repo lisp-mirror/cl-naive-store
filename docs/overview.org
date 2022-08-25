@@ -2,33 +2,33 @@
 
 ** Functionality
 
-cl-naive-store is designed to be simple with minimal functionality to
+=cl-naive-store= is designed to be simple with minimal functionality to
 start with, additional packages add additional
-functionality. cl-naive-store.* packages can be layered to achieve complex
+functionality. =cl-naive-store.*= packages can be layered to achieve complex
 behaviour. Each of the layers are customizable and if none of them
 does what you need then write your own layer.
 
 *** Functionality Matrix
 
-| Functionality | naive-core | naive-indexed | document-types | document-type-defs | naive-documents |
-| ------ | ------ | ------ | ------ | ------ | ------ |
-| Load data into memory | T |  |  |  |  |
-| Delete Data | T |  |  |  |  |
-| Persist data to file | T |  |  |  |  |
-| Query Data | T |  |  |  |  |
-| Single Key Value | T |  |  |  |  |
-| Unique Object Identifier |  | T |  |  |  |
-| Multiple Key Values |  | T |  |  |  |
-| Key Value Lookups |  | T |  |  |  |
-| Index Data |  | T |  |  |  |
-| Index Lookups |  | T |  |  |  |
-| Handles Duplicates Properly |  | T |  |  |  |
-| Data Type aware Universe |  |  | T |  |  |
-| Pre Defined Data Types |  |  |  | T |  |
-| Hierarchical Data Objects |  |  |  |  | T |
-| Cross Collection Reference Objects |  |  |  |  | T |
-| Object Version Tracking |  |  |  |  | T |
-| Object Value Change Tracking |  |  |  |  | T |
+| Functionality                      | naive-core | naive-indexed | document-types | document-type-defs | naive-documents |
+| ------                             | ------     | ------        | ------         | ------             | ------          |
+| Load data into memory              | T          |               |                |                    |                 |
+| Delete Data                        | T          |               |                |                    |                 |
+| Persist data to file               | T          |               |                |                    |                 |
+| Query Data                         | T          |               |                |                    |                 |
+| Single Key Value                   | T          |               |                |                    |                 |
+| Unique Object Identifier           |            | T             |                |                    |                 |
+| Multiple Key Values                |            | T             |                |                    |                 |
+| Key Value Lookups                  |            | T             |                |                    |                 |
+| Index Data                         |            | T             |                |                    |                 |
+| Index Lookups                      |            | T             |                |                    |                 |
+| Handles Duplicates Properly        |            | T             |                |                    |                 |
+| Data Type aware Universe           |            |               | T              |                    |                 |
+| Pre Defined Data Types             |            |               |                | T                  |                 |
+| Hierarchical Data Objects          |            |               |                |                    | T               |
+| Cross Collection Reference Objects |            |               |                |                    | T               |
+| Object Version Tracking            |            |               |                |                    | T               |
+| Object Value Change Tracking       |            |               |                |                    | T               |
 
 ** Data Universe
 
@@ -66,12 +66,12 @@ time.
 Data is only loaded when needed and not before if you use the store
 correctly. It means that you will only have the data that users
 requested up to that point in memory. Data in memory can easily be
-garbage collected if not in use any more. cl-naive-store does not do
+garbage collected if not in use any more. =cl-naive-store= does not do
 garbage collection for you that is left to the user.
 
 ** Documents
 
-"Documents" in cl-naive-store are property lists by default and when
+"Documents" in =cl-naive-store= are property lists by default and when
 persisted the lists are written out to file as property lists so that
 they can be retrieved using lisp build in read function.
 
@@ -85,16 +85,16 @@ overriding you will have to do.
 
 ** Persistence
 
-cl-naive-store relies on the fact that objects are translatable to
+=cl-naive-store= relies on the fact that objects are translatable to
 key-value pairs and writes plists to a file per collection. Note of
 caution here if you go and store unprintable values (ie not readable)
 in the db you are going to be very disappointed when you try to load
-the db again! cl-naive-store tries to protect you from that scenario
+the db again! =cl-naive-store= tries to protect you from that scenario
 but you can still override that.
 
 ** Indexes
 
-cl-naive-store.naive-indexed adds key, value and user defined indexes to the basic
+=cl-naive-store.naive-indexed= adds key, value and user defined indexes to the basic
 collection class. It also introduces the concept of a UUID (hash) for
 each object.
 
@@ -119,26 +119,26 @@ recreate it to keep your sanity.
 
 ** Data Types
 
-cl-naive-store is mostly/blissfully unaware of user defined "document
-types" and value types. cl-naive-document-type adds document-type and
+=cl-naive-store= is mostly/blissfully unaware of user defined "document
+types" and value types. =cl-naive-document-type= adds document-type and
 element classes, extending the store and collection classes to store
 document types.
 
 Document types are ignored when doing persistence to and loading from
-disk, cl-naive-store.document-types just adds a place to store your document
+disk, =cl-naive-store.document-types= just adds a place to store your document
 types and retrieve them at run time. Document types can be what ever
 you dream up!
 
 If you want document type validation based on your document type
 definitions you need to implement it yourself, overriding add-object
 and persist-object should be enough to add
-cl-naive-store.document-type-defs offers some setf level
+=cl-naive-store.document-type-defs= offers some =setf= level
 validation.
 
 ** Document Type Definitions
 
 If you don't feel like coming up with your own document type
-definitions cl-document-type-defs gives you some predefined element
+definitions =cl-document-type-defs= gives you some predefined element
 type definitions to use. If you find them peculiar it might help to
 note these where specifically designed to be used by a UI to know how
 to implement basic data interactions.
@@ -147,8 +147,8 @@ For a in depth discussion look at [[file:document-type-definitions.org][Document
 
 ** Naive Documents
 
-Naive Documents uses cl-naive-store.naive-core, cl-naive-store.naive-indexed,
-cl-naive-store.document-types, cl-naive-store.document-type-defs to create a more
+Naive Documents uses =cl-naive-store.naive-core=, =cl-naive-store.naive-indexed=,
+=cl-naive-store.document-types=, =cl-naive-store.document-type-defs= to create a more
 complex/fleshed out data store experience. Note that document types
 are still only used for their key and index definitions and no data
 type specific validation is done when loading or persisting data.
@@ -162,7 +162,7 @@ Other peculiarities of Naive Documents:
   adding an object to a collection
 - A document keeps a set of old and new values while you are updating
   values, this is cleared on persist.
-- A document is expected to be hierarchical in nature. IE a document
+- A document is expected to be hierarchical in nature, i.e. a document
   key-value pair can hold other documents (child documents). Child
   documents come in two basic flavours, documents that have no
   collection of their own, and documents referenced from other
@@ -171,7 +171,7 @@ Other peculiarities of Naive Documents:
 
 ** BLOBS
 
-cl-naive-store knows how to deal with values that are blobs. Basically
+=cl-naive-store= knows how to deal with values that are blobs. Basically
 blobs are written to their own files and if file type is relevant the
 correct file type is used.
 

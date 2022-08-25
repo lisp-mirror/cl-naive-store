@@ -1,18 +1,18 @@
 * Document Type Definitions
 
-cl-naive-store.document-type-defs is a "declaritive" implementation (I am
-using the word loosly) of cl-naive-document-type (abstract data
+=cl-naive-store.document-type-defs= is a "declarative" implementation (I am
+using the word loosely) of =cl-naive-document-type= (abstract data
 type???).
 
-What use are type-defs? Well they are there to descibe the document
-type. IE more information about elements of a document type and the
-document type it self. Such information could cover any thing from the
+What use are type-defs? Well they are there to describe the document
+type, i.e. more information about elements of a document type and the
+document type itself. Such information could cover any thing from the
 basics to the esoteric, and that is one of the reasons why this is a
-"declaritive" implementation. The information covered is not always
+"declarative" implementation. The information covered is not always
 relevant to the database but could be extra information needed by a
-GUI to display an update a document and its elments correctly.
+GUI to display an update a document and its elements correctly.
 
-To understand the "loose" protocol/interface of cl-naive-type-defs we
+To understand the "loose" protocol/interface of =cl-naive-type-defs= we
 will look at the parts of the type def.
 
 ** :document-type
@@ -26,7 +26,7 @@ will look at the parts of the type def.
     :documentation ""))
 #+END_SRC
 
-Looks familiar? Well it should look and smell like a naivie-document-type
+Looks familiar? Well it should look and smell like a naive-document-type
 
 *** :document-type :elements
 
@@ -128,25 +128,25 @@ You can use type-defs to bootstrap an application, creating stores and
 collections on the fly. They also come in very handy when you
 implement a GUI because they are so rich in information.
 
-cl-naive-store does not use type-defs internally. All it does is give
-you cl-document-types which gives you a place to load your defs and
+=cl-naive-store= does not use type-defs internally. All it does is give
+you =cl-document-types= which gives you a place to load your defs and
 access them at run time. It will also persist the type defs for you.
 
-cl-document-types requirements are minimal and its up to you to load
+=cl-document-types= requirements are minimal and its up to you to load
 your type-defs into the store so that means you can do with or
 structure your type defs any way you want. But if you want to share
 typedefs portably then you might have to consider sticking to what
-cl-document-type-defs offer, at least as a minimal baseline.
+=cl-document-type-defs= offer, at least as a minimal baseline.
 
 There are a couple of helper functions to get you started using type
 defs.
 
-This full example is referred to as a "definitions collection"" because it
+This full example is referred to as a "definitions collection" because it
 contains multiple document type definitions and collection definitions.
 
 If you are going to use your definitions collection to startup and
 load a database try to order the type and collection definitions in
-the sequence that they need to be loaded. IE if you reference
+the sequence that they need to be loaded - that is, if you reference
 documents in another collection, that collection should be loaded
 before loading the referencing collection.
 
@@ -269,14 +269,14 @@ before loading the referencing collection.
 
 ** getx
 
-cl-naive-type defs offer us the opportunity to use an element-def as
-the accessor to the value of the element in the document. getx is used
+=cl-naive-type= defs offer us the opportunity to use an element-def as
+the accessor to the value of the element in the document. =getx= is used
 to achieve this, the specialization makes full use of the the type
 defs to implement much more complex/intelligent getting and setting of
-the values. It does that by calling getxe that has specializations
+the values. It does that by calling =getxe= that has specializations
 that understand complex types and what to do.
 
-Simple validation at setf time is also offered by supplying a function
+Simple validation at =setf= time is also offered by supplying a function
 to setf-validate in attributes of an element. Validation functions
 must return 2 values the first indicates pass or fail the second is a
 message which is usually the reason for failure.

@@ -1,7 +1,7 @@
 * Naive Documents Example
 
-Using cl-naive-store.naive-documents gives you a lot of functionality out of the
-box but you need to do more work to set it up right.
+Using =cl-naive-store.naive-documents= gives you a lot of functionality out of the
+box, but you need to do more work to set it up right.
 
 #+BEGIN_SRC lisp
   ;;Setup to use cl-naive-store
@@ -257,4 +257,3 @@ Take note that **getx** will return "Potgieter" now even if the
 document has not been persisted yet.
 
 [[file:home.org][Home]] [[file:indexed-example.org][Previous]] [[file:sharding-example.org][Next]]
-

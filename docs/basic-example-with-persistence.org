@@ -58,8 +58,8 @@ To see the file created for the data go to ~/data-universe/simple-store/simple-c
 
 ** Lazy Loading:
 
-In this example query-data loaded the data into the collection and then only ran the query against the data. This is a type of lazy loading where we delay loading the data into memory to the last moment. In this example it does not make a lot of sense because persist-document already loads the documents into the collection and memory, but when you have already persisted data this could help in keeping a smaller foot print in memory.
+In this example =query-data= loaded the data into the collection and then only ran the query against the data. This is a type of lazy loading where we delay loading the data into memory to the last moment. In this example it does not make a lot of sense because =persist-document= already loads the documents into the collection and memory, but when you have already persisted data this could help in maintaining a smaller memory footprint.
 
-You can explicitly load the collection yourself by using (load-data collection).
+You can explicitly load the collection yourself by using =(load-data collection)=.
 
 [[file:home.org][Home]] [[file:basic-example.org][Previous]] [[file:indexed-example.org][Next]]

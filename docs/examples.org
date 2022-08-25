@@ -4,7 +4,7 @@ Examples below become more and more complex as you go down the list.
 
 [[file:basic-example.org][Basic Example]]
 
-[[file:basic-example-with-persistence.org][Basic Example with Persitence]]
+[[file:basic-example-with-persistence.org][Basic Example with Persistence]]
 
 [[file:indexed-example.org][Indexed Example]]
 
