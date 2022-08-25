@@ -17,7 +17,7 @@ instances.
 
 *** [generic function] definition-keys (document-type document-type-def)
 
-Get keys form document-type-def.
+Get keys from document-type-def.
 
 **** [generic function] implement-document-definition (store document-type-def &key collection-name indexes)
 
