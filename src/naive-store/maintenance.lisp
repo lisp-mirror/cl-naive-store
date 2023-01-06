@@ -32,10 +32,8 @@
 
     (when documents
       (dolist (document documents)
-
-	(cl-naive-store.naive-core::persist-document collection  document
-						     :file-name new-file
-						     :new-file-p t))
+        (cl-naive-store.naive-core::persist-document collection  document
+                                                     :file-name new-file))
       (fad:copy-file new-file
 		     log-file
 		     :overwrite t))))
