@@ -54,7 +54,7 @@
 		    'element
 		    :name (getf element :name)
 		    :key-p (getf element :key-p)
-		    :document-type (getf element :concrete-type)
+		    :concrete-type (getf element :concrete-type)
 		    :attributes (getf element :attributes))))))
 
   (setf document-type (add-document-type
