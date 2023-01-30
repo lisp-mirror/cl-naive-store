@@ -24,12 +24,17 @@
        (test-location))
    :if-does-not-exist :ignore))
 
+(defun count-lines-in-file (path)
+  (with-input-from-string (file-content (naive-impl::file-to-string path))
+    (loop for line = (read-line file-content nil)
+          while line count line)))
+
 (defparameter *universe*
   (progn
     (tear-down-universe)
     (make-instance 'universe
-		   :location (test-location)
-		   :store-class 'store)))
+                   :location (test-location)
+                   :store-class 'store)))
 
 (defparameter *store*
   (add-store   *universe* (make-instance (store-class *universe*)
@@ -57,7 +62,16 @@
 (let ((results (query-data *collection* :query (lambda (document) (<= (getx document :id) 900)))))
   (assert (= 3 (length (documents *collection*))))
   (assert (= 2 (length results)))
-  (print :success)
-  (pprint results))
-
+  (pprint results)
+  ;; test maintenance functionality - sanitize collection
+  (mapcar #'(lambda (doc) (delete-document *collection* doc)) results)
+  (assert (= 1 (length (documents *collection*))))
+  ;; now main log file contain information about deleted documents
+  (assert (= 5 (count-lines-in-file (location *collection*))))
+  (sanitize-data-file *collection* :if-does-not-exist :create)
+  ;; now collection log file contains just one document as *collection* do
+  (assert (= 1 (count-lines-in-file (location *collection*))))
+  (assert (= 1 (length (documents *collection*))))
+  (pprint (documents *collection*))
+  (print :success))
 ;;;; THE END ;;;;

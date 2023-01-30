@@ -183,15 +183,16 @@ The shard the document should belong to can be passed in as well."))
       (load-data collection)))
 
 (defmethod persist-document ((collection collection) document
-			     &key shard (handle-duplicates-p t) delete-p
-			       file-stream &allow-other-keys)
+                             &key shard (handle-duplicates-p t) delete-p
+                               (file-name nil new-file-p)
+                               file-stream &allow-other-keys)
   (unless shard
     (setf shard (get-shard collection (document-shard-mac collection document))))
 
   (unless shard
     (let* ((mac (document-shard-mac collection document))
-	   (shardx
-	     (make-shard collection mac)))
+           (shardx
+             (make-shard collection mac)))
 
       ;;Make sure there is nothing to load.
       (load-shard collection shardx (location shardx))
@@ -203,15 +204,18 @@ The shard the document should belong to can be passed in as well."))
       (naive-impl::debug-log "created new shard in add-document" :file-p t :args mac)))
 
   (let* ((document (if (or delete-p (getx document :deleted-p))
-		       (progn
-			 (remove-document collection document :shard shard)
-			 document)
-		       (add-document collection document
-				     :handle-duplicates-p handle-duplicates-p
-				     :shard shard)))
-	 (sexp     (naive-impl:persist-parse collection shard document nil)))
-    (if file-stream
-	(naive-impl::write-to-stream file-stream   sexp)
-	(naive-impl:write-to-file (location shard) sexp))
+                       (progn
+                         (remove-document collection document :shard shard)
+                         document)
+                       (add-document collection document
+                                     :handle-duplicates-p handle-duplicates-p
+                                     :shard shard)))
+         (sexp     (naive-impl:persist-parse collection shard document nil)))
+    (cond
+      (file-stream
+       (naive-impl::write-to-stream file-stream sexp))
+      (new-file-p
+       (naive-impl::write-to-file file-name sexp :if-exists :supersede))
+      (t
+       (naive-impl:write-to-file (location shard) sexp)))
     document))
-
