@@ -59,13 +59,30 @@ naive-store writes data to file sequentially and when deleting data documents it
   (setf (getx document :deleted-p) value)
   document)
 
+
+(defun ensure-shard (shard collection mac &optional where)
+  (unless shard
+    (setf shard (get-shard collection mac)))
+  (unless shard
+    (let ((shardx
+	    (make-shard collection mac)))
+
+      ;;Make sure there is nothing to load.
+      (load-shard collection shardx (location shardx))
+
+      (set-shard-cache-safe% collection mac shardx)
+      (vector-push-extend shardx (shards collection))
+      (setf shard shardx)
+      (naive-impl::debug-log "created new shard~@[ in ~A~]" where :file-p t :args mac)))
+  shard)
+
+
 (defgeneric remove-document (collection document &key shard &allow-other-keys)
   (:documentation "Removes an document from the collection and its indexes. See add-document."))
 
 (defmethod remove-document :around ((collection collection) document &rest other-keys &key shard
 				    &allow-other-keys)
-  (unless shard
-    (setf shard (get-shard collection (document-shard-mac collection document))))
+  (setf shard (ensure-shard shard collection (document-shard-mac collection document) 'remove-document))
   (bt:with-lock-held ((getx (lock shard) :docs))
     (apply (function call-next-method) collection document :shard shard other-keys)))
 
@@ -92,9 +109,7 @@ naive-store writes data to file sequentially and when deleting data documents it
   (:documentation "Removes a document from the collection, marks the document as deleted and persists the deleted document to disk."))
 
 (defmethod delete-document ((collection collection) document &key shard &allow-other-keys)
-  (unless shard
-    (setf shard (get-shard collection (document-shard-mac collection document))))
-
+  (setf shard (ensure-shard shard collection (document-shard-mac collection document) 'delete-document))
   (remove-document collection document :shard shard)
   (setf (deleted-p document) t)
   (persist-document collection document :delete-p t))
@@ -118,29 +133,15 @@ cl-naive-store does not have a update-document function, add-document does both 
 
 (defmethod add-document ((collection collection) document
 			 &key (shard naive-impl:%loading-shard%)
-			   (handle-duplicates-p t) (replace-existing-p t) &allow-other-keys)
+			 (handle-duplicates-p t) (replace-existing-p t) &allow-other-keys)
   "None of the following will have an effect if handle-duplicates = nil.
 
 If a document with the same keys exists in the collection the supplied the existing document will be replaced with the supplied document.
 
 If you set replace-existing-p to nil then an existing document wont be replaced by the supplied document. Basically nothing will be done."
   (let ((mac (document-shard-mac collection document)))
-    (unless shard
-      (setf shard (get-shard collection mac)))
-
-    (unless shard
-      (let ((shardx
-	      (make-shard collection mac)))
-
-	;;Make sure there is nothing to load.
-	(load-shard collection shardx (location shardx))
-
-	(set-shard-cache-safe% collection mac shardx)
-	(vector-push-extend shardx (shards collection))
-
-	(setf shard shardx)
-	(naive-impl::debug-log "created new shard in add-document" :file-p t :args mac))))
-
+    (setf shard (ensure-shard shard collection mac 'add-document)))
+  
   (let ((existing-document%)
 	(action-taken))
 
@@ -186,23 +187,7 @@ The shard the document should belong to can be passed in as well."))
                              &key shard (handle-duplicates-p t) delete-p
                                (file-name nil new-file-p)
                                file-stream &allow-other-keys)
-  (unless shard
-    (setf shard (get-shard collection (document-shard-mac collection document))))
-
-  (unless shard
-    (let* ((mac (document-shard-mac collection document))
-           (shardx
-             (make-shard collection mac)))
-
-      ;;Make sure there is nothing to load.
-      (load-shard collection shardx (location shardx))
-
-      (cl-naive-store.naive-core::set-shard-cache-safe% collection mac shardx)
-      (vector-push-extend shardx (shards collection))
-
-      (setf shard shardx)
-      (naive-impl::debug-log "created new shard in add-document" :file-p t :args mac)))
-
+  (setf shard (ensure-shard shard collection (document-shard-mac collection document) 'persist-document))
   (let* ((document (if (or delete-p (getx document :deleted-p))
                        (progn
                          (remove-document collection document :shard shard)
