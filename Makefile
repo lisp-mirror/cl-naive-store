@@ -1,6 +1,6 @@
 all: test
 
-.PHONY: test test-load-systems test-run-tests run-tests-ccl run-tests-sbcl
+.PHONY: test tests test-load-systems test-run-tests run-tests-ccl run-tests-sbcl
 
 CCL_LISP = ccl  --batch --quiet --no-init
 CCL_QUIT = --eval '(ccl:quit)'
@@ -16,7 +16,7 @@ NAME ?= sbcl
 LISP ?= $(SBCL_LISP)
 QUIT ?= $(SBCL_QUIT)
 
-test: test-run-tests test-load-systems
+test tests: test-run-tests test-load-systems
 
 test-load-systems:
 	load_system=load_system_in_$(NAME) tests/test-load-systems

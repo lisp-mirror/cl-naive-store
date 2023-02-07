@@ -451,11 +451,10 @@ which contain the actual data. Each collection will have its own directory and f
                 :actual-count (list (length data) (length test-results))))))
 
 (define-test test-all-simple ()
-  (append
-   (test-simple)
-   (test-simple-duplicates)
-   (test-lazy-loading)
-   (test-delete)))
+  (test-simple)
+  (test-simple-duplicates)
+  (test-lazy-loading)
+  (test-delete))
 
 (define-test test-all-simple-indexed ()
   (let ((*collection-class* 'collection-indexed))
@@ -809,21 +808,21 @@ or signal an error."
     (mapcar (lambda (test-file)
               (ignore-errors (delete-package :naive-examples))
               (multiple-value-bind (output success)
-                  (handler-case
-                      (values
-                       (with-output-to-string (*standard-output*)
-                         (with-standard-io-syntax
-                           (let ((*print-circle*   t)
-                                 (*print-readably* t)
-                                 (*print-right-margin* 78))
-                             (let ((file (merge-pathnames test-file test-dir)))
-                               (print file *trace-output*)
-                               (load file :verbose nil)))))
-                       t)
-                    (error (err)
-                      (values
-                       (format nil "~A" err)
-                       nil)))
+                  (let ((file (merge-pathnames test-file test-dir)))
+                    (print file *trace-output*)
+                    (handler-case
+                        (values
+                         (with-output-to-string (*standard-output*)
+                           (with-standard-io-syntax
+                             (let ((*print-circle*   t)
+                                   (*print-readably* t)
+                                   (*print-right-margin* 78))
+                               (load file :verbose nil))))
+                         t)
+                      (error (err)
+                        (values
+                         (format nil "~A loading file ~S" err file)
+                         nil))))
                 (if success
                     (with-input-from-string (inp output)
                       (let* ((*package* (find-package :naive-examples))
