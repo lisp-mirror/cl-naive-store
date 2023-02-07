@@ -32,7 +32,7 @@
         (setf (car *now*) now
               (cdr *now*)
               (multiple-value-bind (se mi ho da mo ye) (decode-universal-time now 0)
-                (format nil "~4,0D~2,'0D~2,'0DT~2,'0D~2,'0D~2,'0DZ"
+                (format nil "~4,'0D~2,'0D~2,'0DT~2,'0D~2,'0D~2,'0DZ"
                         ye mo da ho mi se))))))
 
 (defparameter *std-lock* (bt:make-lock)
