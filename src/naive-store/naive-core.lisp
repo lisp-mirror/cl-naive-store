@@ -13,8 +13,7 @@
               :accessor documents
               :initform (make-array 1 :fill-pointer 0 :adjustable t :initial-element nil)
               :documentation "Documents belonging to shard.")
-   (status :initarg :status
-           :accessor status
+   (status :initarg :status ;; accessor is defined below.
            :initform nil
            :documentation "Used internally during the loading of the documents in a shard to help with locking.")
    (lock :initarg :lock

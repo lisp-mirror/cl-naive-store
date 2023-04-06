@@ -22,6 +22,7 @@
   (:documentation "Loads documents from file."))
 
 (defmethod load-shard :around ((collection collection) shard filename &key &allow-other-keys)
+  (declare (ignorable filename))
   (let ((naive-impl:%loading-shard% shard))
     (call-next-method)))
 
@@ -207,10 +208,10 @@
                          :location (getx file-contents :location)))))
 
             (when (or with-collections-p with-data-p)
-              (load-collections store with-data-p))))))))
+              (load-collections store :with-data-p with-data-p))))))))
 
 (defgeneric load-store (store &key &allow-other-keys)
   (:documentation "Loads the document-types and collections, with or without the actual data documents."))
 
 (defmethod load-store ((store store) &key with-data-p &allow-other-keys)
-  (load-collections store with-data-p))
+  (load-collections store :with-data-p with-data-p))
