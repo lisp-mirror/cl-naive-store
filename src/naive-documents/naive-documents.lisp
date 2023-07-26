@@ -17,7 +17,7 @@ store = The store that the document comes from.
 collection = The collection that the document comes from.
 document-type = The document type specification that describes this document.
 hash = The hash/UUID that uniquely identifies this document
-elements = The actual key value pairs of the doucument.
+elements = The actual key value pairs of the document.
 changes = Is used to store setf values when using getx the preffered accessor for values. This helps with comparing of values when persisting.
 versions = older key value pairs that represent older versions of the document
 deleted-p = indicates that the document was deleted.
@@ -53,13 +53,6 @@ persisted-p = indicates that the document has been peristed.
 (defmethod murmurhash:murmurhash ((timestamp local-time:timestamp) &key)
   (murmurhash:murmurhash (let ((poes)) (local-time:format-timestring poes  timestamp) poes)))
 
-;;TODO:Need to hunt down instances where this function can use instead of the more
-;;verbose code lying around.
-;;currently not used any where?
-(defun document-of-type-p (document document-type)
-  "Returns t if the document is of the data type."
-  (string-equal document-type (document-document-type document)))
-
 ;;TODO: Consider removing these getx* thingies.
 (defgeneric getxo (document element-name)
   (:documentation "Gets value ignoring any changes made to the document. IE old value."))
@@ -84,8 +77,8 @@ persisted-p = indicates that the document has been peristed.
   (let ((keys-values))
     (dolist (key keys)
       (if (document-p (getx values key))
-	  (push (list key (document-hash (getx values key))) keys-values)
-	  (push (list key (getx values key)) keys-values)))
+          (push (list key (document-hash (getx values key))) keys-values)
+          (push (list key (getx values key)) keys-values)))
     (nreverse keys-values)))
 
 (defmethod key-values ((collection document-collection) document &key &allow-other-keys)

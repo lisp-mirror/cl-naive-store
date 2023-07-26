@@ -18,7 +18,7 @@
    (attributes :initarg :attributes
                :accessor attributes
                :initform nil
-               :documentation "A property list of additional element attributes that are not data type specific."))
+               :documentation "A property list of additional element attributes."))
 
   (:documentation "A definition of an element of a document.
 
@@ -44,7 +44,7 @@ naive-store can be used as a hierarchical database or a flat databases or a mix.
                   :documentation "The class that should be used to make element documents.
 NOTES:
 
-element-class is declaratively specified here because so that elements can be dynamicly created when definition type definitions are read from file. See naive-store-documents for usage examples. ")
+element-class is declaratively specified here so that elements can be dynamicly created when definition type definitions are read from file. See naive-store-documents for usage examples. ")
    (label :initarg :label
           :accessor label
           :initform nil
@@ -62,6 +62,11 @@ The default implementation of cl-naive-store is unaware of document-types when r
 GUI's like cl-wfx use these to help with generic rendering of user input screens.
 
 See cl-naive-type-defs:*example-type-defs* for examples of type definitions to get a feel for the intended use."))
+
+;;TODO:Need to hunt down instances where this function can be used instead of the more
+;;verbose code lying around.
+;;currently not used any where?
+(defgeneric document-of-type-p (document document-type))
 
 (defmethod getx ((element element) accessor &key &allow-other-keys)
   ""
@@ -97,6 +102,22 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
          (label document-type))
         ((equalp accessor :elements)
          (elements document-type))))
+
+(defgeneric get-attribute (element attribute))
+
+(defmethod get-attribute ((element element) attribute)
+  (dolist (attribute (attributes element))
+    ;;TODO: Lazy matching should use cond with more inteligent matching
+    (when (string-equal (getx attribute :name) (format nil "~A" attribute))
+      (return-from get-attribute attribute))))
+
+(defgeneric get-element (document-type element))
+
+(defmethod get-element (document-type element)
+  (dolist (element (elements document-type))
+    ;;TODO: Lazy matching should use cond with more inteligent matching
+    (when (string-equal (getx element :name) (format nil "~A" element))
+      (return-from get-element element))))
 
 (defmethod (setf getx) (value (document-type document-type) accessor &key &allow-other-keys)
   ""
@@ -215,10 +236,11 @@ IMPL NOTES: To deal with customization of document-type.")
   (:documentation "Tries to find the document definition on disk."))
 
 (defmethod get-document-type-from-def ((store store) document-type-name)
-  (let ((document-document-type (naive-impl:sexp-from-file (cl-fad:merge-pathnames-as-file
-                                                            (pathname (location store))
-                                                            (make-pathname :name document-type-name
-                                                                           :type "type")))))
+  (let ((document-document-type
+          (naive-impl:sexp-from-file (cl-fad:merge-pathnames-as-file
+                                      (pathname (location store))
+                                      (make-pathname :name document-type-name
+                                                     :type "type")))))
     (when document-document-type
       (let ((document-type (add-document-type
                             store
@@ -244,14 +266,17 @@ IMPL NOTES: To deal with customization of document-type.")
     (when (string-equal type-name (name document-type))
       (return-from get-document-type document-type))))
 
-(defgeneric add-document-type (store document-type)
+(defgeneric add-document-type (store document-type &key persist-p)
   (:documentation "Adds a document-type to a store."))
 
-(defmethod add-document-type ((store document-type-store-mixin) (document-type document-type))
+(defmethod add-document-type ((store document-type-store-mixin)
+                              (document-type document-type)
+                              &key (persist-p t))
   (unless (get-document-type store (name document-type))
     (setf (store document-type) store)
     (pushnew document-type (document-types store))
-    (persist document-type))
+    (when persist-p
+      (persist document-type)))
   document-type)
 
 (defun load-store-document-types (store)
