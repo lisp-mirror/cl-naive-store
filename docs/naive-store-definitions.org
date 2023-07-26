@@ -1,8 +1,11 @@
 * Document Type Definitions
 
-=cl-naive-store.document-type-defs= is a "declarative" implementation (I am
-using the word loosely) of =cl-naive-document-type= (abstract data
-type???).
+
+=cl-naive-store.definitions= is a "declarative" implementation (I am
+using the word loosely) of =cl-naive-document-type=.
+
+It can be used to create universes and everything they contain from a
+simple definitions sexp.
 
 What use are type-defs? Well they are there to describe the document
 type, i.e. more information about elements of a document type and the

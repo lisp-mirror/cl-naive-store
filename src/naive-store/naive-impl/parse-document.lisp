@@ -28,7 +28,9 @@ When documents are read from a file the references need to be converted to docum
 (defmethod find-document-by-hash (collection hash &key shards &allow-other-keys)
 
   (do-sequence (shard (if shards shards
-                          (shards collection)) :parallel-p nil)
+                          (shards collection))
+                :parallel-p
+                nil)
 
     (do-sequence (document (documents shard))
       (when (string-equal

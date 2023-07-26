@@ -21,7 +21,7 @@ Functionality was broken down into these packages:
 
 - =cl-naive-store.naive-core=
 - =cl-naive-store.document-types=
-- =cl-naive-store.document-type-defs=
+- =cl-naive-store.definitions=
 - =cl-naive-store.naive-documents=
 - =cl-naive-store.naive-indexed=
 - =cl-naive-store.naive-merkle=
@@ -45,7 +45,7 @@ The following .asd files can be used to load different functionality:
   and type definition functionality.
 
 - =cl-naive-store.documents.asd= loads naive-core, naive-indexed,
-  documents-types, document-type-defs and document functionality.
+  documents-types, definitions and document functionality.
 
 - =cl-naive-store.asd= loads the whole shebang.
 

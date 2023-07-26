@@ -4,9 +4,8 @@
   :author "Phil Marneweck"
   :licence "MIT"
   :depends-on ("cl-naive-store.naive-core"
-	       "cl-naive-store.naive-indexed"
-	       "cl-naive-store.document-types"
-	       "cl-naive-store.document-type-defs")
+               "cl-naive-store.naive-indexed"
+               "cl-naive-store.document-types")
   :components
   ((:file "src/naive-documents/packages")
    (:file "src/naive-documents/documents-impl/package"
