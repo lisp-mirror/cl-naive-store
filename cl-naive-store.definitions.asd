@@ -3,7 +3,9 @@
   :version "2023.7.22"
   :author "Phil Marneweck"
   :licence "MIT"
-  :depends-on (:cl-naive-store.naive-core
+  :depends-on (:cl-getx
+               :cl-naive-ptrees
+               :cl-naive-store.naive-core
                :cl-naive-store.document-types)
   :components
   ((:file "src/definitions/packages")
