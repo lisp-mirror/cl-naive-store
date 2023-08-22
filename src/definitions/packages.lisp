@@ -4,8 +4,10 @@
   (:use :cl :cl-getx :cl-naive-store.naive-core
    :cl-naive-store.document-types)
   (:export
-   :find-collection-definition
-   :find-document-type-definition
+   :find-named-definition-elements
+   :find-named-definition-element
+   :get-referenced-types
+   :get-collections-dependencies
    :add-collection-definition
    :add-document-type-definition
    :add-store-definition

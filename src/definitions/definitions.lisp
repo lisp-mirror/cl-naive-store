@@ -6,23 +6,31 @@
 ;;; data-type that data type might still be used by a collection which
 ;;; will cause errors when trying to use the definition.
 
-(defun find-collection-definition (collection-name
-                                   definition)
-  "Finds a collection definition in a store definition."
-  (car (cl-naive-ptrees::query definition
-                               `((((lambda (node)
-                                     (when (listp node)
-                                       (equalp (getf node :name) ,collection-name)))
-                                   :collection))))))
+(defgeneric find-named-definition-elements (element name definition)
+  (:documentation
+   "Returns all the specific named definition-elements found.
 
-(defun find-document-type-definition (document-type-name
-                                      definition)
-  "Finds a collection definition in a store definition."
-  (car (cl-naive-ptrees::query definition
-                               `((((lambda (node)
-                                     (when (listp node)
-                                       (equalp (getf node :name) ,document-type-name)))
-                                   :document-type))))))
+What the definition needs to be can vary for elements but worst case
+implementations should at least deal with a multiverse definition
+and parent definition."))
+
+(defmethod find-named-definition-elements (element name definition)
+  (cl-naive-ptrees::query definition
+                          `(((lambda (node)
+                               (when (listp node)
+                                 (equalp (getf node :name) ,name)))
+                             ,element))))
+
+(defgeneric find-named-definition-element (element name definition)
+  (:documentation
+   "Returns the first specific named definition-element found.
+
+What the definition needs to be can vary for elements but worst case
+implementations should at least deal with a multiverse definition
+and parent definition."))
+
+(defmethod find-named-definition-element (element name definition)
+  (car (find-named-definition-elements element name definition)))
 
 (defun add-collection-definition (universe-name store-name collection-definition
                                   multiverse-definition)
@@ -33,7 +41,8 @@
       (dolist (store (cl-getx:digx universe :universe :stores))
 
         (when (string-equal store-name (getx (getx store :store) :name))
-          (if (find-collection-definition
+          (if (find-named-definition-element
+               :collection
                (getx (getx collection-definition :collection) :name)
                store)
               (error "Collection definition already exsists: ~A"
@@ -70,7 +79,13 @@
                         (cl-getx:digx universe :universe :name))
       (dolist (store (cl-getx:digx universe :universe :stores))
         (when (string-equal store-name (getf (getf store :store) :name))
-          (pushnew type-definition (getx store :document-types))
+          (if (find-named-definition-element
+               :data-type
+               (getx (getx type-definition :data-type) :name)
+               store)
+              (error "Data type definition already exsists: ~A"
+                     (getx (getx type-definition :collection) :name))
+              (pushnew type-definition (getx store :document-types)))
           (return-from add-document-type-definition multiverse-definition))))))
 
 (defun remove-document-type-definition (universe-name store-name type-name
@@ -128,11 +143,13 @@
             (remove universe (getx multiverse-definition :multiverse)))
       (return-from remove-universe-definition multiverse-definition))))
 
-(defun get-document-types (doc-type-defs)
+;;TODO: Use some ptrees function
+(defun get-document-type-names (doc-type-defs)
   (mapcar (lambda (doc-type-def)
             (getf (getf doc-type-def :document-type) :name))
           doc-type-defs))
 
+;;TODO: Use some ptrees function
 (defun get-collection-names (collection-defs)
   (mapcar (lambda (collection-def)
             (getf (getf collection-def :collection) :name))
@@ -143,7 +160,7 @@
                          `(chain
                            (((lambda (node)
                                (when (listp node)
-                                 (find (getf element :name) ',known-doc-types
+                                 (find (getf element :document-type) ',known-doc-types
                                        :test #'string-equal)))
                              :collection)))))
 
@@ -243,11 +260,10 @@
                                    referenced-collections)))
 
     (dolist (collection-name sorted-collection-names)
-
-      (let* ((collection-def (find collection-name collection-definitions
-                                   :key #'(lambda (def)
-                                            (getf (getf def :collection) :name))
-                                   :test #'string-equal))
+      (let* ((collection-def (find-named-definition-element
+                              :collection
+                              collection-name
+                              collection-definitions))
              (collection-definition (getf collection-def :collection))
              (collection
                (add-collection store
@@ -308,7 +324,7 @@
               (persist store))
 
             ;; Get the known document types and collection names first
-            (let* ((known-doc-types (get-document-types
+            (let* ((known-doc-types (get-document-type-names
                                      (getf store-definition :document-types)))
                    (known-coll-names (get-collection-names
                                       (getf store-definition :collections))))
