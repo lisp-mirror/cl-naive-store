@@ -4,6 +4,8 @@
   (:use :cl :cl-getx :cl-naive-store.naive-core
    :cl-naive-store.document-types)
   (:export
+   :find-collection-definition
+   :find-document-type-definition
    :add-collection-definition
    :add-document-type-definition
    :add-store-definition
