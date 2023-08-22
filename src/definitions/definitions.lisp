@@ -6,7 +6,7 @@
 ;;; data-type that data type might still be used by a collection which
 ;;; will cause errors when trying to use the definition.
 
-(defgeneric find-named-definition-elements (element name definition)
+(defgeneric find-named-elements (element name definition)
   (:documentation
    "Returns all the specific named definition-elements found.
 
@@ -14,14 +14,14 @@ What the definition needs to be can vary for elements but worst case
 implementations should at least deal with a multiverse definition
 and parent definition."))
 
-(defmethod find-named-definition-elements (element name definition)
+(defmethod find-named-elements (element name definition)
   (cl-naive-ptrees::query definition
                           `(((lambda (node)
                                (when (listp node)
                                  (equalp (getf node :name) ,name)))
                              ,element))))
 
-(defgeneric find-named-definition-element (element name definition)
+(defgeneric find-named-element (element name definition)
   (:documentation
    "Returns the first specific named definition-element found.
 
@@ -29,11 +29,11 @@ What the definition needs to be can vary for elements but worst case
 implementations should at least deal with a multiverse definition
 and parent definition."))
 
-(defmethod find-named-definition-element (element name definition)
-  (car (find-named-definition-elements element name definition)))
+(defmethod find-named-element (element name definition)
+  (car (find-named-elements element name definition)))
 
-(defun add-collection-definition (universe-name store-name collection-definition
-                                  multiverse-definition)
+(defun add-collection (universe-name store-name collection-definition
+                       multiverse-definition)
   "Adds a collection definition to a store in a universe in the multiverse definition."
   (dolist (universe (getx multiverse-definition :multiverse))
     (when (string-equal universe-name
@@ -41,7 +41,7 @@ and parent definition."))
       (dolist (store (cl-getx:digx universe :universe :stores))
 
         (when (string-equal store-name (getx (getx store :store) :name))
-          (if (find-named-definition-element
+          (if (find-named-element
                :collection
                (getx (getx collection-definition :collection) :name)
                store)
@@ -51,10 +51,10 @@ and parent definition."))
                 (setf (getx (getx store :store) :collections)
                       (append (getx (getx store :store) :collections)
                               collection-definition))
-                (return-from add-collection-definition multiverse-definition))))))))
+                (return-from add-collection multiverse-definition))))))))
 
-(defun remove-collection-definition (universe-name store-name collection-name
-                                     multiverse-definition)
+(defun remove-collection (universe-name store-name collection-name
+                          multiverse-definition)
   "Removes a collection definition from a store in a universe in the multiverse definition."
   (dolist (universe (getx multiverse-definition :multiverse))
     (when (string-equal universe-name
@@ -69,27 +69,27 @@ and parent definition."))
 
               (setf (getx (getx store :store) :collections)
                     (remove collection (getx (getx store :store) :collections)))
-              (return-from remove-collection-definition multiverse-definition))))))))
+              (return-from remove-collection multiverse-definition))))))))
 
-(defun add-document-type-definition (universe-name store-name type-definition
-                                     multiverse-definition)
+(defun add-document-type (universe-name store-name type-definition
+                          multiverse-definition)
   "Adds a document-type definition to a store in a universe in the multiverse definition."
   (dolist (universe (getx multiverse-definition :multiverse))
     (when (string-equal universe-name
                         (cl-getx:digx universe :universe :name))
       (dolist (store (cl-getx:digx universe :universe :stores))
         (when (string-equal store-name (getf (getf store :store) :name))
-          (if (find-named-definition-element
+          (if (find-named-element
                :data-type
                (getx (getx type-definition :data-type) :name)
                store)
               (error "Data type definition already exsists: ~A"
                      (getx (getx type-definition :collection) :name))
               (pushnew type-definition (getx store :document-types)))
-          (return-from add-document-type-definition multiverse-definition))))))
+          (return-from add-document-type multiverse-definition))))))
 
-(defun remove-document-type-definition (universe-name store-name type-name
-                                        multiverse-definition)
+(defun remove-document-type (universe-name store-name type-name
+                             multiverse-definition)
   "Removes a document-type definition from a store in a universe in the multiverse definition."
   (dolist (universe (getx multiverse-definition :multiverse))
     (when (string-equal universe-name
@@ -101,20 +101,20 @@ and parent definition."))
                    (cl-getx:digx type-definition :document-type :name) type-name)
               (setf (getx store :document-types)
                     (remove type-definition (getx store :document-types)))
-              (return-from remove-document-type-definition multiverse-definition))))))))
+              (return-from remove-document-type multiverse-definition))))))))
 
-(defun add-store-definition (universe-name store-definition
-                             multiverse-definition)
+(defun add-store (universe-name store-definition
+                  multiverse-definition)
   "Adds a store definition to a universe in the multiverse definition."
   (dolist (universe (getx multiverse-definition :multiverse))
     (when (string-equal universe-name
                         (cl-getx:digx universe :universe :name))
       (pushnew store-definition (cl-getx:digx universe :universe :stores))
 
-      (return-from add-store-definition multiverse-definition))))
+      (return-from add-store multiverse-definition))))
 
-(defun remove-store-definition (universe-name store-name
-                                multiverse-definition)
+(defun remove-store (universe-name store-name
+                     multiverse-definition)
   "Removes a store definition from a universe in the multiverse definition."
   (dolist (universe (getx multiverse-definition :multiverse))
     (when (string-equal universe-name
@@ -124,15 +124,15 @@ and parent definition."))
           (setf (cl-getx:digx universe :universe :stores)
                 (remove store (cl-getx:digx universe :universe :stores)))))
 
-      (return-from remove-store-definition multiverse-definition))))
+      (return-from remove-store multiverse-definition))))
 
-(defun add-universe-definition (universe-definition
-                                multiverse-definition)
+(defun add-universe (universe-definition
+                     multiverse-definition)
   "Adds a universe definition to the multiverse definition."
   (pushnew universe-definition (getx multiverse-definition :multiverse))
   multiverse-definition)
 
-(defun remove-universe-definition (universe-name multiverse-definition)
+(defun remove-universe (universe-name multiverse-definition)
   "Removes a universe definition from the multiverse definition."
   (dolist (universe (getx multiverse-definition :multiverse))
 
@@ -141,7 +141,7 @@ and parent definition."))
 
       (setf (getx multiverse-definition :multiverse)
             (remove universe (getx multiverse-definition :multiverse)))
-      (return-from remove-universe-definition multiverse-definition))))
+      (return-from remove-universe multiverse-definition))))
 
 ;;TODO: Use some ptrees function
 (defun get-document-type-names (doc-type-defs)
@@ -225,29 +225,30 @@ and parent definition."))
       (let* ((doc-type-def (getf
                             (cdr (assoc doc-type-name doc-type-defs))
                             :document-type))
-             (doc-type (make-instance 'document-type
+             (doc-type (make-instance 'cl-naive-store.document-types:document-type
                                       :store store
                                       :name (getf doc-type-def :name)
                                       :label (getf doc-type-def :label)
                                       :elements '())))
 
         (dolist (element-def (getf doc-type-def :elements))
-          (let ((element (make-instance 'element
+          (let ((element (make-instance 'cl-naive-store.document-types:element
                                         :name (getf element-def :name)
                                         :key-p (getf element-def :key-p)
                                         :concrete-type (getf element-def :concrete-type)
                                         :attributes (getf element-def :attributes))))
 
-            (push element (elements doc-type))))
+            (push element (cl-naive-store.document-types:elements doc-type))))
 
-        (add-document-type store doc-type :persist-p persist-p)))))
+        (cl-naive-store.document-types:add-document-type
+         store doc-type :persist-p persist-p)))))
 
 (defun create-collections (store
                            collection-definitions
                            document-types
                            known-coll-names
                            &key (collection-class
-                                 'cl-naive-store.docmuent-collection)
+                                 'cl-naive-store.naive-documents:document-collection)
                            persist-p)
   "Create collections in the specified order of dependencies and add them to the store."
 
@@ -260,30 +261,32 @@ and parent definition."))
                                    referenced-collections)))
 
     (dolist (collection-name sorted-collection-names)
-      (let* ((collection-def (find-named-definition-element
+      (let* ((collection-def (find-named-element
                               :collection
                               collection-name
                               collection-definitions))
              (collection-definition (getf collection-def :collection))
              (collection
-               (add-collection store
-                               (make-instance
-                                collection-class
-                                :store store
-                                :name (getf collection-definition :name)
-                                :location (merge-pathnames
-                                           (make-pathname
-                                            :directory
-                                            (list :relative
-                                                  (getf collection-definition :name)))
-                                           (format nil "~A"
-                                                   (pathname (location store))))
-                                :document-type
-                                (get-document-type
-                                 store
-                                 (getf collection-definition :data-type))))))
+               (cl-naive-store.naive-core:add-collection
+                store
+                (make-instance
+                 collection-class
+                 :store store
+                 :name (getf collection-definition :name)
+                 :location (merge-pathnames
+                            (make-pathname
+                             :directory
+                             (list :relative
+                                   (getf collection-definition :name)))
+                            (format nil "~A"
+                                    (pathname (cl-naive-store.naive-core:location
+                                               store))))
+                 :document-type
+                 (cl-naive-store.document-types:get-document-type
+                  store
+                  (getf collection-definition :data-type))))))
         (when persist-p
-          (persist-collection-def collection))))))
+          (cl-naive-store.naive-core:persist-collection-def collection))))))
 
 (defun create-multiverse (multiverse &optional persist-p)
   (let ((universes '()))
@@ -300,28 +303,29 @@ and parent definition."))
                                 (list :relative (getf universe-definition :name)))
                                (getf universe-definition :location)))))
         (when persist-p
-          (ensure-directories-exist (location universe)))
+          (ensure-directories-exist (cl-naive-store.naive-core:location universe)))
 
         (dolist (store-def (getf universe-definition :stores))
           (let* ((store-definition (getf store-def :store))
                  (store
-                   (add-store universe
-                              (make-instance (getf universe-definition :store-class)
-                                             :universe universe
-                                             :name (getf store-definition :name)
-                                             :collection-class
-                                             (getf universe-definition :collection-class)
-                                             :location
-                                             (merge-pathnames
-                                              (make-pathname
-                                               :directory
-                                               (list :relative
-                                                     (getf store-definition :name)))
-                                              (format nil "~A/"
-                                                      (location universe)))))))
+                   (cl-naive-store.naive-core:add-store
+                    universe
+                    (make-instance (getf universe-definition :store-class)
+                                   :universe universe
+                                   :name (getf store-definition :name)
+                                   :collection-class
+                                   (getf universe-definition :collection-class)
+                                   :location
+                                   (merge-pathnames
+                                    (make-pathname
+                                     :directory
+                                     (list :relative
+                                           (getf store-definition :name)))
+                                    (format nil "~A/"
+                                            (cl-naive-store.naive-core:location universe)))))))
             (when persist-p
-              (ensure-directories-exist (location store))
-              (persist store))
+              (ensure-directories-exist (cl-naive-store.naive-core:location store))
+              (cl-naive-store.naive-core:persist store))
 
             ;; Get the known document types and collection names first
             (let* ((known-doc-types (get-document-type-names

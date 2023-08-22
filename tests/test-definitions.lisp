@@ -237,7 +237,7 @@
    results
    (test-something
     (lambda ()
-      (cl-naive-store.definitions:add-universe-definition
+      (cl-naive-store.definitions:add-universe
        '(:universe
          (:name "movies"
           :stores ((:store
@@ -322,7 +322,7 @@
    results
    (test-something
     (lambda ()
-      (cl-naive-store.definitions:remove-universe-definition
+      (cl-naive-store.definitions:remove-universe
        "movies"
        '(:multiverse
          ((:universe
@@ -393,7 +393,7 @@
    results
    (test-something
     (lambda ()
-      (cl-naive-store.definitions:add-store-definition
+      (cl-naive-store.definitions:add-store
        "marvel"
        '(:store (:name "super-heros"
                  :collections
@@ -473,7 +473,7 @@
    results
    (test-something
     (lambda ()
-      (cl-naive-store.definitions:remove-store-definition
+      (cl-naive-store.definitions:remove-store
        "marvel"
        "super-heros"
        '(:multiverse
@@ -543,7 +543,7 @@
    results
    (test-something
     (lambda ()
-      (cl-naive-store.definitions:add-document-type-definition
+      (cl-naive-store.definitions:add-document-type
        "marvel" "wolverine"
        '(:document-type (:name "relation"
                          :label "Relation"
@@ -613,7 +613,7 @@
    results
    (test-something
     (lambda ()
-      (cl-naive-store.definitions:remove-document-type-definition
+      (cl-naive-store.definitions:remove-document-type
        "marvel" "wolverine" "relation"
        '(:multiverse
          ((:universe
@@ -684,7 +684,7 @@
    results
    (test-something
     (lambda ()
-      (cl-naive-store.definitions:add-collection-definition
+      (cl-naive-store.definitions:add-collection
        "marvel" "wolverine"
        '(:collection (:name "attitude" :label "Attitude" :document-type "attitude"))
        '(:multiverse
@@ -736,7 +736,7 @@
    results
    (test-something
     (lambda ()
-      (cl-naive-store.definitions:remove-collection-definition
+      (cl-naive-store.definitions:remove-collection
        "marvel" "wolverine" "attitude"
        '(:multiverse
          ((:universe
