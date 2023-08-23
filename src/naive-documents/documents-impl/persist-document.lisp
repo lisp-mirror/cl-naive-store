@@ -2,26 +2,26 @@
 
 (defmethod naive-impl:type-of-doc-element ((collection document-collection) element)
   (cond ((blob-p element)
-	 :blob)
-	((and (document-p element) (document-collection element))
-	 :reference)
-	((and (document-p element) (not (document-collection element)))
-	 :child-document)
-	(t nil)))
+         :blob)
+        ((and (document-p element) (document-collection element))
+         :reference)
+        ((and (document-p element) (not (document-collection element)))
+         :child-document)
+        (t nil)))
 
 ;;TODO: Sort out blob paths once and for all!!!!
 (defmethod naive-impl:persist-form ((collection document-collection) shard blob (element-type (eql :blob))
-				    &key root parent &allow-other-keys)
+                                    &key root parent &allow-other-keys)
   (declare  (ignorable shard root parent))
   (let ((file (or (and (not (empty-p (blob-location blob)))
-		       (getx blob :location))
+                       (getx blob :location))
 
-		  (cl-fad:merge-pathnames-as-file
-		   (pathname (location collection))
-		   (make-pathname :directory
-				  (list :relative (frmt "~A" (getx blob :parent-accessor)))
-				  :name (frmt "~A" (hash parent))
-				  :type (getx blob :file-ext))))))
+                  (cl-fad:merge-pathnames-as-file
+                   (pathname (location collection))
+                   (make-pathname :directory
+                                  (list :relative (frmt "~A" (getx blob :parent-accessor)))
+                                  :name (frmt "~A" (hash parent))
+                                  :type (getx blob :file-ext))))))
 
     (setf (getx blob :location) file)
 
@@ -30,108 +30,114 @@
 
     (list :blob%
 
-	  (list :file-type (getx blob :file-type)
-		:file-ext (getx blob :file-ext)
-		:location (getx blob :location)
-		:parent-accessor (getx blob :parent-accessor)))))
+          (list :file-type (getx blob :file-type)
+                :file-ext (getx blob :file-ext)
+                :location (getx blob :location)
+                :parent-accessor (getx blob :parent-accessor)))))
 
 (defmethod naive-impl:persist-form ((collection document-collection) shard document
-				    (element-type (eql :reference))
-				    &key root parent &allow-other-keys)
+                                    (element-type (eql :reference))
+                                    &key root parent &allow-other-keys)
   (declare  (ignorable shard root parent))
   (list
+   :universe  (if (and (not (document-store document))
+                       (document-collection document))
+                  (name (universe (store (document-collection document))))
+                  (name (universe (document-store document))))
    :store (if (and (not (document-store document))
-		   (document-collection document))
-	      (name (store (document-collection document)))
-	      (name (document-store document)))
+                   (document-collection document))
+              (name (store (document-collection document)))
+              (name (document-store document)))
    :collection (name (document-collection document))
    :type (if (stringp (document-document-type document))
-	     (document-document-type document)
-	     (if (document-document-type document)
-		 (name (document-document-type document))
-		 (error "Missing type def")))
+             (document-document-type document)
+             (if (document-document-type document)
+                 (name (document-document-type document))
+                 (error "Missing type def")))
    :hash (document-hash document)
+   :shard-mac (cl-naive-store.naive-core:document-shard-mac
+               (document-collection document) document)
    :elements '(:reference% t)))
 
 (defmethod naive-impl:persist-form ((collection document-collection) shard document
-				    (element-type (eql :child-document))
-				    &key root parent &allow-other-keys)
+                                    (element-type (eql :child-document))
+                                    &key root parent &allow-other-keys)
   (declare  (ignorable root) (ignorable parent))
 
   (list
    :document-type (if (stringp (document-document-type document))
-		      (document-document-type document)
-		      (if (not (document-document-type document))
-			  (break "Cannot save children with on document-type ~%~S" document)
-			  ;;TODO: Need to see why objects with no full doc type is arriving here
-			  (if (symbolp (document-document-type document))
-			      (document-document-type document)
-			      (name (document-document-type document)))))
+                      (document-document-type document)
+                      (if (not (document-document-type document))
+                          (break "Cannot save children with on document-type ~%~S" document)
+                          ;;TODO: Need to see why objects with no full doc type is arriving here
+                          (if (symbolp (document-document-type document))
+                              (document-document-type document)
+                              (name (document-document-type document)))))
    :hash (document-hash document)
    :elements (naive-impl:persist-parse collection
-				       shard
-				       (or (document-changes document)
-					   (document-elements document))
-				       nil
-				       :root root
-				       :parent document)))
+                                       shard
+                                       (or (document-changes document)
+                                           (document-elements document))
+                                       nil
+                                       :root root
+                                       :parent document)))
 
 (defmethod naive-impl:persist-form ((collection document-collection) shard document
-				    (element-type (eql :document))
-				    &key root parent &allow-other-keys)
+                                    (element-type (eql :document))
+                                    &key root parent &allow-other-keys)
   (declare  (ignorable root) (ignorable parent))
 
   (list
    :hash (document-hash document)
    :deleted-p (if (document-deleted-p document)
-		  t
-		  nil)
+                  t
+                  nil)
    :elements (naive-impl:persist-parse
-	      collection
-	      shard
-	      (or (document-changes document)
-		  (document-elements document))
-	      nil
-	      :root document)))
+              collection
+              shard
+              (or (document-changes document)
+                  (document-elements document))
+              nil
+              :root document)))
 
 (defmethod naive-impl:persist-parse ((collection document-collection) shard element doc
-				     &key root parent &allow-other-keys)
+                                     &key root parent &allow-other-keys)
 
   (cond ((null element)
-	 (nreverse doc))
+         (nreverse doc))
         ((consp (car element))
-	 (naive-impl:persist-parse
-	  collection
-	  shard
-	  (cdr element)
-	  (cons (naive-impl:persist-parse collection
-					  shard
-					  (car element)
-					  nil
-					  :root root
-					  :parent parent)
-		doc)
+         (naive-impl:persist-parse
+          collection
+          shard
+          (cdr element)
+          (cons (naive-impl:persist-parse collection
+                                          shard
+                                          (car element)
+                                          nil
+                                          :root root
+                                          :parent parent)
+                doc)
 
-	  :root root
-	  :parent parent))
-	(t
-	 (naive-impl:persist-parse collection
-				   shard
-				   (cdr element)
-				   (cons
-				    (if (naive-impl:type-of-doc-element collection (car element))
-					(naive-impl:persist-form
-					 collection
-					 shard
-					 (car element)
-					 (naive-impl:type-of-doc-element collection (car element))
-					 :root root
-					 :parent parent)
-					(car element))
+          :root root
+          :parent parent))
+        (t
+         (naive-impl:persist-parse collection
+                                   shard
+                                   (cdr element)
+                                   (cons
+                                    (if (naive-impl:type-of-doc-element collection (car element))
+                                        (naive-impl:persist-form
+                                         collection
+                                         shard
+                                         (car element)
+                                         (naive-impl:type-of-doc-element collection (car element))
+                                         :root root
+                                         :parent parent)
+                                        (car element))
 
-				    doc)
-				   :root root
-				   :parent parent))))
+                                    doc)
+                                   :root root
+                                   :parent parent))))
 
 #|
 

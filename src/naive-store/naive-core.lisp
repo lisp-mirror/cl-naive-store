@@ -90,7 +90,18 @@ NOTES:
 collection-class and document-type-class is delcaritively specied here because they are dynamicly created when definition files are loaded. The alternative would be defmethod hell where the customizer of naive-store would have to implement a whole lot of methods that do exactly what the provided methods do just to be able to be type specific in other methods where it is actually needed. Alternatively meta classes could be used for element-class but that opens another can of worms."))
 
 (defclass universe ()
-  ((stores :initarg :stores
+  ((multiverse :initarg :multiverse
+               :accessor multiverse
+               :initform nil
+               :documentation "The multiverse this universe belongs to.")
+   (name :initarg :name
+         :accessor name
+         ;;Initializing name to help with backwards
+         ;;compatibility. Name was intruduced with multiverse and is
+         ;;needed for references etc.
+         :initform "universe"
+         :documentation "Universe name.")
+   (stores :initarg :stores
            :accessor stores
            :initform nil
            :documentation "List of stores contained by this universe.")
@@ -102,13 +113,12 @@ collection-class and document-type-class is delcaritively specied here because t
 
 NOTES:
 
-store-class is delcaritively specied here because stores are dynamicly created when definition
-files are loaded. (see store notes for more about this.).")
+store-class is delcaritively specied here because stores are dynamicly
+created when definition files are loaded. (see store notes for more
+about this.).")
    (location :initarg :location
              :accessor location
-             :initform (cl-fad:merge-pathnames-as-directory
-                        (user-homedir-pathname)
-                        (make-pathname :directory (list :relative "data-universe")))
+             :initform nil
              :documentation "Directory path to stores.")
    (shards-cache% :initarg :shards-cache%
                   :accessor shards-cache%
@@ -123,6 +133,32 @@ files are loaded. (see store notes for more about this.).")
                        #+(not (or sbcl ecl)) (make-hash-table :test 'equalp)
                        :documentation "This was introduced to speedup finding a shard. Calulating macs is expensive. It is only for internal use!"))
   (:documentation "Stores are held by a universe to make up a database."))
+
+(defclass multiverse ()
+  ((name :initarg :name
+         :accessor name
+         :documentation "Universe name.")
+   (universes :initarg :universes
+              :accessor universes
+              :initform nil
+              :documentation "List of universes contained by this multiverse.")
+   (universe-class :initarg :universe-class
+                   :accessor universe-class
+                   :initform 'universe
+                   :allocation :class
+                   :documentation "The class that should be used to make universes.
+
+NOTES:
+
+universe-class is delcaritively specied here because stores are dynamicly created when definition
+files are loaded. (see store notes for more about this.).")
+   (location :initarg :location
+             :accessor location
+             :initform (cl-fad:merge-pathnames-as-directory
+                        (user-homedir-pathname)
+                        (make-pathname :directory (list :relative "multiverse")))
+             :documentation "Directory path to stores."))
+  (:documentation "Universes are held by a multiverse to make up a group of databases."))
 
 (defmethod cl:print-object ((shard shard) stream)
   (if *print-readably*
@@ -276,6 +312,14 @@ files are loaded. (see store notes for more about this.).")
           mac)
         (name collection))))
 
+(defgeneric get-universe (multiverse store-name)
+  (:documentation "Returns a universe if found in the multiverse."))
+
+(defmethod get-universe ((multiverse multiverse) universe-name)
+  (dolist (universe (universes multiverse))
+    (when (string-equal universe-name (name universe))
+      (return-from get-universe universe))))
+
 (defgeneric get-store (universe store-name)
   (:documentation "Returns a store if found in the universe."))
 
@@ -308,8 +352,34 @@ files are loaded. (see store notes for more about this.).")
 
    :if-exists :supersede))
 
+(defmethod persist ((universe universe) &key &allow-other-keys)
+  "Persists a universe definition and not what it contains! Path to file is of this general format
+/multiverse/universe-name/universe-name.universe."
+  (naive-impl:write-to-file
+   (cl-fad:merge-pathnames-as-file
+    (pathname (location universe))
+    (make-pathname :name (name universe)
+                   :type "universe"))
+   (list :name (name universe)
+         :location (location universe))
+
+   :if-exists :supersede))
+
+(defmethod persist ((multiverse multiverse) &key &allow-other-keys)
+  "Persists a universe definition and not what it contains! Path to file is of this general format
+/multiverse/universe-name/universe-name.universe."
+  (naive-impl:write-to-file
+   (cl-fad:merge-pathnames-as-file
+    (pathname (location multiverse))
+    (make-pathname :name (name multiverse)
+                   :type "multiverse"))
+   (list :name (name multiverse)
+         :location (location multiverse))
+
+   :if-exists :supersede))
+
 (defgeneric persist-collection-def (colleciton)
-  (:documentation "Persists a collection definition. Path to file is of this general format /universe/store-name/collection-name.col."))
+  (:documentation "Persists a collection definition. Path to file is of this general format /multiverse/universe/store-name/collection-name.col."))
 
 (defmethod persist-collection-def ((collection collection))
   (naive-impl:write-to-file
@@ -347,9 +417,31 @@ files are loaded. (see store notes for more about this.).")
       (lparallel:receive-result channel))))
 
 (defmethod persist ((collection collection) &key &allow-other-keys)
-  "Persists a collection definition and the documents in a collection. Path to file for data is this general format /universe/store-name/collection-name/collection-name.log."
+  "Persists a collection definition and the documents in a collection.
+Path to file for data is this general format /multiverse/universe/store-name/collection-name/collection-name.log."
   (persist-collection-def collection)
   (persist-collection collection))
+
+(defgeneric add-universe (multiverse universe)
+  (:documentation "Adds a universe document to a multiverse."))
+
+(defmethod add-universe ((multiverse multiverse) (universe universe))
+  (unless (get-universe multiverse (name universe))
+    (when (location universe)
+      (ensure-directories-exist (pathname (location universe))))
+    (unless (location universe)
+      (let ((location
+              (cl-fad:merge-pathnames-as-directory
+               (pathname (location multiverse))
+               (make-pathname :directory (list :relative (name universe))))))
+
+        (ensure-directories-exist location)
+        (setf (location universe) (pathname location))))
+
+    (setf (multiverse universe) multiverse)
+    (persist multiverse)
+    (pushnew multiverse (universes multiverse)))
+  universe)
 
 (defgeneric add-store (universe store)
   (:documentation "Adds a store document to a universe."))
@@ -373,21 +465,50 @@ files are loaded. (see store notes for more about this.).")
     (pushnew store (stores universe)))
   store)
 
-(defun get-store-from-def (universe store-name)
-  "Tries to find a store definition file on disk and if it does it loads the store into the universe, but it does not load the collections!."
-  (let ((filename (cl-fad:merge-pathnames-as-file
-                   (pathname (location universe))
-                   (make-pathname :directory (list :relative store-name)
-                                  :name store-name
-                                  :type "store")))
-        (store-def)
-        (store))
+(defun get-definitions (location definition-type)
+  "Returns persisted definitions for the type (multiverse, universe, store, collection) using the passed object that can be a multiverse, universe, store, collection.
+If no definition-type is not supplied the definition of the object is returned."
+  (mapcar (lambda (filename)
+            (naive-impl:sexp-from-file filename))
+          (directory (format nil "~A/**/*.~A"
+                             location definition-type))))
 
-    (with-open-file (in filename :if-does-not-exist :create)
-      (with-standard-io-syntax
-        (when in
-          (setf store-def (read in nil))
-          (close in))))
+(defun get-definition (location definition-type name)
+  "Returns a persisted definition for the type (multiverse, universe, store, collection) using the passed object that can be a multiverse, universe, store, collection."
+  (naive-impl:sexp-from-file
+   (car (directory (format nil "~A/**/~A.~A"
+                           location name definition-type)))))
+
+(defun instance-from-definition-file (location definition-type name class)
+  (let ((definition (get-definition location definition-type name)))
+    (when definition
+      (make-instance class
+                     :name (getx definition :name)
+                     :location (getx definition :location)))))
+
+(defun instance-from-definition (definition class)
+  (make-instance class
+                 :name (getx definition :name)
+                 :location (getx definition :location)))
+
+(defun read-definition (filename)
+  (with-open-file (in filename :if-does-not-exist :create)
+    (with-standard-io-syntax
+      (when in
+        (prog1
+            (read in nil)
+          (close in))))))
+
+(cl-naive-deprecation::define-deprecated-function
+    get-store-from-def (universe store-name)
+  "Tries to find a store definition file on disk and returns a store instance."
+  (let ((store-def (naive-impl:sexp-from-file
+                    (cl-fad:merge-pathnames-as-file
+                     (pathname (location universe))
+                     (make-pathname :directory (list :relative store-name)
+                                    :name store-name
+                                    :type "store"))))
+        (store))
 
     (when store-def
       (setf store
@@ -396,22 +517,22 @@ files are loaded. (see store notes for more about this.).")
                            :location (getx store-def :location))))
     store))
 
+;;TODO: Revisit this function to see if it can be deprecated in favour
+;;of some instance-from-* function.  Initial investigation shows that
+;;document-types has a its own implementation that loads
+;;document-types for the store because the collection instance needs a
+;;reference to the document-type. For that it needs the store instance
+;;which seems to be an issue since instance-from-* functions does not
+;;have access to the store.
 (defgeneric get-collection-from-def (store collection-name)
   (:documentation "Tries to find the collection definition file on disk and loads it into the store, but it does not load the collection's data."))
 
 (defmethod get-collection-from-def ((store store) collection-name)
-  (let ((filename (cl-fad:merge-pathnames-as-file
-                   (pathname (location store))
-                   (make-pathname :name collection-name
-                                  :type "col")))
-        (collection-def))
-
-    (with-open-file (in filename :if-does-not-exist :create)
-      (with-standard-io-syntax
-        (when in
-          (setf collection-def (read in nil))
-          (close in))))
-
+  (let ((collection-def (naive-impl:sexp-from-file
+                         (cl-fad:merge-pathnames-as-file
+                          (pathname (location store))
+                          (make-pathname :name collection-name
+                                         :type "col")))))
     (when collection-def
       (make-instance (collection-class store)
                      :store store

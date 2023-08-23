@@ -140,6 +140,7 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
                                   :concrete-type (concrete-type element)
                                   :attributes (attributes element)))
                           (elements document-type))))
+
     (naive-impl:write-to-file (cl-fad:merge-pathnames-as-file
                                (pathname (location (store document-type)))
                                (make-pathname :name (name document-type)
@@ -202,24 +203,23 @@ IMPL NOTES: To deal with customization of document-type.")
                    :documentation "List of document-types represented by this store's collections.")))
 
 (defmethod get-collection-from-def ((store document-type-store-mixin) collection-name)
+  "Tries to find the collection definition file on disk and loads it into the store, but it does not load the collection's data.
+Needs to find the associated docment-type as well which might mean loading the all the document types for the store."
   (let ((collection-def (naive-impl:sexp-from-file
                          (cl-fad:merge-pathnames-as-file
                           (pathname (location store))
                           (make-pathname :name collection-name
                                          :type "col")))))
+
     (when collection-def
       (let ((document-type (get-document-type
                             store
-                            (or (getx collection-def :document-type)
-                                ;;TODO: Backwards compatibility to be removed some time in the future.
-                                (getx collection-def :document-type)))))
+                            (getx collection-def :document-type))))
         (unless document-type
           (load-store-document-types store)
           (setf document-type (get-document-type
                                store
-                               (or (getx collection-def :document-type)
-                                   ;;TODO: Backwards compatibility
-                                   (getx collection-def :document-type)))))
+                               (getx collection-def :document-type))))
 
         (unless document-type
           (error "Collection document-type could not be found."))
@@ -286,36 +286,36 @@ IMPL NOTES: To deal with customization of document-type.")
                  (pathname (location store))
                  (make-pathname :directory '(:relative :wild-inferiors)
                                 :name :wild
-                                :type "type"))))
-        (type-contents))
+                                :type "type")))))
     (dolist (file files)
-      (with-open-file (in file :if-does-not-exist :create)
-        (with-standard-io-syntax
-          (when in
-            (setf type-contents (read in nil))
-            (close in))))
+      (let ((type-contents (naive-impl:sexp-from-file file)))
 
-      (let ((elements)
-            (document-type (add-document-type
-                            store
-                            (make-instance (document-type-class store)
-                                           :name (getx type-contents :name)
-                                           :label (getx type-contents :label)
-                                           :elements nil))))
+        (unless (getx type-contents :name)
+          (error "Type contents is nil but the file exists. ~%~%File: ~S~%Contents: ~S~%Contents Queried on Error again: ~S"
+                 file type-contents
+                 (naive-impl:sexp-from-file file)))
 
-        (dolist (element (getx type-contents :elements))
+        (let ((elements)
+              (document-type (add-document-type
+                              store
+                              (make-instance (document-type-class store)
+                                             :name (getx type-contents :name)
+                                             :label (getx type-contents :label)
+                                             :elements nil))))
 
-          (setf elements
-                (append elements
-                        (list (make-instance
-                               (element-class document-type)
-                               :name (getx element :name)
-                               :key-p (getx element :key-p)
-                               :concrete-type (getx element :concrete-type)
-                               :attributes (getx element :attributes)))))
+          (dolist (element (getx type-contents :elements))
 
-          setf elements)
-        (setf (elements document-type) elements)))))
+            (setf elements
+                  (append elements
+                          (list (make-instance
+                                 (element-class document-type)
+                                 :name (getx element :name)
+                                 :key-p (getx element :key-p)
+                                 :concrete-type (getx element :concrete-type)
+                                 :attributes (getx element :attributes)))))
+
+            setf elements)
+          (setf (elements document-type) elements))))))
 
 (defmethod load-store-collections ((store document-type-store-mixin) &key with-data-p
                                    &allow-other-keys)

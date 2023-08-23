@@ -53,6 +53,9 @@
    ;;:location
    :store-class
 
+   :multiverse
+   :universe-class
+
    ;;##methods
    :key-values
    :existing-document
@@ -62,14 +65,23 @@
    :document-values
    :deleted-p
    :delete-document
+   :get-universe
    :get-store
    :get-document-type
    :get-collection
    :find-collection-definitions
+
+   :get-definitions
+
+   :get-definition
+   :instance-from-definition-file
+   :instance-from-definition
+
    :get-store-from-def
    :get-collection-from-def
 
    ;;adding
+   :add-universe
    :add-store
    :add-collection
    :add-document-type

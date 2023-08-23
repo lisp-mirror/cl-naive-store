@@ -153,10 +153,10 @@ So if you are customising cl-naive-store use do-sequence for simple parallel pro
 (defun call-do-sequence (thunk with-index-p sequence &key parallel-p)
   (if (and (not *disable-parallel-p*) parallel-p)
       (lparallel:pdotimes (index (length sequence))
-                          (let ((element (elt sequence index)))
-                            (if with-index-p
-                                (funcall thunk element index)
-                                (funcall thunk element))))
+        (let ((element (elt sequence index)))
+          (if with-index-p
+              (funcall thunk element index)
+              (funcall thunk element))))
       (etypecase sequence
         (list
          (loop for index from 0

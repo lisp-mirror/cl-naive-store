@@ -8,7 +8,8 @@
                "split-sequence" "uuid" "local-time"
                "cl-getx" "cl-murmurhash" "ironclad"
                "lparallel" "cl-cpus"
-	       "bordeaux-threads")
+               "bordeaux-threads"
+               "cl-naive-deprecation")
   :components
   ((:file "src/naive-store/packages")
    (:file "src/naive-store/naive-impl/package"

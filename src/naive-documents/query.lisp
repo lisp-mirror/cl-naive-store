@@ -49,7 +49,7 @@ By default it is on.")
 
 (defmethod (setf getx) (value (document document) accessor
                         &key (change-control-p *change-control-p*)
-                        (use-element-definition-p)
+                        ;;(use-element-definition-p)
                         &allow-other-keys)
 
   (cond ((equalp accessor :hash)
