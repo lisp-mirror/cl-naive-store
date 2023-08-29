@@ -103,7 +103,7 @@
                           :concrete-type (getf element :concrete-type)
                           :attributes (getf element :attributes))))))
 
-        (push (add-document-type
+        (push (cl-naive-store.naive-core:add-multiverse-element
                store
                (make-instance
                 'document-type
@@ -194,19 +194,24 @@ which contain the actual data. Each collection will have its own directory and f
     (time (load-data collection))))
 
 (defun populate-simple-data (persist-p &key (size *simple-size*))
-  (let ((collection (get-collection (get-store *universe* "simple-store")
-                                    "simple-collection"))
-        (asset-collection (get-collection (get-store *universe* "simple-store")
-                                          "asset-collection"))
-        (emp-race '("African" "White" "Indian" "Chinese" "Coloured"))
-        (emp-gender '("Male" "Female"))
-        (emp-surnames '("Smith"
-                        "Johnson"
-                        "Williams"
-                        "Jones"
-                        "Brown"
-                        "Davis"
-                        "Miller")))
+  (let* ((store (get-multiverse-element :store *universe* "simple-store"))
+         (collection (get-multiverse-element
+                      :collection
+                      store
+                      "simple-collection"))
+         (asset-collection (cl-naive-store.naive-core:get-multiverse-element
+                            :collection
+                            store
+                            "asset-collection"))
+         (emp-race '("African" "White" "Indian" "Chinese" "Coloured"))
+         (emp-gender '("Male" "Female"))
+         (emp-surnames '("Smith"
+                         "Johnson"
+                         "Williams"
+                         "Jones"
+                         "Brown"
+                         "Davis"
+                         "Miller")))
 
     ;;Make sure that any previously persisted documents are already loaded from disk.
     (load-data-x collection)
@@ -254,8 +259,10 @@ which contain the actual data. Each collection will have its own directory and f
                 (add-document collection document)))))))
 
 (defun query-simple-data ()
-  (let* ((collection (get-collection (get-store *universe* "simple-store")
-                                     "simple-collection"))
+  (let* ((collection (cl-naive-store.naive-core:get-multiverse-element
+                      :collection
+                      (get-multiverse-element :store *universe* "simple-store")
+                      "simple-collection"))
          (result (query-data collection :query (lambda (document)
                                                  (<= (getx document :emp-no) 50)))))
     ;; TODO: Why do we try twice?
@@ -266,14 +273,19 @@ which contain the actual data. Each collection will have its own directory and f
                                               (<= (getx document :emp-no) 50)))))))
 
 (defun query-ref-doc ()
-  (let* ((collection (get-collection (get-store *universe* "simple-store")
-                                     "simple-collection"))
+  (let* ((store (get-multiverse-element :store *universe* "simple-store"))
+         (collection (cl-naive-store.naive-core:get-multiverse-element
+                      :collection
+                      store
+                      "simple-collection"))
          (reference-doc
            (query-document collection :query (lambda (document)
                                                (= (getx document :emp-no) 1)))))
     (if (document-p reference-doc)
-        (if (index-lookup-hash (get-collection (get-store *universe* "simple-store")
-                                               "asset-collection")
+        (if (index-lookup-hash (cl-naive-store.naive-core:get-multiverse-element
+                                :collection
+                                store
+                                "asset-collection")
                                (hash (getx reference-doc :asset)))
             reference-doc)
         reference-doc)))
@@ -325,8 +337,10 @@ which contain the actual data. Each collection will have its own directory and f
               test-results)))
 
     (let ((documents (documents
-                      (get-collection (get-store *universe* "simple-store")
-                                      "simple-collection"))))
+                      (get-multiverse-element
+                       :collection
+                       (get-multiverse-element :store *universe* "simple-store")
+                       "simple-collection"))))
       (push (list :documents-count-simple-size
                   (= (if (hash-table-p documents)
                          (hash-table-count documents)
@@ -357,8 +371,10 @@ which contain the actual data. Each collection will have its own directory and f
   (populate-simple-data t)
 
   ;;Unload the collection (contains the data) if it is already loaded.
-  (let ((collection (get-collection (get-store *universe* "simple-store")
-                                    "simple-collection")))
+  (let ((collection (cl-naive-store.naive-core:get-multiverse-element
+                     :collection
+                     (get-multiverse-element :store *universe* "simple-store")
+                     "simple-collection")))
     (when (data-loaded-p collection)
       (clear-collection collection)))
   ;;Query the data in the universe
@@ -384,8 +400,10 @@ which contain the actual data. Each collection will have its own directory and f
   (populate-simple-data t)
 
   (let ((results (query-simple-data))
-        (collection (get-collection (get-store *universe* "simple-store")
-                                    "simple-collection")))
+        (collection (get-multiverse-element
+                     :collection
+                     (get-multiverse-element :store *universe* "simple-store")
+                     "simple-collection")))
 
     ;;Delete the top 51 documents
     (dolist (document results)
@@ -418,8 +436,10 @@ which contain the actual data. Each collection will have its own directory and f
     ;;Query the data in the universe
     (setf data (query-simple-data))
 
-    (let ((collection (get-collection (get-store *universe* "simple-store")
-                                      "simple-collection")))
+    (let ((collection (get-multiverse-element
+                       :collection
+                       (get-multiverse-element :store *universe* "simple-store")
+                       "simple-collection")))
 
       (dolist (document data)
         (if (equalp *document-type* 'document)
@@ -465,8 +485,10 @@ which contain the actual data. Each collection will have its own directory and f
     (test-all-simple)))
 
 (defun query-monster-data ()
-  (let ((collection (get-collection (get-store *universe* "simple-store")
-                                    "simple-collection")))
+  (let ((collection (get-multiverse-element
+                     :collection
+                     (get-multiverse-element :store *universe* "simple-store")
+                     "simple-collection")))
     (query-data collection :query
                 (let ((size *monster-size*))
                   (lambda (document)
@@ -481,8 +503,10 @@ which contain the actual data. Each collection will have its own directory and f
                          (<= (getx document :emp-no) size))))))))
 
 (defun populate-monster-data (persist-p &key (size *monster-size*))
-  (let ((collection (get-collection (get-store *universe* "simple-store")
-                                    "simple-collection"))
+  (let ((collection (get-multiverse-element
+                     :collection
+                     (get-multiverse-element :store *universe* "simple-store")
+                     "simple-collection"))
         (emp-race '("African" "White" "Indian" "Chinese" "Coloured"))
         (shards (make-hash-table :test 'equalp))
         (emp-gender '("Male" "Female"))
@@ -571,8 +595,10 @@ Only peristed if persist-p is t."
             test-results))
 
     (let ((documents (documents
-                      (get-collection (get-store *universe* "simple-store")
-                                      "simple-collection"))))
+                      (get-multiverse-element
+                       :collection
+                       (get-multiverse-element :store *universe* "simple-store")
+                       "simple-collection"))))
       (push (list :documents-count-monster
                   (= (if (hash-table-p documents)
                          (hash-table-count documents)
@@ -600,8 +626,10 @@ Only peristed if persist-p is t."
 
   (when *universe*
     ;;Unload the collection (contains the data) if it is already loaded.
-    (let ((collection (get-collection (get-store *universe* "simple-store")
-                                      "simple-collection")))
+    (let ((collection (get-multiverse-element
+                       :collection
+                       (get-multiverse-element :store *universe* "simple-store")
+                       "simple-collection")))
       ;;Clear the collection
       (when (data-loaded-p collection)
         (clear-collection collection))))
@@ -650,8 +678,10 @@ Only peristed if persist-p is t."
   (unless *universe*
     (setup-universe))
 
-  (let ((collection (get-collection (get-store *universe* "simple-store")
-                                    "simple-collection")))
+  (let ((collection (get-multiverse-element
+                     :collection
+                     (get-multiverse-element :store *universe* "simple-store")
+                     "simple-collection")))
     (unless (documents collection)
       (load-data collection))
 
@@ -663,8 +693,10 @@ Only peristed if persist-p is t."
   (unless *universe*
     (setup-universe))
 
-  (let ((collection (get-collection (get-store *universe* "simple-store")
-                                    "simple-collection")))
+  (let ((collection (get-multiverse-element
+                     :collection
+                     (get-multiverse-element :store *universe* "simple-store")
+                     "simple-collection")))
     (unless (documents collection)
       (load-data collection))
 
@@ -677,8 +709,10 @@ Only peristed if persist-p is t."
   (unless *universe*
     (setup-universe))
 
-  (let ((collection (get-collection (get-store *universe* "simple-store")
-                                    "simple-collection")))
+  (let ((collection (get-multiverse-element
+                     :collection
+                     (get-multiverse-element :store *universe* "simple-store")
+                     "simple-collection")))
     (unless (documents collection)
       (load-data collection))
 
@@ -888,8 +922,10 @@ or signal an error."
   (tear-down-universe)
   (setup-universe)
   (populate-monster-data nil :size *monster-size*)
-  (let ((collection (get-collection (get-store *universe* "simple-store")
-                                    "simple-collection")))
+  (let ((collection (get-multiverse-element
+                     :collection
+                     (get-multiverse-element :store *universe* "simple-store")
+                     "simple-collection")))
     (format t "#shards = ~S~%" (length (shards collection)))
     (sb-sprof:reset)
     (sb-sprof:start-profiling)

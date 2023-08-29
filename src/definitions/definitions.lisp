@@ -160,7 +160,7 @@ and parent definition."))
                          `(chain
                            (((lambda (node)
                                (when (listp node)
-                                 (find (getf element :document-type) ',known-doc-types
+                                 (find (getf node :document-type) ',known-doc-types
                                        :test #'string-equal)))
                              :collection)))))
 
@@ -207,7 +207,9 @@ and parent definition."))
     (topological-sort nodes adjacency-list)))
 
 (defun create-document-types (store document-type-definitions known-doc-types
-                              &key persist-p)
+                              &key (document-type-class
+                                    'cl-naive-store.document-types:document-type)
+                              persist-p)
   "Create document types in the specified order of dependencies and add them to the store."
   (let* ((doc-type-defs
            (mapcar (lambda (doc-type-def)
@@ -225,14 +227,20 @@ and parent definition."))
       (let* ((doc-type-def (getf
                             (cdr (assoc doc-type-name doc-type-defs))
                             :document-type))
-             (doc-type (make-instance 'cl-naive-store.document-types:document-type
+             (doc-type (make-instance (or
+                                       (getx doc-type-def :class)
+                                       document-type-class
+                                       'cl-naive-store.document-types:document-type)
                                       :store store
                                       :name (getf doc-type-def :name)
                                       :label (getf doc-type-def :label)
                                       :elements '())))
 
         (dolist (element-def (getf doc-type-def :elements))
-          (let ((element (make-instance 'cl-naive-store.document-types:element
+          (let ((element (make-instance (or
+                                         (getx element-def :class)
+                                         (getx doc-type-def :element-class)
+                                         'cl-naive-store.document-types:element)
                                         :name (getf element-def :name)
                                         :key-p (getf element-def :key-p)
                                         :concrete-type (getf element-def :concrete-type)
@@ -240,7 +248,7 @@ and parent definition."))
 
             (push element (cl-naive-store.document-types:elements doc-type))))
 
-        (cl-naive-store.document-types:add-document-type
+        (cl-naive-store.naive-core:add-multiverse-element
          store doc-type :persist-p persist-p)))))
 
 (defun create-collections (store
@@ -265,85 +273,159 @@ and parent definition."))
                               :collection
                               collection-name
                               collection-definitions))
-             (collection-definition (getf collection-def :collection))
-             (collection
-               (cl-naive-store.naive-core:add-collection
-                store
-                (make-instance
-                 collection-class
-                 :store store
-                 :name (getf collection-definition :name)
-                 :location (merge-pathnames
-                            (make-pathname
-                             :directory
-                             (list :relative
-                                   (getf collection-definition :name)))
-                            (format nil "~A"
-                                    (pathname (cl-naive-store.naive-core:location
-                                               store))))
-                 :document-type
-                 (cl-naive-store.document-types:get-document-type
-                  store
-                  (getf collection-definition :data-type))))))
-        (when persist-p
-          (cl-naive-store.naive-core:persist-collection-def collection))))))
+             (collection-definition (getf collection-def :collection)))
 
-(defun create-multiverse (multiverse &optional persist-p)
-  (let ((universes '()))
-    (dolist (universe-def (getf multiverse :multiverse))
+        (cl-naive-store.naive-core:add-multiverse-element
+         store
+         (make-instance
+          ;;because there is a high likelyhood that nil was
+          ;;passed for collection-class which would negate
+          ;;default value doubling up with or
+          (or
+           (getx collection-definition :class)
+           collection-class
+           'cl-naive-store.naive-documents:document-collection)
+          :store store
+          :name (getf collection-definition :name)
+          :location (merge-pathnames
+                     (make-pathname
+                      :directory
+                      (list :relative
+                            (getf collection-definition :name)))
+                     (format nil "~A"
+                             (pathname (cl-naive-store.naive-core:location
+                                        store))))
+          :document-type
+          (cl-naive-store.document-types:get-document-type
+           store
+           (getf collection-definition :data-type)))
+         :persist-p persist-p)))))
 
-      (let* ((universe-definition (getf universe-def :universe))
-             (universe
-               (make-instance (getf universe-definition :universe-class)
-                              :store-class (getf universe-definition :store-class)
-                              :location
-                              (merge-pathnames
-                               (make-pathname
-                                :directory
-                                (list :relative (getf universe-definition :name)))
-                               (getf universe-definition :location)))))
-        (when persist-p
-          (ensure-directories-exist (cl-naive-store.naive-core:location universe)))
+(defun traverse-apply (criteria plist-tree func)
+  "Traverses the plist-tree and calls the attribute-func for each attribute pair that matches the criteria supplied.
+The criteria selects plists in the plist-tree.  The ATTRIBUTE-FUNC is called one each attribute of each selected plist.
 
-        (dolist (store-def (getf universe-definition :stores))
-          (let* ((store-definition (getf store-def :store))
-                 (store
-                   (cl-naive-store.naive-core:add-store
-                    universe
-                    (make-instance (getf universe-definition :store-class)
-                                   :universe universe
-                                   :name (getf store-definition :name)
-                                   :collection-class
-                                   (getf universe-definition :collection-class)
-                                   :location
-                                   (merge-pathnames
-                                    (make-pathname
-                                     :directory
-                                     (list :relative
-                                           (getf store-definition :name)))
-                                    (format nil "~A/"
-                                            (cl-naive-store.naive-core:location universe)))))))
-            (when persist-p
-              (ensure-directories-exist (cl-naive-store.naive-core:location store))
-              (cl-naive-store.naive-core:persist store))
+Note: all the attribute in the criteria are matched into a single plist, to select it.
 
-            ;; Get the known document types and collection names first
-            (let* ((known-doc-types (get-document-type-names
-                                     (getf store-definition :document-types)))
-                   (known-coll-names (get-collection-names
-                                      (getf store-definition :collections))))
+An item in the criteria can be specific like (:att \"x\") which will match all attribute with name = :att and value = \"x\".
+Or the item in the criteria can be non specific (:att) which will match all attributes with then name :att.
+Specific and non specific criteria elements can be mixed like ((:att \"x\") (:other-att))
+"
+  (dolist (plist (cl-naive-ptrees:query plist-tree criteria))
+    (funcall func plist)))
 
-              ;; Then pass them to the creation functions
-              (create-document-types store
-                                     (getf store-definition :document-types)
-                                     known-doc-types
-                                     :persist-p persist-p)
-              (create-collections
-               store
-               (getf store-definition :collections)
-               (getf store-definition :document-types)
-               known-coll-names
-               :collection-class (getf universe-definition :collection-class)
-               :persist-p persist-p))))
-        (push universe universes)))
-    (nreverse universes)))
+(defun make-universe (multiverse universe-definition)
+  (setf universe-definition (getx universe-definition :universe))
+  (or
+   (cl-naive-store.naive-core:get-multiverse-element :universe
+                                                     multiverse
+                                                     (getf universe-definition :name))
+   (make-instance (or
+                   (getx universe-definition :universe-class)
+                   (cl-naive-store.naive-core:universe-class
+                    multiverse))
+                  :store-class (getx universe-definition :store-class)
+                  :location
+                  (merge-pathnames
+                   (make-pathname
+                    :directory
+                    (list :relative
+                          (getx universe-definition :name)))
+                   (cl-naive-store.naive-core:location
+                    multiverse)))))
+
+(defun make-multiverse (multiverse-definition)
+  (make-instance 'cl-naive-store.naive-core:multiverse
+                 :name (digx multiverse-definition :multiverse :name)
+                 :location (digx multiverse-definition :multiverse :location)
+                 :universe-class
+                 (or (digx multiverse-definition :multiverse :universe-class)
+                     'cl-naive-store.naive-core:universe)))
+
+(defun make-store (universe store-definition)
+  (when (equal (car store-definition) :store)
+    (setf store-definition (getx store-definition :store)))
+  (or
+   (cl-naive-store.naive-core:get-multiverse-element :store universe
+                                                     (getx store-definition :name))
+
+   (cl-naive-store.naive-core:add-multiverse-element
+    universe
+    (make-instance (or (getx store-definition :store-class)
+                       (cl-naive-store.naive-core:store-class universe))
+                   :universe universe
+                   :name (getx store-definition :name)
+                   :collection-class (or
+                                      (getx store-definition :collection-class)
+                                      (getx store-definition :collection-class))
+                   :location
+                   (merge-pathnames
+                    (make-pathname
+                     :directory
+                     (list :relative
+                           (getx store-definition :name)))
+                    (format nil "~A/"
+                            (cl-naive-store.naive-core:location
+                             universe))))
+    :persist-p t)))
+
+(defun create-stores (universe universe-definition &key persist-p)
+  (traverse-apply
+   '(chain
+     ((:stores))
+     ((:store)))
+   universe-definition
+   (lambda (store-definition)
+     (setf store-definition (getx store-definition :store))
+
+     (let* ((store (make-store universe store-definition)))
+       (let* ((known-doc-types (get-document-type-names
+                                (getx store-definition :document-types)))
+              (known-coll-names (get-collection-names
+                                 (getx store-definition :collections))))
+
+         (create-document-types store
+                                (getx store-definition :document-types)
+                                known-doc-types
+                                :document-type-class
+                                (or
+                                 (getx store-definition :document-type-class)
+                                 (getx universe-definition :document-type-class))
+                                :persist-p persist-p)
+
+         (create-collections
+          store
+          (getx store-definition :collections)
+          (getx store-definition :document-types)
+          known-coll-names
+          :collection-class (or (getx store-definition :collection-class)
+                                (getx universe-definition :collection-class))
+          :persist-p persist-p)
+
+         (cl-naive-store.naive-core:add-multiverse-element universe store :persist-p t)
+
+         (when persist-p
+           (ensure-directories-exist (cl-naive-store.naive-core:location store))
+           (cl-naive-store.naive-core:persist store)))))))
+
+(defun create-multiverse (multiverse-definition &optional persist-p multiverse)
+  (unless multiverse
+    (setf multiverse
+          (make-multiverse multiverse-definition))
+
+    ;;Using traverse-apply instead of simple dolist so that we can
+    ;;accomodate at least a small degree of flexibility in the
+    ;;structure of the universe definition
+    (traverse-apply
+     '(chain
+       ((:multiverse))
+       ((:universe)))
+     multiverse-definition
+     (lambda (universe-definition)
+       (let* ((universe (make-universe multiverse universe-definition)))
+         (cl-naive-store.naive-core:add-multiverse-element multiverse universe
+                                                           :persist-p t)
+         (when persist-p
+           (ensure-directories-exist (cl-naive-store.naive-core:location universe)))
+         (create-stores universe universe-definition :persist-p persist-p)))))
+  multiverse)

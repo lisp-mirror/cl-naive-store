@@ -12,6 +12,8 @@
                "cl-naive-deprecation")
   :components
   ((:file "src/naive-store/packages")
+   (:file "src/naive-store/deprecations"
+    :depends-on ("src/naive-store/packages"))
    (:file "src/naive-store/naive-impl/package"
     :depends-on ("src/naive-store/packages"))
    (:file "src/naive-store/naive-impl/common"

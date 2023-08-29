@@ -3,48 +3,83 @@
 ;;TODO: Do we need to implement a generic function so that we can deal with multiverse?
 ;;TODO: We need to save the universe as well if we want to take full advantage of multiverse concept.
 
+;;Yes we need generic functions so we can deal with multiverse in a
+;;backwards compatible way!!!
+
 (defun load-document-reference-collection (universe document-ref)
   "When documents are persisted to file any document values that are referencing a document in a different collection is first sanitized (just enough info to retrieve the document later from where it is stored).
 
 When documents are read from a file the references need to be converted to documents but for that to happen the collection containing the referenced documents need to be loaded first."
-  (let* ((reference-universe
-           (if (getx document-ref :universe)
-               (or
-                (and (multiverse universe)
-                     (cl-naive-store.naive-core:get-universe
-                      (multiverse universe)
-                      (getx document-ref :universe)))
-                (and (multiverse universe)
+
+  ;;TODO: Doing this and other crazies for backwards compatibility,
+  ;;should be removed at some stage and an error should be raised if
+  ;;no multiverse is set for the universe.
+  (let ((multiverse (or (multiverse universe)
+                        (make-instance 'multiverse
+                                       :name "multiverse"
+                                       :location (cl-fad:pathname-parent-directory
+                                                  (location universe))))))
+
+    (unless (multiverse universe)
+      (setf (multiverse universe)
+            multiverse))
+
+    (let* ((universe-name (or (getx document-ref :universe)
+                              (name universe)))
+           (reference-universe
+             (or
+              (and (not (getx document-ref :universe))
+                   universe)
+              (and (equalp (getx document-ref :universe) (name universe))
+                   universe)
+              (progn
+                (break "Fuck ~S" (getx document-ref :universe))
+                (cl-naive-store.naive-core:get-multiverse-element
+                 :universe
+                 (multiverse universe)
+                 (getx document-ref :universe))
+                (and (get-definition (location multiverse)
+                                     :universe universe-name)
                      (cl-naive-store.naive-core::instance-from-definition-file
-                      (location (multiverse universe))
-                      "universe"
-                      (getx document-ref :universe)
-                      (or (universe-class (multiverse universe))
-                          'universe)))
-                (make-instance
-                 'universe
-                 :name (getx document-ref :universe)
-                 :location (location universe)
-                 :multiverse (make-instance 'multiverse
-                                            :name "multiverse"
-                                            :location (location universe))))
-               universe))
+                      (location multiverse)
+                      multiverse :universe (getx document-ref :universe))))
+              ;;If we get here then it means we are dealing with a
+              ;;very brokend database. Should consider removing this.
+              (make-instance (universe-class multiverse)
+                             :name universe-name
+                             :location (cl-fad:merge-pathnames-as-directory
+                                        (location multiverse)
+                                        (make-pathname
+                                         :directory (list :relative
+                                                          universe-name)))
+                             :store-class 'store)))
+           (store (or
+                   (cl-naive-store.naive-core:get-multiverse-element
+                    :store
+                    reference-universe
+                    (getx document-ref :store))
+                   (cl-naive-store.naive-core::instance-from-definition-file
+                    (location reference-universe)
+                    reference-universe :store (getx document-ref :store))))
+           (collection (or
+                        (cl-naive-store.naive-core:get-multiverse-element
+                         :collection
+                         store
+                         (getx document-ref :collection))
+                        (cl-naive-store.naive-core::instance-from-definition-file
+                         (location store)
+                         reference-universe :collection
+                         (getx document-ref :collection))))
+           (shard-mac (getx document-ref :shard-mac)))
 
-         (store (get-store* reference-universe (getx document-ref :store)))
-         (collection (get-collection* store (getx document-ref :collection)))
-         (shard-mac (getx document-ref :shard-mac)))
+      (if shard-mac
+          (let ((shard (get-shard collection shard-mac)))
+            (when shard
+              (cl-naive-store.naive-core::load-shard collection shard nil)))
 
-    (unless collection
-      (setf collection (add-collection store (getx document-ref :collection))))
+          (load-data collection :parallel-p nil))
 
-    (if shard-mac
-        (let ((shard (get-shard collection shard-mac)))
-          (when shard
-            (cl-naive-store.naive-core::load-shard collection shard nil)))
-
-        (load-data collection :parallel-p nil))
-
-    collection))
+      collection)))
 
 (defgeneric find-document-by-hash (collection hash &key shards &allow-other-keys)
   (:documentation "Finds the document that matches the hash."))
@@ -139,10 +174,10 @@ When documents are read from a file the references need to be converted to docum
 
     ref-document))
 
-;;Made this a seperate method so simple units tests can test basic parsing.
 (defgeneric compose-document (collection shard document-form &key &allow-other-keys)
   (:documentation "The loading of documents happens in a two step process. First documents are read with (*read-eval* nil). Then the sexp representing a raw document is processed to compose the required in memory representation."))
 
+;;Made this a seperate method so simple units tests can test basic parsing.
 (defgeneric compose-parse (collection shard sexp doc)
   (:documentation "Processes document form for compose-document."))
 

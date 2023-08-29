@@ -70,10 +70,12 @@
           (getf *employee-document-type* :elements)))
 
 (defparameter *document-type*
-  (add-document-type *store* (make-instance 'document-type
-                                            :name (getf *employee-document-type* :name)
-                                            :label (getf *employee-document-type* :label)
-                                            :elements *elements*)))
+  (cl-naive-store.naive-core:add-multiverse-element
+   *store*
+   (make-instance 'document-type
+                  :name (getf *employee-document-type* :name)
+                  :label (getf *employee-document-type* :label)
+                  :elements *elements*)))
 
 (defparameter *collection*
   (add-collection *store* (make-instance (collection-class *store*)

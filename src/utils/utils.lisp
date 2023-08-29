@@ -49,9 +49,10 @@
                  store
                  (make-instance 'cl-naive-store.naive-documents:document-collection
                                 :name collection-name
-                                :document-type (add-document-type
-                                                store
-                                                document-type)
+                                :document-type
+                                (cl-naive-store.naive-core:add-multiverse-element
+                                 store
+                                 document-type)
                                 :keys (definition-keys document-type
                                                        document-type-def)
                                 ;;Specifying the elements to set up indexes for.
@@ -79,7 +80,7 @@ from the first itteration and create any collections.
   (let ((collections))
     (mapcar (lambda (def)
               (if (equal (car def) :document-type)
-                  (add-document-type
+                  (cl-naive-store.naive-core:add-multiverse-element
                    store
                    (make-instance
                     'cl-naive-store.document-types:document-type

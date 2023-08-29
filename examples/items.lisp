@@ -5,7 +5,7 @@
                              :cl-getx :cl-naive-store.naive-core
                              :cl-naive-store.naive-indexed
                              :cl-naive-store.document-types
-                             :cl-naive-store.document-type-defs
+                             :cl-naive-store.definitions
                              :cl-naive-store.naive-documents))
 (in-package :naive-examples)
 
@@ -50,12 +50,12 @@
     (setf
      elements
      (append elements
-	     (list (make-instance
-		    'element
-		    :name (getf element :name)
-		    :key-p (getf element :key-p)
-		    :concrete-type (getf element :concrete-type)
-		    :attributes (getf element :attributes))))))
+             (list (make-instance
+                    'element
+                    :name (getf element :name)
+                    :key-p (getf element :key-p)
+                    :concrete-type (getf element :concrete-type)
+                    :attributes (getf element :attributes))))))
 
   (setf document-type (add-document-type
                        store
@@ -136,10 +136,14 @@
 
   (reverse results))
 
-(let ((sannie (first (index-lookup-values (get-collection
-                                           (get-store *universe* "simple-store")
-                                           "simple-collection")
-                                          (list (list :name "Sannie")
-                                                (list :surname "Gieter"))))))
+(let ((sannie (first (index-lookup-values
+                      (get-multiverse-element
+                       :collection
+                       (cl-naive-store.naive-core:get-multiverse-element
+                        :store
+                        *universe* "simple-store")
+                       "simple-collection")
+                      (list (list :name "Sannie")
+                            (list :surname "Gieter"))))))
 
   (setf (getx sannie :surname) "Potgieter"))

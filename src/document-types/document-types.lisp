@@ -147,6 +147,11 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
                                               :type "type"))
                               (list :name (name document-type)
                                     :label (label document-type)
+                                    :class (type-of document-type)
+                                    ;;TODO: naive-store does not use
+                                    ;;top-level-p internally anywhere
+                                    ;;so can we remove it?
+                                    ;;Looks like only cl-wfx grid needs this.
                                     :top-level-p t
                                     :elements elements)
                               :if-exists :supersede)))
@@ -158,8 +163,38 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
                   :documentation "The document-type that this collection contains documents of."))
   (:documentation "Collection extention to make collection of a specific document-type."))
 
-(defmethod add-collection :after ((store store) (collection document-type-collection-mixin))
+(defmethod add-multiverse-element ((store store) (collection collection) &key persist-p)
+  (if (not (store collection))
+      (setf (store collection) store)
+      (unless (eql (store collection) store)
+        (error "Collection already references a different store instance!")))
+
+  (unless (get-multiverse-element :collection store (name collection))
+    (let ((location (location collection)))
+
+      (when location
+        (ensure-directories-exist (pathname location)))
+
+      (unless location
+        (setf location
+              (cl-fad:merge-pathnames-as-file
+               (pathname (location store))
+               (make-pathname :directory (list :relative (name collection))
+                              :name (name collection)
+                              :type "log")))
+
+        (ensure-directories-exist location))
+
+      (setf (location collection) (pathname location))
+      (pushnew collection (collections store))
+      (setf (store collection) store)
+      (when persist-p
+        (persist-collection-def collection))))
+  collection)
+
+(defmethod add-multiverse-element :after ((store store) (collection document-type-collection-mixin) &key persist-p)
   "Uses document type to figure out what the keys of the collection are."
+  (declare (ignore persist-p))
   (when (or
          (not (keys collection))
          (equalp (keys collection) '(:key)))
@@ -185,6 +220,7 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
                    :type "col"))
    (list
     :name (name collection)
+    :class (type-of collection)
     :location (location collection)
     :document-type (and (document-type collection) (name (document-type collection))))
 
@@ -202,9 +238,21 @@ IMPL NOTES: To deal with customization of document-type.")
                    :initform nil
                    :documentation "List of document-types represented by this store's collections.")))
 
+(defmethod cl-naive-store.naive-core:instance-from-definition
+    ((store store)(definition-type (eql :document-type))
+     definition &key class persist-p)
+
+  (let ((instance (raw-instance-from-definition definition-type definition
+                                                :class class)))
+    (when instance
+      (setf (store instance) store)
+      (add-multiverse-element store instance :persist-p persist-p))
+
+    instance))
+
 (defmethod get-collection-from-def ((store document-type-store-mixin) collection-name)
   "Tries to find the collection definition file on disk and loads it into the store, but it does not load the collection's data.
-Needs to find the associated docment-type as well which might mean loading the all the document types for the store."
+Needs to find the associated docment-type as well which might mean loading all the document types for the store."
   (let ((collection-def (naive-impl:sexp-from-file
                          (cl-fad:merge-pathnames-as-file
                           (pathname (location store))
@@ -242,9 +290,11 @@ Needs to find the associated docment-type as well which might mean loading the a
                                       (make-pathname :name document-type-name
                                                      :type "type")))))
     (when document-document-type
-      (let ((document-type (add-document-type
+      (let ((document-type (cl-naive-store.naive-core:add-multiverse-element
                             store
-                            (make-instance (document-type-class store)
+                            (make-instance (or
+                                            (getx document-document-type :class)
+                                            (document-type-class store))
                                            :name (getx document-document-type :name)
                                            :label (getx document-document-type :label)
                                            :elements nil))))
@@ -258,13 +308,44 @@ Needs to find the associated docment-type as well which might mean loading the a
                       (getx document-document-type :elements)))
         document-type))))
 
+(defmethod cl-naive-store.naive-core:get-multiverse-element
+    ((element-type (eql :document-type))
+     (store store) name)
+  (cl-naive-store.naive-core::get-multiverse-element* store document-types))
+
 (defgeneric get-document-type (store type-name)
   (:documentation "Returns a document-type document if found in the store."))
 
 (defmethod get-document-type ((store document-type-store-mixin) type-name)
-  (dolist (document-type (document-types store))
-    (when (string-equal type-name (name document-type))
-      (return-from get-document-type document-type))))
+  (get-multiverse-element :document-type store type-name))
+
+(defmethod cl-naive-store.naive-core:add-multiverse-element
+    ((store store) (document-type document-type) &key persist-p)
+
+  (if (not (store document-type))
+      (setf (store document-type) store)
+      (unless (eql (store document-type) store)
+        (error
+         "Document-Type already references a different STORE instance!")))
+  (unless (get-multiverse-element :document-type store (name document-type))
+    ;;TODO: Document does not have a location as lon as the store
+    ;;location is ok all should be good??
+    ;;(cl-naive-store.naive-core::set-and-ensure-locations store
+    ;;document-type)
+    (setf (store document-type) store)
+    (if persist-p
+        (persist document-type))
+    (pushnew document-type (document-types store)))
+  document-type)
+
+(defparameter *global-css* (make-hash-table :test #'equalp))
+
+(defmethod global-css :around (what)
+  (if (boundp '*global-css*)
+      (setf (gethash what *global-css*) (call-next-method))
+      (progn
+        (print (call-next-method))
+        (error "*global-css* special variable is unbound"))))
 
 (defgeneric add-document-type (store document-type &key persist-p)
   (:documentation "Adds a document-type to a store."))
@@ -272,12 +353,8 @@ Needs to find the associated docment-type as well which might mean loading the a
 (defmethod add-document-type ((store document-type-store-mixin)
                               (document-type document-type)
                               &key (persist-p t))
-  (unless (get-document-type store (name document-type))
-    (setf (store document-type) store)
-    (pushnew document-type (document-types store))
-    (when persist-p
-      (persist document-type)))
-  document-type)
+
+  (add-multiverse-element store document-type :persist-p persist-p))
 
 (defun load-store-document-types (store)
   "Finds and loads the files representing data types for a store."
@@ -296,7 +373,7 @@ Needs to find the associated docment-type as well which might mean loading the a
                  (naive-impl:sexp-from-file file)))
 
         (let ((elements)
-              (document-type (add-document-type
+              (document-type (cl-naive-store.naive-core:add-multiverse-element
                               store
                               (make-instance (document-type-class store)
                                              :name (getx type-contents :name)

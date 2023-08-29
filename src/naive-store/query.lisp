@@ -23,56 +23,56 @@ Does lazy loading."))
 (defvar *query-lock* (bt:make-lock))
 
 (defmethod naive-reduce ((collection collection) &key query function initial-value shards
-			 &allow-other-keys)
+                         &allow-other-keys)
   (let ((%result% nil))
 
     (do-sequence (shard (or shards
-			    (shards collection))
-			:parallel-p t)
+                            (shards collection))
+                  :parallel-p t)
 
       (let ((result (naive-reduce (documents shard)
-				  :query query
-				  :function function
-				  :initial-value initial-value)))
-	(bt:with-recursive-lock-held (*query-lock*)
+                                  :query query
+                                  :function function
+                                  :initial-value initial-value)))
+        (bt:with-recursive-lock-held (*query-lock*)
 
-	  (setf %result%
-		(concatenate 'list %result%
-			     result)))))
+          (setf %result%
+                (concatenate 'list %result%
+                             result)))))
     %result%))
 
 ;;:TODO: This should be target to move to cl-query or something
 (defmethod naive-reduce ((hash-table hash-table) &key query function initial-value
-			 &allow-other-keys)
+                         &allow-other-keys)
   (let ((result initial-value))
     (maphash
      (lambda (key document)
        (declare (ignore key))
        (if query
-	   (if (funcall query document)
-	       (if function
-		   (setf result (funcall function result document))
-		   (push document result)))
-	   (if function
-	       (setf result (funcall function result document))
-	       (push document result))))
+           (if (funcall query document)
+               (if function
+                   (setf result (funcall function result document))
+                   (push document result)))
+           (if function
+               (setf result (funcall function result document))
+               (push document result))))
      hash-table)
     result))
 
 ;;:TODO: This should be target to move to cl-query or something
 (defmethod naive-reduce ((sequence sequence) &key query function initial-value  &allow-other-keys)
   (reduce #'(lambda (result document)
-	      (if query
-		  (if (apply query (list document))
-		      (if function
-			  (funcall function result document)
-			  (push document result))
-		      result)
-		  (if function
-		      (funcall function result document)
-		      (push document result))))
-	  sequence
-	  :initial-value initial-value))
+              (if query
+                  (if (apply query (list document))
+                      (if function
+                          (funcall function result document)
+                          (push document result))
+                      result)
+                  (if function
+                      (funcall function result document)
+                      (push document result))))
+          sequence
+          :initial-value initial-value))
 
 (defgeneric query-data (collection &key query &allow-other-keys)
   (:documentation "Returns the data that satisfies the query.
@@ -85,31 +85,31 @@ Does lazy loading."))
   "Lazy loading data."
   (if shards
       (progn ; only load the specified shards.
-	(naive-impl::debug-log "query-data -shards" :file-p t)
-	(cl-naive-store.naive-core::load-shards collection shards))
+        (naive-impl::debug-log "query-data -shards" :file-p t)
+        (cl-naive-store.naive-core::load-shards collection shards))
       (progn
-	(naive-impl::debug-log "query-data -collection" :file-p t)
-	(load-data collection))))
+        (naive-impl::debug-log "query-data -collection" :file-p t)
+        (load-data collection))))
 
 (defmethod query-data ((collection collection) &key query shards &allow-other-keys)
   (let ((%result% nil))
     (do-sequence (shard (or shards (shards collection)) :parallel-p t)
       (let ((result (query-data (documents shard) :query query)))
-	(bt:with-recursive-lock-held (*query-lock*)
-	  (setf %result% (append result %result%)))))
+        (bt:with-recursive-lock-held (*query-lock*)
+          (setf %result% (append result %result%)))))
     %result%))
 
 (defmethod query-data ((store store) &key collection-name query shards &allow-other-keys)
-  (let ((collection (get-collection store collection-name)))
+  (let ((collection (get-multiverse-element :collection store collection-name)))
 
     (unless collection
       (setf collection (get-collection-from-def
-			store
-			collection-name))
+                        store
+                        collection-name))
       (when collection
-	(add-collection store collection))
+        (add-collection store collection))
       (unless collection
-	(error "Could not find or create collection ~A" collection-name)))
+        (error "Could not find or create collection ~A" collection-name)))
 
     (query-data collection :query query :shards shards)))
 
@@ -140,11 +140,11 @@ Does lazy loading."))
 (defmethod query-data ((sequence sequence) &key query &allow-other-keys)
   (if query
       (reduce (lambda (results document)
-		(cond
-		  ((deleted-p document)     results)
-		  ((funcall query document) (cons document results))
-		  (t                        results)))
-	      sequence :initial-value '())
+                (cond
+                  ((deleted-p document)     results)
+                  ((funcall query document) (cons document results))
+                  (t                        results)))
+              sequence :initial-value '())
       (coerce sequence 'list)))
 
 ;;:TODO: This should be target to move to cl-query or something
@@ -154,10 +154,10 @@ Does lazy loading."))
      (lambda (key document)
        (declare (ignore key))
        (unless (deleted-p document)
-	 (if query
-	     (when (funcall query document)
-	       (push document documents))
-	     (push document documents))))
+         (if query
+             (when (funcall query document)
+               (push document documents))
+             (push document documents))))
      hash-table)
     documents))
 
@@ -173,6 +173,6 @@ Does lazy loading."))
      (lambda (key document)
        (declare (ignore key))
        (when (funcall query document)
-	 (push document documents)))
+         (push document documents)))
      hash-table)
     (values (first documents) (rest documents))))

@@ -23,6 +23,7 @@
    ;;##classes
    :shard
    :universe
+   :multiverse
    :collection
    :store
    :name
@@ -54,6 +55,7 @@
    :store-class
 
    :multiverse
+   :universes
    :universe-class
 
    ;;##methods
@@ -65,23 +67,28 @@
    :document-values
    :deleted-p
    :delete-document
-   :get-universe
+
    :get-store
    :get-document-type
    :get-collection
    :find-collection-definitions
 
+   :get-multiverse-element
+   :add-multiverse-element
+   :remove-multiverse-element
    :get-definitions
 
    :get-definition
-   :instance-from-definition-file
-   :instance-from-definition
 
+   :raw-instance-from-definition
+   :instance-from-definition
+   :raw-instance-from-definition-file
+   :instance-from-definiton-file
+   :instances-from-definitions
    :get-store-from-def
    :get-collection-from-def
 
    ;;adding
-   :add-universe
    :add-store
    :add-collection
    :add-document-type

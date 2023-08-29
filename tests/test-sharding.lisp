@@ -156,9 +156,10 @@
   (mkelements *employee-document-type-description*))
 
 (defparameter *employee-document-type*
-  (add-document-type *store*
-                     (make-document-type *employee-document-type-description*
-                                         *employee-elements*)))
+  (cl-naive-store.naive-core:add-multiverse-element
+   *store*
+   (make-document-type *employee-document-type-description*
+                       *employee-elements*)))
 
 (defparameter *employee-collection*
   (add-collection *store*
@@ -188,9 +189,10 @@
   (mkelements *asset-document-type-description*))
 
 (defparameter *asset-document-type*
-  (add-document-type *store*
-                     (make-document-type *asset-document-type-description*
-                                         *asset-elements*)))
+  (cl-naive-store.naive-core:add-multiverse-element
+   *store*
+   (make-document-type *asset-document-type-description*
+                       *asset-elements*)))
 
 (defparameter *asset-collection*
   (add-collection *store* (make-instance (collection-class *store*)

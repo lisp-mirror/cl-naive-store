@@ -30,7 +30,7 @@
 ;;TODO: add a wait with a time out if .lock file exists?
 
 ;;Dont try to do compose-document asyncronously because the order in which the documents
-;;are loaded in the underlying container matter, for deleted documents and document history!!!!
+;;are loaded in the underlying container matter, for deleted documents and document history both!!!!
 (defmethod load-shard ((collection collection) shard filename &key &allow-other-keys)
 
   (unless (equalp (status shard) :loading)
