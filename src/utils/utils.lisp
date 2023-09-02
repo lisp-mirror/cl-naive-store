@@ -1,5 +1,13 @@
 (in-package :cl-naive-store.utils)
+;;TODO: Most of these (badly named) utility functions has been
+;;superceded by get/add/remove-multiverse-elements and/or
+;;instance-from-definition for the different multiverse classes.
 
+;;The collection one is a bit different to the add-multiverse-element
+;;as it tries to load the document type as well. Should we ammend
+;;add-multiverse-element to have similar behaviour?
+
+;;TODO: Depricated
 (defgeneric make-elements (document-type document-type-def)
   (:documentation "Convert the elements of the document-type-def into a list of ELEMENT instances."))
 
@@ -45,7 +53,7 @@
 
     (if collection-name
         (values document-type
-                (add-collection
+                (add-multiverse-element
                  store
                  (make-instance 'cl-naive-store.naive-documents:document-collection
                                 :name collection-name
@@ -96,7 +104,7 @@ from the first itteration and create any collections.
                                        store
                                        (getf (second def) :data-type)))
                        (collection
-                         (add-collection
+                         (add-multiverse-element
                           store
                           (make-instance 'cl-naive-store.naive-documents:document-collection
                                          :name (getf (getx def :collection) :name)

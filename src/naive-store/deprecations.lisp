@@ -59,4 +59,4 @@
                 (instance-from-definition-file (location ,universe%)
                                                ,universe%
                                                :store
-                                               store-name)))))
+                                               ,store-name%)))))

@@ -139,7 +139,7 @@
 (let ((sannie (first (index-lookup-values
                       (get-multiverse-element
                        :collection
-                       (cl-naive-store.naive-core:get-multiverse-element
+                       (get-multiverse-element
                         :store
                         *universe* "simple-store")
                        "simple-collection")

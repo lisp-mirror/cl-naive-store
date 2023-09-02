@@ -312,27 +312,63 @@ files are loaded. (see store notes for more about this.).")
           mac)
         (name collection))))
 
-(defmacro get-multiverse-element* (parent child-list-name)
-  (let ((parent% (gensym)))
-    `(let ((,parent% ,parent))
+(defgeneric query-multiverse (element fn)
+  (:documentation "Queries the multiverse element passed for an element or elements."))
+
+(defmethod query-multiverse ((collection collection) fn)
+  (let ((result))
+    (let ((fn-result (funcall fn collection)))
+      (when fn-result
+        (push fn-result result)))))
+
+(defmethod query-multiverse ((store store) fn)
+  (let ((result (mapcar (lambda (collection)
+                          (query-multiverse collection fn))
+                        (collections store))))
+    (let ((fn-result (funcall fn store)))
+      (when fn-result
+        (push fn-result result)))))
+
+(defmethod query-multiverse ((universe universe) fn)
+  (let ((result (mapcar (lambda (store)
+                          (query-multiverse store fn))
+                        (stores universe))))
+    (let ((fn-result (funcall fn universe)))
+      (when fn-result
+        (push fn-result result)))))
+
+(defmethod query-multiverse ((multiverse multiverse) fn)
+  (let ((result (mapcar (lambda (universe)
+                          (query-multiverse universe fn))
+                        (universes multiverse))))
+    (let ((fn-result (funcall fn multiverse)))
+      (when fn-result
+        (push fn-result result)))))
+
+(defmacro get-multiverse-element* (parent child-list-name name)
+  (let ((parent% (gensym))
+        (name% (gensym)))
+    `(let ((,parent% ,parent)
+           (,name% ,name))
        (dolist (element (,child-list-name ,parent%))
-         (when (string-equal name (name element))
+         (when (string-equal ,name% (name element))
            (return-from get-multiverse-element
              element))))))
 
-(defgeneric get-multiverse-element (element-type parent name))
+(defgeneric get-multiverse-element (element-type parent name)
+  (:documentation "Fetches an element of the type "))
 
 (defmethod get-multiverse-element ((element-type (eql :universe))
                                    (multiverse multiverse) name)
-  (get-multiverse-element* multiverse universes))
+  (get-multiverse-element* multiverse universes name))
 
 (defmethod get-multiverse-element ((element-type (eql :store))
                                    (universe universe) name)
-  (get-multiverse-element* universe stores))
+  (get-multiverse-element* universe stores name))
 
 (defmethod get-multiverse-element ((element-type (eql :collection))
                                    (store store) name)
-  (get-multiverse-element* store collections))
+  (get-multiverse-element* store collections name))
 
 ;;TODO:Deprecated remove some time
 (defgeneric get-store (universe store-name)
@@ -475,7 +511,7 @@ Path to file for data is this general format /multiverse/universe/store-name/col
                        (string-capitalize child-type)
                        parent-type))))
        (unless (get-multiverse-element
-                ,(intern (string-upcase (format nil "~A" child-type))
+                ,(intern (format nil "~:@(~A~)" child-type)
                          :keyword)
                 ,parent% (name ,child%))
 
@@ -512,17 +548,18 @@ Path to file for data is this general format /multiverse/universe/store-name/col
 
   (unless (get-multiverse-element :collection store (name collection))
     (let ((location (location collection)))
-
       (when location
         (ensure-directories-exist (pathname location)))
-
       (unless location
         (setf location
               (cl-fad:merge-pathnames-as-file
                (pathname (location store))
-               (make-pathname :directory (list :relative (name collection))
-                              :name (name collection)
-                              :type "log")))
+               (make-pathname
+                :defaults (pathname (location store))
+                :directory (list :relative (name collection))
+                :name (name collection)
+                :type "log"
+                :version nil)))
 
         (ensure-directories-exist location))
 
@@ -560,8 +597,7 @@ If no definition-type is not supplied the definition of the object is returned."
                                      ((equal definition-type :document-type)
                                       "type")
                                      (t
-                                      (string-downcase
-                                       (format nil "~A" definition-type))))
+                                      (format nil "~(~a~)" definition-type)))
                                definition-type)))
          (file (car (directory filename))))
     (when error-p

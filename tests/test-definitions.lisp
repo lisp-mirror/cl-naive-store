@@ -15,7 +15,7 @@
 (defun test-location ()
   (cl-fad:merge-pathnames-as-directory
    (user-homedir-pathname)
-   (make-pathname :directory (list :relative "test-universes"))))
+   (make-pathname :directory (list :relative "test-multiverse"))))
 
 (defparameter *multiverse-definition*
   `(:multiverse
@@ -240,12 +240,41 @@
     results))
 
 (let ((results))
-
   (setf
    results
    (test-something
     (lambda ()
-      (cl-naive-store.definitions:add-universe
+      (cl-naive-store.definitions:add-definition-element
+       :universe
+       `(:multiverse
+         (:name "multiverse"
+          :universe-class cl-naive-store.naive-core:universe
+          :location ,(test-location)
+          :universes
+          ((:universe
+            (:name "marvel"
+             :stores ((:store
+                       (:name "wolverine"
+                        :collections
+                              ((:collection
+                                (:name "stats"
+                                 :label "Statistics"
+                                 :document-type "statistics")))
+                        :document-types
+                              ((:document-type (:name "statistics"
+                                                :label "Statistics"
+                                                :elements
+                                                      ((:element
+                                                        (:name :id
+                                                         :label "Id"
+                                                         :concrete-type :string
+                                                         :attributes ((:attribute
+                                                                       (:name :display
+                                                                        :value t))
+                                                                      (:attribute
+                                                                       (:name :editable
+                                                                        :value t))))))
+                                                :documentation "Cool statistics.")))))))))))
        '(:universe
          (:name "movies"
           :stores ((:store
@@ -270,59 +299,37 @@
                                                               (:name :editable
                                                                :value t)))))
                                               :documentation "Cool movie.")))))))))
-       '(:multiverse
-         ((:universe
-           (:name "marvel"
-            :stores ((:store
-                      (:name "wolverine"
-                       :collections
-                             ((:collection
-                               (:name "stats"
-                                :label "Statistics"
-                                :document-type "statistics")))
-                       :document-types
-                             ((:document-type (:name "statistics"
-                                               :label "Statistics"
-                                               :elements
-                                                     ((:element
-                                                       (:name :id
-                                                        :label "Id"
-                                                        :concrete-type :string
-                                                        :attributes ((:attribute
-                                                                      (:name :display
-                                                                       :value t))
-                                                                     (:attribute
-                                                                      (:name :editable
-                                                                       :value t))))))
-                                               :documentation "Cool statistics."))))))))))))
+       :name-path '((:multiverse "multiverse"))))
     '(:MULTIVERSE
-      ((:UNIVERSE
-        (:NAME "movies" :STORES
-         ((:STORE
-           (:NAME "super-heros" :COLLECTIONS
-                  ((:COLLECTION (:NAME "movies" :LABEL "Movies" :DOCUMENT-TYPE "movie")))
-            :DOCUMENT-TYPES
-                  ((:DOCUMENT-TYPE
-                    (:NAME "movie" :LABEL "Movies" :ELEMENTS
-                           ((:ELEMENT
-                             (:NAME :ID :LABEL "Id" :CONCRETE-TYPE :STRING :ATTRIBUTES
-                                    ((:ATTRIBUTE (:NAME :DISPLAY :VALUE T))
-                                     (:ATTRIBUTE (:NAME :EDITABLE :VALUE T)))))
-                            :DOCUMENTATION "Cool movie.")))))))))
-       (:UNIVERSE
-        (:NAME "marvel" :STORES
-         ((:STORE
-           (:NAME "wolverine" :COLLECTIONS
-                  ((:COLLECTION
-                    (:NAME "stats" :LABEL "Statistics" :DOCUMENT-TYPE "statistics")))
-            :DOCUMENT-TYPES
-                  ((:DOCUMENT-TYPE
-                    (:NAME "statistics" :LABEL "Statistics" :ELEMENTS
-                           ((:ELEMENT
-                             (:NAME :ID :LABEL "Id" :CONCRETE-TYPE :STRING :ATTRIBUTES
-                                    ((:ATTRIBUTE (:NAME :DISPLAY :VALUE T))
-                                     (:ATTRIBUTE (:NAME :EDITABLE :VALUE T))))))
-                     :DOCUMENTATION "Cool statistics."))))))))))
+      (:NAME "multiverse" :UNIVERSE-CLASS CL-NAIVE-STORE.NAIVE-CORE:UNIVERSE
+       :LOCATION #P"/home/phil/test-multiverse/" :UNIVERSES
+       ((:UNIVERSE
+         (:NAME "marvel" :STORES
+          ((:STORE
+            (:NAME "wolverine" :COLLECTIONS
+                   ((:COLLECTION
+                     (:NAME "stats" :LABEL "Statistics" :DOCUMENT-TYPE "statistics")))
+             :DOCUMENT-TYPES
+                   ((:DOCUMENT-TYPE
+                     (:NAME "statistics" :LABEL "Statistics" :ELEMENTS
+                            ((:ELEMENT
+                              (:NAME :ID :LABEL "Id" :CONCRETE-TYPE :STRING :ATTRIBUTES
+                                     ((:ATTRIBUTE (:NAME :DISPLAY :VALUE T))
+                                      (:ATTRIBUTE (:NAME :EDITABLE :VALUE T))))))
+                      :DOCUMENTATION "Cool statistics."))))))))
+        (:UNIVERSE
+         (:NAME "movies" :STORES
+          ((:STORE
+            (:NAME "super-heros" :COLLECTIONS
+                   ((:COLLECTION (:NAME "movies" :LABEL "Movies" :DOCUMENT-TYPE "movie")))
+             :DOCUMENT-TYPES
+                   ((:DOCUMENT-TYPE
+                     (:NAME "movie" :LABEL "Movies" :ELEMENTS
+                            ((:ELEMENT
+                              (:NAME :ID :LABEL "Id" :CONCRETE-TYPE :STRING :ATTRIBUTES
+                                     ((:ATTRIBUTE (:NAME :DISPLAY :VALUE T))
+                                      (:ATTRIBUTE (:NAME :EDITABLE :VALUE T)))))
+                             :DOCUMENTATION "Cool movie."))))))))))))
     "Failed to add universe."
     results))
 
@@ -330,70 +337,79 @@
    results
    (test-something
     (lambda ()
-      (cl-naive-store.definitions:remove-universe
+      (cl-naive-store.definitions::remove-definition-element
+       :universe
+       `(:multiverse
+         (:name "multiverse"
+          :universe-class cl-naive-store.naive-core:universe
+          :location ,(test-location)
+          :universes
+          ((:universe
+            (:name "marvel"
+             :stores ((:store
+                       (:name "wolverine"
+                        :collections
+                              ((:collection
+                                (:name "stats"
+                                 :label "Statistics"
+                                 :document-type "statistics")))
+                        :document-types
+                              ((:document-type (:name "statistics"
+                                                :label "Statistics"
+                                                :elements
+                                                      ((:element
+                                                        (:name :id
+                                                         :label "Id"
+                                                         :concrete-type :string
+                                                         :attributes ((:attribute
+                                                                       (:name :display
+                                                                        :value t))
+                                                                      (:attribute
+                                                                       (:name :editable
+                                                                        :value t))))))
+                                                :documentation "Cool statistics."))))))))
+           (:universe
+            (:name "movies"
+             :stores
+                   ((:store (:name "super-heros"
+                             :collections
+                                   ((:collection (:name "movies"
+                                                  :label "Movies"
+                                                  :document-type "movie")))
+                             :document-types
+                                   ((:document-type (:name "movie"
+                                                     :label "Movies"
+                                                     :elements
+                                                           ((:element
+                                                             (:name :id
+                                                              :label "Id"
+                                                              :concrete-type :string
+                                                              :attributes ((:attribute
+                                                                            (:name :display
+                                                                             :value t))
+                                                                           (:attribute
+                                                                            (:name :editable
+                                                                             :value t))))))
+                                                     :documentation "Cool movie.")))))))))))
        "movies"
-       '(:multiverse
-         ((:universe
-           (:name "marvel"
-            :stores ((:store
-                      (:name "wolverine"
-                       :collections
-                             ((:collection
-                               (:name "stats"
-                                :label "Statistics"
-                                :document-type "statistics")))
-                       :document-types
-                             ((:document-type (:name "statistics"
-                                               :label "Statistics"
-                                               :elements
-                                                     ((:element
-                                                       (:name :id
-                                                        :label "Id"
-                                                        :concrete-type :string
-                                                        :attributes ((:attribute
-                                                                      (:name :display
-                                                                       :value t))
-                                                                     (:attribute
-                                                                      (:name :editable
-                                                                       :value t))))))
-                                               :documentation "Cool statistics."))))))))
-          (:universe
-           (:name "movies"
-            :stores ((:store (:name "super-heros"
-                              :collections
-                                    ((:collection (:name "movies"
-                                                   :label "Movies"
-                                                   :document-type "movie")))
-                              :document-types
-                                    ((:document-type (:name "movie"
-                                                      :label "Movies"
-                                                      :elements
-                                                            ((:element
-                                                              (:name :id
-                                                               :label "Id"
-                                                               :concrete-type :string
-                                                               :attributes ((:attribute
-                                                                             (:name :display
-                                                                              :value t))
-                                                                            (:attribute
-                                                                             (:name :editable
-                                                                              :value t))))))
-                                                      :documentation "Cool movie."))))))))))))
+       :name-path '((:multiverse "multiverse"))))
     '(:MULTIVERSE
-      ((:UNIVERSE
-        (:NAME "marvel" :STORES
-         ((:STORE
-           (:NAME "wolverine" :COLLECTIONS
-                  ((:COLLECTION
-                    (:NAME "stats" :LABEL "Statistics" :DOCUMENT-TYPE "statistics")))
-            :DOCUMENT-TYPES
-                  ((:DOCUMENT-TYPE
-                    (:NAME "statistics" :LABEL "Statistics" :ELEMENTS
-                           ((:ELEMENT
-                             (:NAME :ID :LABEL "Id" :CONCRETE-TYPE :STRING :ATTRIBUTES
-                                    ((:ATTRIBUTE (:NAME :DISPLAY :VALUE T))
-                                     (:ATTRIBUTE (:NAME :EDITABLE :VALUE T))))))
-                     :DOCUMENTATION "Cool statistics."))))))))))
+      (:NAME "multiverse" :UNIVERSE-CLASS CL-NAIVE-STORE.NAIVE-CORE:UNIVERSE
+       :LOCATION #P"/home/phil/test-multiverse/" :UNIVERSES
+       ((:UNIVERSE
+         (:NAME "marvel" :STORES
+          ((:STORE
+            (:NAME "wolverine" :COLLECTIONS
+                   ((:COLLECTION
+                     (:NAME "stats" :LABEL "Statistics" :DOCUMENT-TYPE "statistics")))
+             :DOCUMENT-TYPES
+                   ((:DOCUMENT-TYPE
+                     (:NAME "statistics" :LABEL "Statistics" :ELEMENTS
+                            ((:ELEMENT
+                              (:NAME :ID :LABEL "Id" :CONCRETE-TYPE :STRING :ATTRIBUTES
+                                     ((:ATTRIBUTE (:NAME :DISPLAY :VALUE T))
+                                      (:ATTRIBUTE (:NAME :EDITABLE :VALUE T))))))
+                      :DOCUMENTATION "Cool statistics.")))))))))))
     "Failed to remove universe."
     results))
 
@@ -401,8 +417,39 @@
    results
    (test-something
     (lambda ()
-      (cl-naive-store.definitions:add-store
-       "marvel"
+      (cl-naive-store.definitions:add-definition-element
+       :store
+       `(:multiverse
+         (:name "multiverse"
+          :universe-class cl-naive-store.naive-core:universe
+          :location ,(test-location)
+          :universes
+          ((:universe
+            (:name "marvel"
+             :stores
+                   ((:store
+                     (:name "wolverine"
+                      :collections
+                            ((:collection
+                              (:name "stats"
+                               :label "Statistics"
+                               :document-type "statistics")))
+                      :document-types
+                            ((:document-type
+                              (:name "statistics"
+                               :label "Statistics"
+                               :elements
+                                     ((:element
+                                       (:name :id
+                                        :label "Id"
+                                        :concrete-type :string
+                                        :attributes ((:attribute
+                                                      (:name :display
+                                                       :value t))
+                                                     (:attribute
+                                                      (:name :editable
+                                                       :value t))))))
+                               :documentation "Cool statistics.")))))))))))
        '(:store (:name "super-heros"
                  :collections
                  ((:collection (:name "movies"
@@ -423,57 +470,35 @@
                                                     (:name :editable
                                                      :value t))))))
                                    :documentation "Cool movie.")))))
-       '(:multiverse
-         ((:universe
-           (:name "marvel"
-            :stores ((:store
-                      (:name "wolverine"
-                       :collections
-                             ((:collection
-                               (:name "stats"
-                                :label "Statistics"
-                                :document-type "statistics")))
-                       :document-types
-                             ((:document-type (:name "statistics"
-                                               :label "Statistics"
-                                               :elements
-                                                     ((:element
-                                                       (:name :id
-                                                        :label "Id"
-                                                        :concrete-type :string
-                                                        :attributes ((:attribute
-                                                                      (:name :display
-                                                                       :value t))
-                                                                     (:attribute
-                                                                      (:name :editable
-                                                                       :value t))))))
-                                               :documentation "Cool statistics."))))))))))))
+       :name-path '((:universe "marvel"))))
     '(:MULTIVERSE
-      ((:UNIVERSE
-        (:NAME "marvel" :STORES
-         ((:STORE
-           (:NAME "super-heros" :COLLECTIONS
-                  ((:COLLECTION (:NAME "movies" :LABEL "Movies" :DOCUMENT-TYPE "movie")))
-            :DOCUMENT-TYPES
-                  ((:DOCUMENT-TYPE
-                    (:NAME "movie" :LABEL "Movies" :ELEMENTS
-                           ((:ELEMENT
-                             (:NAME :ID :LABEL "Id" :CONCRETE-TYPE :STRING :ATTRIBUTES
-                                    ((:ATTRIBUTE (:NAME :DISPLAY :VALUE T))
-                                     (:ATTRIBUTE (:NAME :EDITABLE :VALUE T))))))
-                     :DOCUMENTATION "Cool movie.")))))
-          (:STORE
-           (:NAME "wolverine" :COLLECTIONS
-                  ((:COLLECTION
-                    (:NAME "stats" :LABEL "Statistics" :DOCUMENT-TYPE "statistics")))
-            :DOCUMENT-TYPES
-                  ((:DOCUMENT-TYPE
-                    (:NAME "statistics" :LABEL "Statistics" :ELEMENTS
-                           ((:ELEMENT
-                             (:NAME :ID :LABEL "Id" :CONCRETE-TYPE :STRING :ATTRIBUTES
-                                    ((:ATTRIBUTE (:NAME :DISPLAY :VALUE T))
-                                     (:ATTRIBUTE (:NAME :EDITABLE :VALUE T))))))
-                     :DOCUMENTATION "Cool statistics."))))))))))
+      (:NAME "multiverse" :UNIVERSE-CLASS CL-NAIVE-STORE.NAIVE-CORE:UNIVERSE
+       :LOCATION #P"/home/phil/test-multiverse/" :UNIVERSES
+       ((:UNIVERSE
+         (:NAME "marvel" :STORES
+          ((:STORE
+            (:NAME "wolverine" :COLLECTIONS
+                   ((:COLLECTION
+                     (:NAME "stats" :LABEL "Statistics" :DOCUMENT-TYPE "statistics")))
+             :DOCUMENT-TYPES
+                   ((:DOCUMENT-TYPE
+                     (:NAME "statistics" :LABEL "Statistics" :ELEMENTS
+                            ((:ELEMENT
+                              (:NAME :ID :LABEL "Id" :CONCRETE-TYPE :STRING :ATTRIBUTES
+                                     ((:ATTRIBUTE (:NAME :DISPLAY :VALUE T))
+                                      (:ATTRIBUTE (:NAME :EDITABLE :VALUE T))))))
+                      :DOCUMENTATION "Cool statistics.")))))
+           (:STORE
+            (:NAME "super-heros" :COLLECTIONS
+                   ((:COLLECTION (:NAME "movies" :LABEL "Movies" :DOCUMENT-TYPE "movie")))
+             :DOCUMENT-TYPES
+                   ((:DOCUMENT-TYPE
+                     (:NAME "movie" :LABEL "Movies" :ELEMENTS
+                            ((:ELEMENT
+                              (:NAME :ID :LABEL "Id" :CONCRETE-TYPE :STRING :ATTRIBUTES
+                                     ((:ATTRIBUTE (:NAME :DISPLAY :VALUE T))
+                                      (:ATTRIBUTE (:NAME :EDITABLE :VALUE T))))))
+                      :DOCUMENTATION "Cool movie.")))))))))))
     "Failed to add store."
     results))
 
@@ -481,69 +506,78 @@
    results
    (test-something
     (lambda ()
-      (cl-naive-store.definitions:remove-store
-       "marvel"
+      (cl-naive-store.definitions::remove-definition-element
+       :store
+       `(:multiverse
+         (:name "multiverse"
+          :universe-class cl-naive-store.naive-core:universe
+          :location ,(test-location)
+          :universes
+          ((:universe
+            (:name "marvel"
+             :stores
+                   ((:store
+                     (:name "wolverine"
+                      :collections
+                            ((:collection
+                              (:name "stats"
+                               :label "Statistics"
+                               :document-type "statistics")))
+                      :document-types
+                            ((:document-type (:name "statistics"
+                                              :label "Statistics"
+                                              :elements
+                                                    ((:element
+                                                      (:name :id
+                                                       :label "Id"
+                                                       :concrete-type :string
+                                                       :attributes ((:attribute
+                                                                     (:name :display
+                                                                      :value t))
+                                                                    (:attribute
+                                                                     (:name :editable
+                                                                      :value t))))))
+                                              :documentation "Cool statistics.")))))
+                    (:store (:name "super-heros"
+                             :collections
+                                   ((:collection (:name "movies"
+                                                  :label "Movies"
+                                                  :document-type "movie")))
+                             :document-types
+                                   ((:document-type (:name "movie"
+                                                     :label "Movies"
+                                                     :elements
+                                                           ((:element
+                                                             (:name :id
+                                                              :label "Id"
+                                                              :concrete-type :string
+                                                              :attributes ((:attribute
+                                                                            (:name :display
+                                                                             :value t))
+                                                                           (:attribute
+                                                                            (:name :editable
+                                                                             :value t))))))
+                                                     :documentation "Cool movie.")))))))))))
        "super-heros"
-       '(:multiverse
-         ((:universe
-           (:name "marvel"
-            :stores ((:store
-                      (:name "wolverine"
-                       :collections
-                             ((:collection
-                               (:name "stats"
-                                :label "Statistics"
-                                :document-type "statistics")))
-                       :document-types
-                             ((:document-type (:name "statistics"
-                                               :label "Statistics"
-                                               :elements
-                                                     ((:element
-                                                       (:name :id
-                                                        :label "Id"
-                                                        :concrete-type :string
-                                                        :attributes ((:attribute
-                                                                      (:name :display
-                                                                       :value t))
-                                                                     (:attribute
-                                                                      (:name :editable
-                                                                       :value t))))))
-                                               :documentation "Cool statistics.")))))
-                     (:store (:name "super-heros"
-                              :collections
-                                    ((:collection (:name "movies"
-                                                   :label "Movies"
-                                                   :document-type "movie")))
-                              :document-types
-                                    ((:document-type (:name "movie"
-                                                      :label "Movies"
-                                                      :elements
-                                                            ((:element
-                                                              (:name :id
-                                                               :label "Id"
-                                                               :concrete-type :string
-                                                               :attributes ((:attribute
-                                                                             (:name :display
-                                                                              :value t))
-                                                                            (:attribute
-                                                                             (:name :editable
-                                                                              :value t))))))
-                                                      :documentation "Cool movie."))))))))))))
+       :name-path '((:universe "marvel"))))
+
     '(:MULTIVERSE
-      ((:UNIVERSE
-        (:NAME "marvel" :STORES
-         ((:STORE
-           (:NAME "wolverine" :COLLECTIONS
-                  ((:COLLECTION
-                    (:NAME "stats" :LABEL "Statistics" :DOCUMENT-TYPE "statistics")))
-            :DOCUMENT-TYPES
-                  ((:DOCUMENT-TYPE
-                    (:NAME "statistics" :LABEL "Statistics" :ELEMENTS
-                           ((:ELEMENT
-                             (:NAME :ID :LABEL "Id" :CONCRETE-TYPE :STRING :ATTRIBUTES
-                                    ((:ATTRIBUTE (:NAME :DISPLAY :VALUE T))
-                                     (:ATTRIBUTE (:NAME :EDITABLE :VALUE T))))))
-                     :DOCUMENTATION "Cool statistics."))))))))))
+      (:NAME "multiverse" :UNIVERSE-CLASS CL-NAIVE-STORE.NAIVE-CORE:UNIVERSE
+       :LOCATION #P"/home/phil/test-multiverse/" :UNIVERSES
+       ((:UNIVERSE
+         (:NAME "marvel" :STORES
+          ((:STORE
+            (:NAME "wolverine" :COLLECTIONS
+                   ((:COLLECTION
+                     (:NAME "stats" :LABEL "Statistics" :DOCUMENT-TYPE "statistics")))
+             :DOCUMENT-TYPES
+                   ((:DOCUMENT-TYPE
+                     (:NAME "statistics" :LABEL "Statistics" :ELEMENTS
+                            ((:ELEMENT
+                              (:NAME :ID :LABEL "Id" :CONCRETE-TYPE :STRING :ATTRIBUTES
+                                     ((:ATTRIBUTE (:NAME :DISPLAY :VALUE T))
+                                      (:ATTRIBUTE (:NAME :EDITABLE :VALUE T))))))
+                      :DOCUMENTATION "Cool statistics.")))))))))))
     "Failed to remove store."
     results))
 
@@ -551,8 +585,37 @@
    results
    (test-something
     (lambda ()
-      (cl-naive-store.definitions:add-document-type
-       "marvel" "wolverine"
+      (cl-naive-store.definitions:add-definition-element
+       :document-type
+       `(:multiverse
+         (:name "multiverse"
+          :universe-class cl-naive-store.naive-core:universe
+          :location ,(test-location)
+          :universes
+          ((:universe
+            (:name "marvel"
+             :stores
+                   ((:store
+                     (:name "wolverine"
+                      :collections
+                            ((:collection (:name "stats"
+                                           :label "Statistics"
+                                           :document-type "statistics")))
+                      :document-types
+                            ((:document-type (:name "statistics"
+                                              :label "Statistics"
+                                              :elements
+                                                    ((:element
+                                                      (:name :id
+                                                       :label "Id"
+                                                       :concrete-type :string
+                                                       :attributes ((:attribute
+                                                                     (:name :display
+                                                                      :value t))
+                                                                    (:attribute
+                                                                     (:name :editable
+                                                                      :value t))))))
+                                              :documentation "Cool statistics.")))))))))))
        '(:document-type (:name "relation"
                          :label "Relation"
                          :elements
@@ -567,53 +630,31 @@
                                           (:name :editable
                                            :value t))))))
                          :documentation "Who's who."))
-       '(:multiverse
-         ((:universe
-           (:name "marvel"
-            :stores ((:store
-                      (:name "wolverine"
-                       :collections
-                             ((:collection (:name "stats"
-                                            :label "Statistics"
-                                            :document-type "statistics")))
-                       :document-types
-                             ((:document-type (:name "statistics"
-                                               :label "Statistics"
-                                               :elements
-                                                     ((:element
-                                                       (:name :id
-                                                        :label "Id"
-                                                        :concrete-type :string
-                                                        :attributes ((:attribute
-                                                                      (:name :display
-                                                                       :value t))
-                                                                     (:attribute
-                                                                      (:name :editable
-                                                                       :value t))))))
-                                               :documentation "Cool statistics."))))))))))))
+       :name-path '((:universe "marvel") (:store "wolverine"))))
     '(:MULTIVERSE
-      ((:UNIVERSE
-        (:NAME "marvel" :STORES
-         ((:STORE
-           (:NAME "wolverine" :COLLECTIONS
-                  ((:COLLECTION
-                    (:NAME "stats" :LABEL "Statistics" :DOCUMENT-TYPE "statistics")))
-            :DOCUMENT-TYPES
-                  ((:DOCUMENT-TYPE
-                    (:NAME "statistics" :LABEL "Statistics" :ELEMENTS
-                           ((:ELEMENT
-                             (:NAME :ID :LABEL "Id" :CONCRETE-TYPE :STRING :ATTRIBUTES
-                                    ((:ATTRIBUTE (:NAME :DISPLAY :VALUE T))
-                                     (:ATTRIBUTE (:NAME :EDITABLE :VALUE T))))))
-                     :DOCUMENTATION "Cool statistics."))))
-           :DOCUMENT-TYPES
-           ((:DOCUMENT-TYPE
-             (:NAME "relation" :LABEL "Relation" :ELEMENTS
-                    ((:ELEMENT
-                      (:NAME :ID :LABEL "Id" :CONCRETE-TYPE :STRING :ATTRIBUTES
-                             ((:ATTRIBUTE (:NAME :DISPLAY :VALUE T))
-                              (:ATTRIBUTE (:NAME :EDITABLE :VALUE T))))))
-              :DOCUMENTATION "Who's who.")))))))))
+      (:NAME "multiverse" :UNIVERSE-CLASS CL-NAIVE-STORE.NAIVE-CORE:UNIVERSE
+       :LOCATION #P"/home/phil/test-multiverse/" :UNIVERSES
+       ((:UNIVERSE
+         (:NAME "marvel" :STORES
+          ((:STORE
+            (:NAME "wolverine" :COLLECTIONS
+                   ((:COLLECTION
+                     (:NAME "stats" :LABEL "Statistics" :DOCUMENT-TYPE "statistics")))
+             :DOCUMENT-TYPES
+                   ((:DOCUMENT-TYPE
+                     (:NAME "statistics" :LABEL "Statistics" :ELEMENTS
+                            ((:ELEMENT
+                              (:NAME :ID :LABEL "Id" :CONCRETE-TYPE :STRING :ATTRIBUTES
+                                     ((:ATTRIBUTE (:NAME :DISPLAY :VALUE T))
+                                      (:ATTRIBUTE (:NAME :EDITABLE :VALUE T))))))
+                      :DOCUMENTATION "Cool statistics."))
+                    (:DOCUMENT-TYPE
+                     (:NAME "relation" :LABEL "Relation" :ELEMENTS
+                            ((:ELEMENT
+                              (:NAME :ID :LABEL "Id" :CONCRETE-TYPE :STRING :ATTRIBUTES
+                                     ((:ATTRIBUTE (:NAME :DISPLAY :VALUE T))
+                                      (:ATTRIBUTE (:NAME :EDITABLE :VALUE T))))))
+                      :DOCUMENTATION "Who's who.")))))))))))
     "Failed to add document-type."
     results))
 
@@ -621,70 +662,71 @@
    results
    (test-something
     (lambda ()
-      (cl-naive-store.definitions:remove-document-type
-       "marvel" "wolverine" "relation"
-       '(:multiverse
-         ((:universe
-           (:name "marvel"
-            :stores ((:store
-                      (:name "wolverine"
-                       :collections
-                             ((:collection
-                               (:name "stats"
-                                :label "Statistics"
-                                :document-type "statistics")))
-                       :document-types
-                             ((:document-type (:name "statistics"
-                                               :label "Statistics"
-                                               :elements
-                                                     ((:element
-                                                       (:name :id
-                                                        :label "Id"
-                                                        :concrete-type :string
-                                                        :attributes ((:attribute
-                                                                      (:name :display
-                                                                       :value t))
-                                                                     (:attribute
-                                                                      (:name :editable
-                                                                       :value t))))))
-                                               :documentation "Cool statistics."))
-                              (:document-type (:name "relation"
-                                               :label "Relation"
-                                               :elements
-                                                     ((:element
-                                                       (:name :id
-                                                        :label "Id"
-                                                        :concrete-type :string
-                                                        :attributes ((:attribute
-                                                                      (:name :display
-                                                                       :value t))
-                                                                     (:attribute
-                                                                      (:name :editable
-                                                                       :value t))))))
-                                               :documentation "Who's who."))))))))))))
+      (cl-naive-store.definitions::remove-definition-element
+       :document-type
+       `(:multiverse
+         (:name "multiverse"
+          :universe-class cl-naive-store.naive-core:universe
+          :location ,(test-location)
+          :universes
+          ((:universe
+            (:name "marvel"
+             :stores ((:store
+                       (:name "wolverine"
+                        :collections
+                              ((:collection
+                                (:name "stats"
+                                 :label "Statistics"
+                                 :document-type "statistics")))
+                        :document-types
+                              ((:document-type (:name "statistics"
+                                                :label "Statistics"
+                                                :elements
+                                                      ((:element
+                                                        (:name :id
+                                                         :label "Id"
+                                                         :concrete-type :string
+                                                         :attributes ((:attribute
+                                                                       (:name :display
+                                                                        :value t))
+                                                                      (:attribute
+                                                                       (:name :editable
+                                                                        :value t))))))
+                                                :documentation "Cool statistics."))
+                               (:document-type (:name "relation"
+                                                :label "Relation"
+                                                :elements
+                                                      ((:element
+                                                        (:name :id
+                                                         :label "Id"
+                                                         :concrete-type :string
+                                                         :attributes ((:attribute
+                                                                       (:name :display
+                                                                        :value t))
+                                                                      (:attribute
+                                                                       (:name :editable
+                                                                        :value t))))))
+                                                :documentation "Who's who.")))))))))))
+
+       "relation"
+       :name-path '((:universe "marvel") (:store "wolverine"))))
     '(:MULTIVERSE
-      ((:UNIVERSE
-        (:NAME "marvel" :STORES
-         ((:STORE
-           (:NAME "wolverine" :COLLECTIONS
-                  ((:COLLECTION
-                    (:NAME "stats" :LABEL "Statistics" :DOCUMENT-TYPE "statistics")))
-            :DOCUMENT-TYPES
-                  ((:DOCUMENT-TYPE
-                    (:NAME "statistics" :LABEL "Statistics" :ELEMENTS
-                           ((:ELEMENT
-                             (:NAME :ID :LABEL "Id" :CONCRETE-TYPE :STRING :ATTRIBUTES
-                                    ((:ATTRIBUTE (:NAME :DISPLAY :VALUE T))
-                                     (:ATTRIBUTE (:NAME :EDITABLE :VALUE T))))))
-                     :DOCUMENTATION "Cool statistics."))
-                   (:DOCUMENT-TYPE
-                    (:NAME "relation" :LABEL "Relation" :ELEMENTS
-                           ((:ELEMENT
-                             (:NAME :ID :LABEL "Id" :CONCRETE-TYPE :STRING :ATTRIBUTES
-                                    ((:ATTRIBUTE (:NAME :DISPLAY :VALUE T))
-                                     (:ATTRIBUTE (:NAME :EDITABLE :VALUE T))))))
-                     :DOCUMENTATION "Who's who."))))
-           :DOCUMENT-TYPES NIL))))))
+      (:NAME "multiverse" :UNIVERSE-CLASS CL-NAIVE-STORE.NAIVE-CORE:UNIVERSE
+       :LOCATION #P"/home/phil/test-multiverse/" :UNIVERSES
+       ((:UNIVERSE
+         (:NAME "marvel" :STORES
+          ((:STORE
+            (:NAME "wolverine" :COLLECTIONS
+                   ((:COLLECTION
+                     (:NAME "stats" :LABEL "Statistics" :DOCUMENT-TYPE "statistics")))
+             :DOCUMENT-TYPES
+                   ((:DOCUMENT-TYPE
+                     (:NAME "statistics" :LABEL "Statistics" :ELEMENTS
+                            ((:ELEMENT
+                              (:NAME :ID :LABEL "Id" :CONCRETE-TYPE :STRING :ATTRIBUTES
+                                     ((:ATTRIBUTE (:NAME :DISPLAY :VALUE T))
+                                      (:ATTRIBUTE (:NAME :EDITABLE :VALUE T))))))
+                      :DOCUMENTATION "Cool statistics.")))))))))))
     "Failed to remove document-type."
     results))
 
@@ -692,51 +734,58 @@
    results
    (test-something
     (lambda ()
-      (cl-naive-store.definitions:add-collection
-       "marvel" "wolverine"
+      (cl-naive-store.definitions:add-definition-element
+       :collection
+       `(:multiverse
+         (:name "multiverse"
+          :universe-class cl-naive-store.naive-core:universe
+          :location ,(test-location)
+          :universes
+          ((:universe
+            (:name "marvel"
+             :stores ((:store
+                       (:name "wolverine"
+                        :collections
+                              ((:collection
+                                (:name "stats"
+                                 :label "Statistics"
+                                 :document-type "statistics")))
+                        :document-types
+                              ((:document-type (:name "statistics"
+                                                :label "Statistics"
+                                                :elements
+                                                      ((:element
+                                                        (:name :id
+                                                         :label "Id"
+                                                         :concrete-type :string
+                                                         :attributes ((:attribute
+                                                                       (:name :display
+                                                                        :value t))
+                                                                      (:attribute
+                                                                       (:name :editable
+                                                                        :value t))))))
+                                                :documentation "Cool statistics.")))))))))))
        '(:collection (:name "attitude" :label "Attitude" :document-type "attitude"))
-       '(:multiverse
-         ((:universe
-           (:name "marvel"
-            :stores ((:store
-                      (:name "wolverine"
-                       :collections
-                             ((:collection
-                               (:name "stats"
-                                :label "Statistics"
-                                :document-type "statistics")))
-                       :document-types
-                             ((:document-type (:name "statistics"
-                                               :label "Statistics"
-                                               :elements
-                                                     ((:element
-                                                       (:name :id
-                                                        :label "Id"
-                                                        :concrete-type :string
-                                                        :attributes ((:attribute
-                                                                      (:name :display
-                                                                       :value t))
-                                                                     (:attribute
-                                                                      (:name :editable
-                                                                       :value t))))))
-                                               :documentation "Cool statistics."))))))))))))
+       :name-path '((:universe "marvel") (:store "wolverine"))))
     '(:MULTIVERSE
-      ((:UNIVERSE
-        (:NAME "marvel" :STORES
-         ((:STORE
-           (:NAME "wolverine" :COLLECTIONS
-                  ((:COLLECTION
-                    (:NAME "stats" :LABEL "Statistics" :DOCUMENT-TYPE "statistics"))
-                   :COLLECTION
-                   (:NAME "attitude" :LABEL "Attitude" :DOCUMENT-TYPE "attitude"))
-            :DOCUMENT-TYPES
-                  ((:DOCUMENT-TYPE
-                    (:NAME "statistics" :LABEL "Statistics" :ELEMENTS
-                           ((:ELEMENT
-                             (:NAME :ID :LABEL "Id" :CONCRETE-TYPE :STRING :ATTRIBUTES
-                                    ((:ATTRIBUTE (:NAME :DISPLAY :VALUE T))
-                                     (:ATTRIBUTE (:NAME :EDITABLE :VALUE T))))))
-                     :DOCUMENTATION "Cool statistics."))))))))))
+      (:NAME "multiverse" :UNIVERSE-CLASS CL-NAIVE-STORE.NAIVE-CORE:UNIVERSE
+       :LOCATION #P"/home/phil/test-multiverse/" :UNIVERSES
+       ((:UNIVERSE
+         (:NAME "marvel" :STORES
+          ((:STORE
+            (:NAME "wolverine" :COLLECTIONS
+                   ((:COLLECTION
+                     (:NAME "stats" :LABEL "Statistics" :DOCUMENT-TYPE "statistics"))
+                    (:COLLECTION
+                     (:NAME "attitude" :LABEL "Attitude" :DOCUMENT-TYPE "attitude")))
+             :DOCUMENT-TYPES
+                   ((:DOCUMENT-TYPE
+                     (:NAME "statistics" :LABEL "Statistics" :ELEMENTS
+                            ((:ELEMENT
+                              (:NAME :ID :LABEL "Id" :CONCRETE-TYPE :STRING :ATTRIBUTES
+                                     ((:ATTRIBUTE (:NAME :DISPLAY :VALUE T))
+                                      (:ATTRIBUTE (:NAME :EDITABLE :VALUE T))))))
+                      :DOCUMENTATION "Cool statistics.")))))))))))
     "Failed to add collection."
     results))
 
@@ -744,51 +793,59 @@
    results
    (test-something
     (lambda ()
-      (cl-naive-store.definitions:remove-collection
-       "marvel" "wolverine" "attitude"
-       '(:multiverse
-         ((:universe
-           (:name "marvel"
-            :stores ((:store
-                      (:name "wolverine"
-                       :collections
-                             ((:collection (:name "stats"
-                                            :label "Statistics"
-                                            :document-type "statistics"))
-                              (:collection (:name "attitude"
-                                            :label "Attitude"
-                                            :document-type "attitude")))
-                       :document-types
-                             ((:document-type (:name "statistics"
-                                               :label "Statistics"
-                                               :elements
-                                                     ((:element
-                                                       (:name :id
-                                                        :label "Id"
-                                                        :concrete-type :string
-                                                        :attributes ((:attribute
-                                                                      (:name :display
-                                                                       :value t))
-                                                                     (:attribute
-                                                                      (:name :editable
-                                                                       :value t))))))
-                                               :documentation "Cool statistics."))))))))))))
+      (cl-naive-store.definitions::remove-definition-element
+       :collection
+       `(:multiverse
+         (:name "multiverse"
+          :universe-class cl-naive-store.naive-core:universe
+          :location ,(test-location)
+          :universes
+          ((:universe
+            (:name "marvel"
+             :stores ((:store
+                       (:name "wolverine"
+                        :collections
+                              ((:collection (:name "stats"
+                                             :label "Statistics"
+                                             :document-type "statistics"))
+                               (:collection (:name "attitude"
+                                             :label "Attitude"
+                                             :document-type "attitude")))
+                        :document-types
+                              ((:document-type (:name "statistics"
+                                                :label "Statistics"
+                                                :elements
+                                                      ((:element
+                                                        (:name :id
+                                                         :label "Id"
+                                                         :concrete-type :string
+                                                         :attributes ((:attribute
+                                                                       (:name :display
+                                                                        :value t))
+                                                                      (:attribute
+                                                                       (:name :editable
+                                                                        :value t))))))
+                                                :documentation "Cool statistics.")))))))))))
+       "attitude"
+       :name-path '((:universe "marvel") (:store "wolverine"))))
     '(:MULTIVERSE
-      ((:UNIVERSE
-        (:NAME "marvel" :STORES
-         ((:STORE
-           (:NAME "wolverine" :COLLECTIONS
-                  ((:COLLECTION
-                    (:NAME "stats" :LABEL "Statistics" :DOCUMENT-TYPE "statistics")))
-            :DOCUMENT-TYPES
-                  ((:DOCUMENT-TYPE
-                    (:NAME "statistics" :LABEL "Statistics" :ELEMENTS
-                           ((:ELEMENT
-                             (:NAME :ID :LABEL "Id" :CONCRETE-TYPE :STRING :ATTRIBUTES
-                                    ((:ATTRIBUTE (:NAME :DISPLAY :VALUE T))
-                                     (:ATTRIBUTE (:NAME :EDITABLE :VALUE T))))))
-                     :DOCUMENTATION "Cool statistics."))))))))))
-    "Failed to add collection."
+      (:NAME "multiverse" :UNIVERSE-CLASS CL-NAIVE-STORE.NAIVE-CORE:UNIVERSE
+       :LOCATION #P"/home/phil/test-multiverse/" :UNIVERSES
+       ((:UNIVERSE
+         (:NAME "marvel" :STORES
+          ((:STORE
+            (:NAME "wolverine" :COLLECTIONS
+                   ((:COLLECTION
+                     (:NAME "stats" :LABEL "Statistics" :DOCUMENT-TYPE "statistics")))
+             :DOCUMENT-TYPES
+                   ((:DOCUMENT-TYPE
+                     (:NAME "statistics" :LABEL "Statistics" :ELEMENTS
+                            ((:ELEMENT
+                              (:NAME :ID :LABEL "Id" :CONCRETE-TYPE :STRING :ATTRIBUTES
+                                     ((:ATTRIBUTE (:NAME :DISPLAY :VALUE T))
+                                      (:ATTRIBUTE (:NAME :EDITABLE :VALUE T))))))
+                      :DOCUMENTATION "Cool statistics.")))))))))))
+    "Failed to remove collection."
     results))
 
   ;;TODO: Add more tests to check if directories exist with definition files etc.

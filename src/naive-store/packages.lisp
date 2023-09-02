@@ -73,6 +73,7 @@
    :get-collection
    :find-collection-definitions
 
+   :query-multiverse
    :get-multiverse-element
    :add-multiverse-element
    :remove-multiverse-element

@@ -5,6 +5,10 @@
          :accessor name
          :initform nil
          :documentation "Name of the element. This should be a KEYWORD if you want data portability and some internals might expect a keyword.")
+   (document-type :initarg :document-type
+                  :accessor document-type
+                  :initform nil
+                  :documentation "The document-type that this element belongs to.")
    (concrete-type :initarg :concrete-type
                   :accessor concrete-type
                   :initform nil
@@ -63,6 +67,57 @@ GUI's like cl-wfx use these to help with generic rendering of user input screens
 
 See cl-naive-type-defs:*example-type-defs* for examples of type definitions to get a feel for the intended use."))
 
+(defclass document-type-collection-mixin ()
+  ((document-type :initarg :document-type
+                  :accessor document-type
+                  :initform nil
+                  :documentation "The document-type that this collection contains documents of."))
+  (:documentation "Collection extention to make collection of a specific document-type."))
+
+(defclass document-type-store-mixin ()
+  ((document-type-class :initarg :document-type-class
+                        :accessor document-type-class
+                        :initform 'document-type
+                        :allocation :class
+                        :documentation "The class that should be used to make document-type documents.
+IMPL NOTES: To deal with customization of document-type.")
+   (document-types :initarg :document-types
+                   :accessor document-types
+                   :initform nil
+                   :documentation "List of document-types represented by this store's collections.")))
+
+(defmethod query-multiverse ((element element) fn)
+  (let ((result))
+    (let ((fn-result (funcall fn element)))
+      (when fn-result
+        (push fn-result result)))))
+
+(defmethod query-multiverse ((collection document-type-collection-mixin) fn)
+  (let ((result))
+    (let ((fn-result (funcall fn collection)))
+      (when fn-result
+        (push fn-result result)))))
+
+(defmethod query-multiverse ((document-type document-type) fn)
+  (let ((result (mapcar (lambda (element)
+                          (query-multiverse element fn))
+                        (elements document-type))))
+    (let ((fn-result (funcall fn document-type)))
+      (when fn-result
+        (push fn-result result)))))
+
+(defmethod query-multiverse ((store document-type-store-mixin) fn)
+  (let ((result (append
+                 (mapcar (lambda (document-type)
+                           (query-multiverse document-type fn))
+                         (document-types store))
+                 (mapcar (lambda (collection)
+                           (query-multiverse collection fn))
+                         (collections store)))))
+    (let ((fn-result (funcall fn store)))
+      (when fn-result
+        (push fn-result result)))))
+
 ;;TODO:Need to hunt down instances where this function can be used instead of the more
 ;;verbose code lying around.
 ;;currently not used any where?
@@ -70,7 +125,9 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
 
 (defmethod getx ((element element) accessor &key &allow-other-keys)
   ""
-  (cond ((equalp accessor :name)
+  (cond ((equalp accessor :document-type)
+         (document-type element))
+        ((equalp accessor :name)
          (name element))
         ((equalp accessor :concrete-type)
          (concrete-type element))
@@ -81,7 +138,9 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
 
 (defmethod (setf getx) (value (element element) accessor &key &allow-other-keys)
   ""
-  (cond ((equalp accessor :name)
+  (cond ((equalp accessor :document-type)
+         (setf (document-type element) value))
+        ((equalp accessor :name)
          (setf (name element) value))
         ((equalp accessor :concrete-type)
          (setf (concrete-type element) value))
@@ -148,20 +207,33 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
                               (list :name (name document-type)
                                     :label (label document-type)
                                     :class (type-of document-type)
-                                    ;;TODO: naive-store does not use
-                                    ;;top-level-p internally anywhere
-                                    ;;so can we remove it?
-                                    ;;Looks like only cl-wfx grid needs this.
-                                    :top-level-p t
                                     :elements elements)
                               :if-exists :supersede)))
 
-(defclass document-type-collection-mixin ()
-  ((document-type :initarg :document-type
-                  :accessor document-type
-                  :initform nil
-                  :documentation "The document-type that this collection contains documents of."))
-  (:documentation "Collection extention to make collection of a specific document-type."))
+(defmethod get-multiverse-element ((element-type (eql :element))
+                                   (document-type document-type) name)
+  (cl-naive-store.naive-core::get-multiverse-element* document-type elements name))
+
+(defmethod get-multiverse-element ((element-type (eql :document-type))
+                                   (store store) name)
+  (cl-naive-store.naive-core::get-multiverse-element* store document-types name))
+
+(defmethod add-multiverse-element ((document-type document-type) (element element)
+                                   &key persist-p)
+  (if (not (document-type element))
+      (setf (document-type element) document-type)
+      (unless (eql (document-type element) document-type)
+        (error "Element already references a different document-type instance!")))
+
+  (unless (get-multiverse-element :element document-type (name element))
+
+    (pushnew element (elements document-type))
+
+    ;;Elements are not peristed in seperate files they are part of the
+    ;;document-type file
+    (when persist-p
+      (persist document-type)))
+  element)
 
 (defmethod add-multiverse-element ((store store) (collection collection) &key persist-p)
   (if (not (store collection))
@@ -187,7 +259,8 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
 
       (setf (location collection) (pathname location))
       (pushnew collection (collections store))
-      (setf (store collection) store)
+
+      ;;TODO: Change to proper persist.
       (when persist-p
         (persist-collection-def collection))))
   collection)
@@ -212,6 +285,51 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
             (when keys
               (setf (keys collection) (nreverse keys)))))))))
 
+(defmethod raw-instance-from-definition ((definition-type (eql :element)) definition
+                                         &key class)
+  (make-instance (or
+                  (getx definition :class)
+                  class)
+                 :name (getx definition :name)))
+
+(defmethod raw-instance-from-definition ((definition-type (eql :document-type))
+                                         definition
+                                         &key class)
+  (make-instance (or
+                  (getx definition :class)
+                  class)
+                 :name (getx definition :name)))
+
+(defmethod cl-naive-store.naive-core:instance-from-definition
+    ((document-type document-type) (definition-type (eql :element))
+     definition &key class persist-p)
+
+  (let ((instance (raw-instance-from-definition definition-type definition
+                                                :class (or class 'element))))
+    (when instance
+      (setf (document-type instance) document-type)
+      (add-multiverse-element document-type instance :persist-p persist-p))
+
+    instance))
+
+(defmethod cl-naive-store.naive-core:instance-from-definition
+    ((store store)(definition-type (eql :document-type))
+     definition &key class persist-p)
+
+  (let ((instance (raw-instance-from-definition definition-type definition
+                                                :class class)))
+    (when instance
+      (setf (store instance) store)
+      (add-multiverse-element store instance :persist-p persist-p))
+
+    instance))
+
+(defmethod instance-from-definition-file (location (document-type document-type)
+                                          (definition-type (eql :element))
+                                          name &key class)
+  (declare (ignore location document-type definition-type name class))
+  (error "Elements are part of the document-type and do not have files of their own."))
+
 (defmethod persist-collection-def ((collection document-type-collection-mixin))
   (naive-impl:write-to-file
    (cl-fad:merge-pathnames-as-file
@@ -226,30 +344,7 @@ See cl-naive-type-defs:*example-type-defs* for examples of type definitions to g
 
    :if-exists :supersede))
 
-(defclass document-type-store-mixin ()
-  ((document-type-class :initarg :document-type-class
-                        :accessor document-type-class
-                        :initform 'document-type
-                        :allocation :class
-                        :documentation "The class that should be used to make document-type documents.
-IMPL NOTES: To deal with customization of document-type.")
-   (document-types :initarg :document-types
-                   :accessor document-types
-                   :initform nil
-                   :documentation "List of document-types represented by this store's collections.")))
-
-(defmethod cl-naive-store.naive-core:instance-from-definition
-    ((store store)(definition-type (eql :document-type))
-     definition &key class persist-p)
-
-  (let ((instance (raw-instance-from-definition definition-type definition
-                                                :class class)))
-    (when instance
-      (setf (store instance) store)
-      (add-multiverse-element store instance :persist-p persist-p))
-
-    instance))
-
+;;TODO: See todo on main generic definition about getting rid of this.
 (defmethod get-collection-from-def ((store document-type-store-mixin) collection-name)
   "Tries to find the collection definition file on disk and loads it into the store, but it does not load the collection's data.
 Needs to find the associated docment-type as well which might mean loading all the document types for the store."
@@ -280,6 +375,7 @@ Needs to find the associated docment-type as well which might mean loading all t
           (setf (location collection) (ensure-location collection))
           collection)))))
 
+;;TODO: Depricated impliment
 (defgeneric get-document-type-from-def (store document-type-name)
   (:documentation "Tries to find the document definition on disk."))
 
@@ -311,13 +407,21 @@ Needs to find the associated docment-type as well which might mean loading all t
 (defmethod cl-naive-store.naive-core:get-multiverse-element
     ((element-type (eql :document-type))
      (store store) name)
-  (cl-naive-store.naive-core::get-multiverse-element* store document-types))
+  (cl-naive-store.naive-core::get-multiverse-element* store document-types name))
 
 (defgeneric get-document-type (store type-name)
   (:documentation "Returns a document-type document if found in the store."))
 
 (defmethod get-document-type ((store document-type-store-mixin) type-name)
   (get-multiverse-element :document-type store type-name))
+
+(defmethod cl-naive-store.naive-core:add-multiverse-element
+    ((document-type document-type) (element element) &key persist-p)
+  (cl-naive-store.naive-core::add-multiverse-element* document-type
+                                                      element
+                                                      persist-p
+                                                      document-type element
+                                                      elements))
 
 (defmethod cl-naive-store.naive-core:add-multiverse-element
     ((store store) (document-type document-type) &key persist-p)
@@ -327,14 +431,10 @@ Needs to find the associated docment-type as well which might mean loading all t
       (unless (eql (store document-type) store)
         (error
          "Document-Type already references a different STORE instance!")))
+
   (unless (get-multiverse-element :document-type store (name document-type))
-    ;;TODO: Document does not have a location as lon as the store
-    ;;location is ok all should be good??
-    ;;(cl-naive-store.naive-core::set-and-ensure-locations store
-    ;;document-type)
-    (setf (store document-type) store)
-    (if persist-p
-        (persist document-type))
+    (when persist-p
+      (persist document-type))
     (pushnew document-type (document-types store)))
   document-type)
 
@@ -396,7 +496,7 @@ Needs to find the associated docment-type as well which might mean loading all t
 
 (defmethod load-store-collections ((store document-type-store-mixin) &key with-data-p
                                    &allow-other-keys)
-  "Finds and loads collection definitions for a store, with or without data documents."
+  "Finds and loads collection definitions for a store, with or without data/documents."
   (let ((files (find-collection-definitions store)))
     (dolist (file files)
       (let ((file-contents))
@@ -428,7 +528,7 @@ Needs to find the associated docment-type as well which might mean loading all t
               (error "Collection document-type not found."))
 
             (when document-type
-              (setf collection (add-collection
+              (setf collection (cl-naive-store.naive-core:add-multiverse-element
                                 store
                                 (make-instance (collection-class store)
                                                :name (getx file-contents :name)
@@ -455,13 +555,15 @@ Needs to find the associated docment-type as well which might mean loading all t
     (when (stringp document-type)
       ;;If types have not been loaded yet load type.
       (unless (document-types (store collection))
-        (get-document-type-from-def (store collection) document-type))
-
-      (setf document-type (get-document-type (store collection) document-type)))
+        (setf document-type
+              (cl-naive-store.naive-core::instance-from-definition-file
+               (location (store collection))
+               (store collection)
+               :document-type document-type))))
 
     (unless document-type
       ;;Raising an error here because there is a problem with datatype specifications some where.
-      (error "index-keys called with document-type = nil.
+      (error "key-values called with document-type = nil.
 cl-wfx tip: If this happened on a save look for a mismatch between a collection and its document-type's destinations"))
 
     (values-from-key-elements% (elements document-type) document)))

@@ -7,12 +7,6 @@
    :find-named-element
    :get-referenced-types
    :get-collections-dependencies
-   :add-collection
-   :add-document-type
-   :add-store
-   :add-universe
-   :remove-collection
-   :remove-document-type
-   :remove-store
-   :remove-universe
+   :add-definition-element
+   :remove-defintion-element
    :create-multiverse))

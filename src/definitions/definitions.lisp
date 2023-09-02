@@ -1,12 +1,53 @@
 (in-package :cl-naive-store.definitions)
 
+(defun query-chain (definition criteria)
+  (let ((results))
+    (labels ((query* (definition criteria)
+               (let ((result (cl-naive-ptrees:query definition (list (car criteria)))))
+                 (when result
+
+                   (if (cdr criteria)
+                       (dolist (huh result)
+                         (query* huh (cdr criteria)))
+                       (push result results))))))
+
+      (query* definition criteria)
+
+      (nreverse (car results)))))
+
 ;;; These definition manipulation functions are for convenience sake
 ;;; but are simple in the sense that they will not ensure the
 ;;; integrity of the final definition. For example if you remove a
 ;;; data-type that data type might still be used by a collection which
 ;;; will cause errors when trying to use the definition.
 
-(defgeneric find-named-elements (element name definition)
+(defgeneric query-definition (definition &key fn element)
+  (:documentation "Queries the definition passed for an element or elements.
+
+If an element is supplied limits calling the function to those elements or if no function is supplied just fetches elements of keyword element.
+
+If you need more control use cl-naive-ptrees directly."))
+
+(defmethod query-definition (definition &key fn element)
+  (if fn
+      (if element
+          (cl-naive-ptrees::query definition
+                                  `(((lambda (node)
+                                       (when (listp node)
+                                         (funcall fn node)))
+                                     ,element)))
+          (cl-naive-ptrees::map-plists definition
+                                       fn))
+      (if element
+          (cl-naive-ptrees::query definition
+                                  `((,element)))
+          definition)))
+
+(defgeneric get-definition-element (element-type parent name)
+  (:documentation "Fetches a definition of the type element-type by name from the parent definition."))
+
+;;TODO: depricated
+(defgeneric find-named-elements (element name definition &key fn)
   (:documentation
    "Returns all the specific named definition-elements found.
 
@@ -14,12 +55,19 @@ What the definition needs to be can vary for elements but worst case
 implementations should at least deal with a multiverse definition
 and parent definition."))
 
-(defmethod find-named-elements (element name definition)
+(defmethod find-named-elements (element name definition &key fn)
   (cl-naive-ptrees::query definition
-                          `(((lambda (node)
-                               (when (listp node)
-                                 (equalp (getf node :name) ,name)))
-                             ,element))))
+                          (if fn
+                              `(((lambda (node)
+                                   (when (listp node)
+                                     (and
+                                      (equalp (getf node :name) ,name)
+                                      (funcall fn node))))
+                                 ,element))
+                              `(((lambda (node)
+                                   (when (listp node)
+                                     (equalp (getf node :name) ,name)))
+                                 ,element)))))
 
 (defgeneric find-named-element (element name definition)
   (:documentation
@@ -32,116 +80,208 @@ and parent definition."))
 (defmethod find-named-element (element name definition)
   (car (find-named-elements element name definition)))
 
-(defun add-collection (universe-name store-name collection-definition
-                       multiverse-definition)
-  "Adds a collection definition to a store in a universe in the multiverse definition."
-  (dolist (universe (getx multiverse-definition :multiverse))
-    (when (string-equal universe-name
-                        (cl-getx:digx universe :universe :name))
-      (dolist (store (cl-getx:digx universe :universe :stores))
+(defgeneric add-definition-element (element-type definition element &key name-path)
+  (:documentation "Adds a definition element to the parent definition."))
 
-        (when (string-equal store-name (getx (getx store :store) :name))
-          (if (find-named-element
-               :collection
-               (getx (getx collection-definition :collection) :name)
-               store)
-              (error "Collection definition already exsists: ~A"
-                     (getx (getx collection-definition :collection) :name))
-              (progn
-                (setf (getx (getx store :store) :collections)
-                      (append (getx (getx store :store) :collections)
-                              collection-definition))
-                (return-from add-collection multiverse-definition))))))))
+(defun build-name-path-chain (name-path)
+  `,(mapcar (lambda (path-element)
+              `((lambda (node)
+                  (when (listp node)
+                    (when  (equalp (getf node :name) ,(second path-element))
+                      node)))
+                ,(first path-element)))
+            name-path))
 
-(defun remove-collection (universe-name store-name collection-name
-                          multiverse-definition)
-  "Removes a collection definition from a store in a universe in the multiverse definition."
-  (dolist (universe (getx multiverse-definition :multiverse))
-    (when (string-equal universe-name
-                        (cl-getx:digx universe :universe :name))
-      (dolist (store (cl-getx:digx universe :universe :stores))
-        (when (string-equal store-name (getx (getx store :store) :name))
+(defmacro add-defintion-element* (element-type list-key definition element name-path
+                                  replace-p)
+  (let ((element-type% (gensym))
+        (list-key% (gensym))
+        (definition% (gensym))
+        (element% (gensym))
+        (name-path% (gensym))
+        (replace-p% (gensym)))
 
-          (dolist (collection (getx (getx store :store) :collections))
+    `(let ((,element-type% ,element-type)
+           (,list-key% ,list-key)
+           (,definition% ,definition)
+           (,element% ,element)
+           (,name-path% ,name-path)
+           (,replace-p% ,replace-p))
 
-            (when (string-equal (getx (getx collection :collection) :name)
-                                collection-name)
+       (let* ((elements (or (and ,name-path%
+                                 (getx
+                                  (second
+                                   (car
+                                    (query-chain
+                                     ,definition%
+                                     (cl-naive-store.definitions::build-name-path-chain
+                                      ,name-path%))))
+                                  ,list-key%))
+                            (getx ,definition% ,list-key%)))
+              (existing-element (find-named-element ,element-type%
+                                                    (digx ,element% ,element-type% :name)
+                                                    elements)))
 
-              (setf (getx (getx store :store) :collections)
-                    (remove collection (getx (getx store :store) :collections)))
-              (return-from remove-collection multiverse-definition))))))))
+         (unless elements
+           (error (format nil "~A not found in definition."
+                          (string-capitalize ,list-key%))))
 
-(defun add-document-type (universe-name store-name type-definition
-                          multiverse-definition)
-  "Adds a document-type definition to a store in a universe in the multiverse definition."
-  (dolist (universe (getx multiverse-definition :multiverse))
-    (when (string-equal universe-name
-                        (cl-getx:digx universe :universe :name))
-      (dolist (store (cl-getx:digx universe :universe :stores))
-        (when (string-equal store-name (getf (getf store :store) :name))
-          (if (find-named-element
-               :data-type
-               (getx (getx type-definition :data-type) :name)
-               store)
-              (error "Data type definition already exsists: ~A"
-                     (getx (getx type-definition :collection) :name))
-              (pushnew type-definition (getx store :document-types)))
-          (return-from add-document-type multiverse-definition))))))
+         (if existing-element
+             (if (not ,replace-p%)
+                 (error "Collection definition already exsists: ~A"
+                        (digx ,element% :collection :name))
+                 (setf elements (nsubstitute ,element% existing-element elements)))
+             (nconc elements (list ,element)))
+         ,definition%))))
 
-(defun remove-document-type (universe-name store-name type-name
-                             multiverse-definition)
-  "Removes a document-type definition from a store in a universe in the multiverse definition."
-  (dolist (universe (getx multiverse-definition :multiverse))
-    (when (string-equal universe-name
-                        (cl-getx:digx universe :universe :name))
-      (dolist (store (cl-getx:digx universe :universe :stores))
-        (when (string-equal store-name (getf (getf store :store) :name))
-          (dolist (type-definition (getx (getf store :store) :document-types))
-            (when (string-equal
-                   (cl-getx:digx type-definition :document-type :name) type-name)
-              (setf (getx store :document-types)
-                    (remove type-definition (getx store :document-types)))
-              (return-from remove-document-type multiverse-definition))))))))
+(defmethod add-definition-element ((element-type (eql :collection))
+                                   definition
+                                   collection
+                                   &key name-path replace-p)
+  "Adds a collection to :collections."
 
-(defun add-store (universe-name store-definition
-                  multiverse-definition)
-  "Adds a store definition to a universe in the multiverse definition."
-  (dolist (universe (getx multiverse-definition :multiverse))
-    (when (string-equal universe-name
-                        (cl-getx:digx universe :universe :name))
-      (pushnew store-definition (cl-getx:digx universe :universe :stores))
+  (add-defintion-element* :collection
+                          :collections
+                          definition
+                          collection
+                          name-path
+                          replace-p))
 
-      (return-from add-store multiverse-definition))))
+(defmethod add-definition-element ((element-type (eql :document-type))
+                                   definition
+                                   document-type
+                                   &key name-path replace-p)
+  "Adds a document-type to :document-types."
 
-(defun remove-store (universe-name store-name
-                     multiverse-definition)
-  "Removes a store definition from a universe in the multiverse definition."
-  (dolist (universe (getx multiverse-definition :multiverse))
-    (when (string-equal universe-name
-                        (cl-getx:digx universe :universe :name))
-      (dolist (store (cl-getx:digx universe :universe :stores))
-        (when (string-equal store-name (getf (getf store :store) :name))
-          (setf (cl-getx:digx universe :universe :stores)
-                (remove store (cl-getx:digx universe :universe :stores)))))
+  (add-defintion-element* :document-type
+                          :document-types
+                          definition
+                          document-type
+                          name-path
+                          replace-p))
 
-      (return-from remove-store multiverse-definition))))
+(defmethod add-definition-element ((element-type (eql :store))
+                                   definition
+                                   store
+                                   &key name-path replace-p)
+  "Adds a store to :stores."
 
-(defun add-universe (universe-definition
-                     multiverse-definition)
-  "Adds a universe definition to the multiverse definition."
-  (pushnew universe-definition (getx multiverse-definition :multiverse))
-  multiverse-definition)
+  (add-defintion-element* :store
+                          :stores
+                          definition
+                          store
+                          name-path
+                          replace-p))
 
-(defun remove-universe (universe-name multiverse-definition)
-  "Removes a universe definition from the multiverse definition."
-  (dolist (universe (getx multiverse-definition :multiverse))
+(defmethod add-definition-element ((element-type (eql :universe))
+                                   definition
+                                   universe
+                                   &key name-path replace-p)
+  "Adds a universe to :universes."
 
-    (when (string-equal universe-name
-                        (cl-getx:digx universe :universe :name))
+  (add-defintion-element* :universe
+                          :universes
+                          definition
+                          universe
+                          name-path
+                          replace-p))
 
-      (setf (getx multiverse-definition :multiverse)
-            (remove universe (getx multiverse-definition :multiverse)))
-      (return-from remove-universe multiverse-definition))))
+(defgeneric remove-definition-element (element-type  definition element-name
+                                       &key name-path)
+  (:documentation "Removes a definition element from the definition."))
+
+(defmacro remove-defintion-element* (element-type list-key definition name name-path)
+  (let ((definition% (gensym))
+        (name% (gensym))
+        (name-path% (gensym))
+        (element-type% (gensym))
+        (list-key% (gensym)))
+
+    `(let* ((,definition% ,definition)
+            (,name% ,name)
+            (,name-path% ,name-path)
+            (,element-type% ,element-type)
+            (,list-key% ,list-key))
+
+       (let* ((path-element (second (car
+                                     (query-chain
+                                      ,definition%
+                                      (build-name-path-chain ,name-path%)))))
+              (elements (or (and ,name-path%
+                                 path-element
+                                 (getx
+                                  path-element
+                                  ,list-key%))
+                            (getx path-element ,list-key%)))
+              (existing-element (find-named-element ,element-type%
+                                                    ,name%
+                                                    elements)))
+
+         (unless elements
+           (error (format nil "~A not found in definition."
+                          (string-capitalize ,list-key%))))
+
+         (when existing-element
+           (setf (getx (or path-element ,definition%) ,list-key%)
+                 (remove existing-element elements)))
+
+         ,definition%))))
+
+(defmethod remove-definition-element ((element-type (eql :universe))
+                                      definition
+                                      name
+                                      &key name-path)
+  "Removes a universe from :universes."
+  (declare (ignore element-type))
+
+  (remove-defintion-element*
+   :universe
+   :universes
+   definition
+   name
+   name-path))
+
+(defmethod remove-definition-element ((element-type (eql :store))
+                                      definition
+                                      name
+                                      &key name-path)
+  "Removes a universe from :universes."
+  (declare (ignore element-type))
+
+  (remove-defintion-element*
+   :store
+   :stores
+   definition
+   name
+   name-path))
+
+(defmethod remove-definition-element ((element-type (eql :collection))
+                                      definition
+                                      name
+                                      &key name-path)
+  "Removes a universe from :universes."
+  (declare (ignore element-type))
+
+  (remove-defintion-element*
+   :collection
+   :collections
+   definition
+   name
+   name-path))
+
+(defmethod remove-definition-element ((element-type (eql :document-type))
+                                      definition
+                                      name
+                                      &key name-path)
+  "Removes a universe from :universes."
+  (declare (ignore element-type))
+
+  (remove-defintion-element*
+   :document-type
+   :document-types
+   definition
+   name
+   name-path))
 
 ;;TODO: Use some ptrees function
 (defun get-document-type-names (doc-type-defs)
@@ -292,9 +432,9 @@ and parent definition."))
                       :directory
                       (list :relative
                             (getf collection-definition :name)))
-                     (format nil "~A"
-                             (pathname (cl-naive-store.naive-core:location
-                                        store))))
+                     (namestring
+                      (pathname (cl-naive-store.naive-core:location
+                                 store))))
           :document-type
           (cl-naive-store.document-types:get-document-type
            store
@@ -302,15 +442,7 @@ and parent definition."))
          :persist-p persist-p)))))
 
 (defun traverse-apply (criteria plist-tree func)
-  "Traverses the plist-tree and calls the attribute-func for each attribute pair that matches the criteria supplied.
-The criteria selects plists in the plist-tree.  The ATTRIBUTE-FUNC is called one each attribute of each selected plist.
-
-Note: all the attribute in the criteria are matched into a single plist, to select it.
-
-An item in the criteria can be specific like (:att \"x\") which will match all attribute with name = :att and value = \"x\".
-Or the item in the criteria can be non specific (:att) which will match all attributes with then name :att.
-Specific and non specific criteria elements can be mixed like ((:att \"x\") (:other-att))
-"
+  ""
   (dolist (plist (cl-naive-ptrees:query plist-tree criteria))
     (funcall func plist)))
 
@@ -364,12 +496,16 @@ Specific and non specific criteria elements can be mixed like ((:att \"x\") (:ot
                      :directory
                      (list :relative
                            (getx store-definition :name)))
-                    (format nil "~A/"
-                            (cl-naive-store.naive-core:location
-                             universe))))
+                    ;;TODO: Check for trailing / we need it
+                    (namestring
+                     (cl-naive-store.naive-core:location
+                      universe))))
     :persist-p t)))
 
 (defun create-stores (universe universe-definition &key persist-p)
+  ;;Using traverse-apply instead of simple dolist so that we can
+  ;;accomodate at least a small degree of flexibility in the
+  ;;structure of the universe definition
   (traverse-apply
    '(chain
      ((:stores))

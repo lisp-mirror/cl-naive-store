@@ -199,7 +199,7 @@ which contain the actual data. Each collection will have its own directory and f
                       :collection
                       store
                       "simple-collection"))
-         (asset-collection (cl-naive-store.naive-core:get-multiverse-element
+         (asset-collection (get-multiverse-element
                             :collection
                             store
                             "asset-collection"))
@@ -259,7 +259,7 @@ which contain the actual data. Each collection will have its own directory and f
                 (add-document collection document)))))))
 
 (defun query-simple-data ()
-  (let* ((collection (cl-naive-store.naive-core:get-multiverse-element
+  (let* ((collection (get-multiverse-element
                       :collection
                       (get-multiverse-element :store *universe* "simple-store")
                       "simple-collection"))
@@ -274,7 +274,7 @@ which contain the actual data. Each collection will have its own directory and f
 
 (defun query-ref-doc ()
   (let* ((store (get-multiverse-element :store *universe* "simple-store"))
-         (collection (cl-naive-store.naive-core:get-multiverse-element
+         (collection (get-multiverse-element
                       :collection
                       store
                       "simple-collection"))
@@ -282,7 +282,7 @@ which contain the actual data. Each collection will have its own directory and f
            (query-document collection :query (lambda (document)
                                                (= (getx document :emp-no) 1)))))
     (if (document-p reference-doc)
-        (if (index-lookup-hash (cl-naive-store.naive-core:get-multiverse-element
+        (if (index-lookup-hash (get-multiverse-element
                                 :collection
                                 store
                                 "asset-collection")
@@ -371,7 +371,7 @@ which contain the actual data. Each collection will have its own directory and f
   (populate-simple-data t)
 
   ;;Unload the collection (contains the data) if it is already loaded.
-  (let ((collection (cl-naive-store.naive-core:get-multiverse-element
+  (let ((collection (get-multiverse-element
                      :collection
                      (get-multiverse-element :store *universe* "simple-store")
                      "simple-collection")))
