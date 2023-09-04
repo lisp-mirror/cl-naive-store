@@ -388,13 +388,13 @@ class)
 |#
 
 (defun definition-body (definition)
-  (definition-body (if (and
-                        (member (first definition)
-                                '(:multiverse :universe :store :collection
-                                  :document-type :element :attribute))
-                        (listp (second definition)))
-                       (second definition)
-                       definition)))
+  (if (and
+       (member (first definition)
+               '(:multiverse :universe :store :collection
+                 :document-type :element :attribute))
+       (listp (second definition)))
+      (second definition)
+      definition))
 
 (defmethod instance-from-definition ((class (eql 'multiverse)) definition)
 
@@ -410,22 +410,26 @@ class)
                                  with-data-p)
   ;;Parent is irrelevant for multiverse it cannot have a parent.
   (declare (ignore parent))
-  (let* ((definition-body (definition-body (definition-body definition)))
+
+  (let* ((definition-body (definition-body definition))
          (instance (instance-from-definition (or
                                               (getx definition-body :class)
                                               class
                                               'multiverse)
                                              definition)))
-    (when persist-p
-      (unless (location instance)
-        (error "Cannot persist the multiverse, there is no location."))
-      (persist instance))
+
+    (when instance
+      (when persist-p
+        (ensure-location instance)
+        (unless (location instance)
+          (error "Cannot persist the multiverse, there is no location."))))
 
     (when (or with-data-p with-children-p)
 
       (dolist (child-definition (or (getx definition-body :universes)
                                     (get-definitions (location instance)
                                                      :universe)))
+
         (load-from-definition
          instance
          :universe child-definition
@@ -449,17 +453,23 @@ class)
                                  with-children-p
                                  with-data-p)
 
-  (let* ((definition-body (definition-body (definition-body definition)))
+  (let* ((definition-body (definition-body definition))
          (instance (instance-from-definition (or
                                               (getx definition-body :class)
                                               class
                                               (getx multiverse :universe-class)
                                               'universe)
                                              definition)))
-    (when persist-p
-      (unless (location instance)
-        (error "Cannot persist the universe, there is no location."))
-      (persist instance))
+
+    (when instance
+      (setf (multiverse instance) multiverse)
+
+      (when persist-p
+        (ensure-location instance)
+        (unless (location instance)
+          (error "Cannot persist the universe, there is no location.")))
+
+      (add-multiverse-element multiverse instance :persist-p persist-p))
 
     (when (or with-data-p with-children-p)
       (dolist (child-definition (or (getx definition-body :stores)
@@ -473,10 +483,6 @@ class)
          :persist-p persist-p
          :with-children-p with-children-p
          :with-data-p with-data-p)))
-
-    (when instance
-      (setf (multiverse instance) multiverse)
-      (add-multiverse-element multiverse instance :persist-p persist-p))
 
     instance))
 
@@ -499,27 +505,50 @@ class)
                                               (getx universe :store-class)
                                               'store)
                                              definition)))
-    (when persist-p
-      (unless (location instance)
-        (error "Cannot persist the universe, there is no location."))
-      (persist instance))
+
+    (when instance
+      (setf (universe instance) universe)
+
+      (when persist-p
+        (ensure-location instance)
+        (unless (location instance)
+          (error "Cannot persist the store, there is no location.")))
+
+      (add-multiverse-element universe instance :persist-p persist-p))
 
     (when (or with-data-p with-children-p)
+
+      ;;types before collections!!!!!
+      (dolist (child-definition (or (getx definition-body :document-types)
+                                    (get-definitions (location instance)
+                                                     :document-types)))
+        (unless child-definition
+          (error "There is a nil definition in document-types or document-types is ill formatted."))
+
+        (load-from-definition
+         instance
+         :document-type
+         child-definition
+         :class (getx definition-body :document-type-class)
+         :persist-p persist-p
+         :with-children-p with-children-p
+         :with-data-p with-data-p))
+
       (dolist (child-definition (or (getx definition-body :collections)
                                     (get-definitions (location instance)
                                                      :collection)))
+
+        (unless child-definition
+          (error "There is a nil definition in collections or document-types is ill formatted."))
+
         (load-from-definition
          instance
-         :store
+         :collection
          child-definition
          :class (getx definition-body :collection-class)
          :persist-p persist-p
          :with-children-p with-children-p
          :with-data-p with-data-p)))
-
-    (when instance
-      (setf (universe instance) universe)
-      (add-multiverse-element universe instance :persist-p persist-p))
 
     instance))
 
@@ -543,16 +572,21 @@ class)
                                               (getx store :collection-class)
                                               'collection)
                                              definition)))
-    (when persist-p
-      (unless (location instance)
-        (error "Cannot persist the universe, there is no location."))
-      (persist instance))
+
+    (when instance
+
+      (setf (store instance) store)
+
+      (when persist-p
+        (ensure-location instance)
+
+        (unless (location instance)
+          (error "Cannot persist the collection, there is no location.")))
+
+      (add-multiverse-element store instance :persist-p persist-p))
 
     (when with-data-p
       (load-data instance))
-
-    (when instance
-      (setf (store instance) store))
 
     instance))
 

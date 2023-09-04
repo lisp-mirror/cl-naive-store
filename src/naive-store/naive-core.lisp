@@ -694,10 +694,23 @@ shard-macs is a list of shard macs to indicate which shards should be used. If n
 (defgeneric ensure-location (object)
   (:documentation "Tries to find or build path to cl-naive-store files."))
 
-(defmethod ensure-location ((object universe))
+(defmethod ensure-location ((object multiverse))
   (if (not (empty-p (location object)))
       (location object)
       (error "Unverse location is not set.")))
+
+(defmethod ensure-location ((object universe))
+  (if (not (empty-p (location object)))
+      (location object)
+      (if (not (multiverse object))
+          (error "Universe multiverse not set, cant ensure location.")
+          (if (not (empty-p (ensure-location (multiverse object))))
+              (setf (location object)
+                    (cl-fad:merge-pathnames-as-file
+                     (pathname (location (multiverse object)))
+                     (make-pathname :directory (list :relative (name object))
+                                    :name (name object)
+                                    :type "universe")))))))
 
 (defmethod ensure-location ((object store))
   (if (not (empty-p (location object)))

@@ -10,6 +10,55 @@
    :collection-class 'document-collection)
   (:documentation "cl-naive-store.naive-documents specialization of store."))
 
+(defmethod cl-naive-store.naive-core:instance-from-definition
+    ((class (eql 'document-collection)) definition)
+
+  (let ((definition-body (cl-naive-store.naive-core::definition-body definition)))
+    (make-instance class
+                   :name (getx definition-body :name)
+                   :location (getx definition-body :location))))
+
+(defmethod cl-naive-store.naive-core:load-from-definition
+    ((store cl-naive-store.naive-documents:document-store)
+     (definition-type (eql :collection))
+     definition &key class persist-p
+     with-children-p
+     with-data-p)
+
+  (declare (ignore with-children-p))
+
+  (let* ((definition-body (definition-body definition))
+         (instance (instance-from-definition (or
+                                              (getx definition-body :class)
+                                              class
+                                              (getx store :collection-class)
+                                              'document-collection)
+                                             definition)))
+    (when instance
+      (setf (store instance) store)
+
+      (when persist-p
+        (ensure-location instance)
+
+        (unless (location instance)
+          (error "Cannot persist the universe, there is no location.")))
+
+      (add-multiverse-element store instance :persist-p persist-p))
+
+    (when with-data-p
+      (load-data instance))
+
+    instance))
+
+(defmethod cl-naive-store.naive-core:instance-from-definition
+    ((class (eql 'document-store)) definition)
+
+  (let ((definition-body (definition-body definition)))
+    (make-instance class
+                   :name (getx definition-body :name)
+                   :location (getx definition-body :location)
+                   :collection-class (getx definition-body :collecition-class))))
+
 (defstruct document
   "A basic struct that represents a document object. A struct is used because there is meta data that we want to add to the actual document values and there is additional functionality like being able to know what has changed in the values during updates.
 
