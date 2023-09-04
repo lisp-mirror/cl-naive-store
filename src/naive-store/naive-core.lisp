@@ -200,6 +200,80 @@ files are loaded. (see store notes for more about this.).")
                                   :colletions (map 'list (function name) (collections store))))))
   store)
 
+(defmethod getx ((multiverse multiverse) accessor &key &allow-other-keys)
+  ""
+  (cond ((equalp accessor :name)
+         (name multiverse))
+        ((equalp accessor :universes)
+         (universes multiverse))
+        ((equalp accessor :universe-class)
+         (universe-class multiverse))
+        ((equalp accessor :location)
+         (location multiverse))))
+
+(defmethod (setf getx) (value (multiverse multiverse) accessor &key &allow-other-keys)
+  ""
+  (cond ((equalp accessor :name)
+         (setf (name multiverse) value))
+        ((equalp accessor :universes)
+         (setf (universes multiverse) value))
+        ((equalp accessor :universe-class)
+         (setf (universe-class multiverse) value))
+        ((equalp accessor :location)
+         (setf (location multiverse) value))))
+
+(defmethod getx ((universe universe) accessor &key &allow-other-keys)
+  ""
+  (cond ((equalp accessor :multiverse)
+         (multiverse universe))
+        ((equalp accessor :name)
+         (name universe))
+        ((equalp accessor :stores)
+         (stores universe))
+        ((equalp accessor :store-class)
+         (store-class universe))
+        ((equalp accessor :location)
+         (location universe))))
+
+(defmethod (setf getx) (value (universe universe) accessor &key &allow-other-keys)
+  ""
+  (cond ((equalp accessor :multiverse)
+         (setf (multiverse universe) value))
+        ((equalp accessor :name)
+         (setf (name universe) value))
+        ((equalp accessor :stores)
+         (setf (stores universe) value))
+        ((equalp accessor :store-class)
+         (setf (store-class universe) value))
+        ((equalp accessor :location)
+         (setf (location universe) value))))
+
+(defmethod getx ((store store) accessor &key &allow-other-keys)
+  ""
+  (cond ((equalp accessor :universe)
+         (universe store))
+        ((equalp accessor :name)
+         (name store))
+        ((equalp accessor :collections)
+         (collections store))
+        ((equalp accessor :collection-class)
+         (collection-class store))
+        ((equalp accessor :location)
+         (location store))))
+
+(defmethod (setf getx) (value (store store) accessor &key &allow-other-keys)
+  ""
+  (cond ((equalp accessor :universe)
+         (setf (universe store) value))
+        ((equalp accessor :name)
+         (setf (name store) value))
+        ((equalp accessor :collections)
+         (setf (collections store) value))
+        ((equalp accessor :collection-class)
+         (setf (collection-class store) value))
+        ((equalp accessor :location)
+         (setf (location store) value))))
+
 (defgeneric short-mac (shard)
   (:documentation "Return a short string containing a prefix of the MAC"))
 
@@ -570,233 +644,6 @@ Path to file for data is this general format /multiverse/universe/store-name/col
         (persist-collection-def collection))))
   collection)
 
-;;TODO:Deprecated remove some time
-(defgeneric add-store (universe store)
-  (:documentation "Adds a store document to a universe.
-If the store already exists nothing is done!"))
-
-;;TODO:Deprecated remove some time
-(defmethod add-store ((universe universe) (store store))
-  (add-multiverse-element universe store))
-
-(defun get-definitions (location definition-type)
-  "Returns persisted definitions for the type (multiverse, universe, store, collection) using the passed object that can be a multiverse, universe, store, collection.
-If no definition-type is not supplied the definition of the object is returned."
-  (mapcar (lambda (filename)
-            (naive-impl:sexp-from-file filename))
-          (directory (format nil "~A/**/*.~A"
-                             location definition-type))))
-
-(defun get-definition (location definition-type name &key (error-p t))
-  "Returns a persisted definition for the type (multiverse, universe, store, collection) using the passed object that can be a multiverse, universe, store, collection."
-  (let* ((filename (format nil "~A/**/~A.~A"
-                           location name
-                           (if (keywordp definition-type)
-                               (cond ((equal definition-type :collection)
-                                      "col")
-                                     ((equal definition-type :document-type)
-                                      "type")
-                                     (t
-                                      (format nil "~(~a~)" definition-type)))
-                               definition-type)))
-         (file (car (directory filename))))
-    (when error-p
-      (unless file
-        (error "Defintion file not found for ~A." filename)))
-    (naive-impl:sexp-from-file filename)))
-
-(defgeneric raw-instance-from-definition (definition-type definition &key class)
-  (:documentation "Creates a universe element like multiverse, universe, store, collection or document-type and instanciates the equivilant object from the definition.
-
-Howevere multiverse elements usually have a reference to the parent that needs to be set to complete the creation of the instance. For instance a collection will have a reference to its store.
-
-It is for that reason that this function is prefixed-with raw because it only initialises the instance from what is saved in the definition file. The reason is that there is no sensible way to retrieve a parent instance even if it was persisted to file without access to a multiverse to query.
-
-This method is exposed incase some-one wants to write different tooling to load a database."))
-
-;;TODO: Chould be check if the defintion is already loaded before we try to load it???
-(defgeneric instance-from-definition (parent definition-type definition &key class persist-p)
-  (:documentation "Creates a universe element like multiverse, universe, store, collection or document-type and instanciates the equivilant object from the definition.
-
-Multiverse elements usually have a reference to the parent that needs to be set to complete the creation of the instance. For instance a collection will have a reference to its store.
-
-If persist-p the definition is persisted."))
-
-(defmethod raw-instance-from-definition (definition-type definition &key class)
-  (make-instance (or
-                  (getx definition :class)
-                  class)
-                 :name (getx definition :name)
-                 :location (getx definition :location)))
-
-(defmethod instance-from-definition (parent definition-type definition
-                                     &key class persist-p)
-  (declare (ignore parent))
-  (let ((instance (raw-instance-from-definition definition-type definition
-                                                :class class)))
-    (when persist-p
-      (persist instance))
-    instance))
-
-(defmethod instance-from-definition (parent (definition-type (eql :multiverse))
-                                     definition &key class persist-p)
-  ;;Parent is irrelevant for multiverse it cannot have a parent.
-  (declare (ignore parent))
-  (let ((multiverse (make-instance (or
-                                    (getx definition :class)
-                                    class)
-                                   :name (getx definition :name)
-                                   :location (getx definition :location)
-                                   :universe-class (getx definition :universe-class))))
-    (when  persist-p
-      (persist multiverse))
-    multiverse))
-
-(defmethod raw-instance-from-definition ((definition-type (eql :universe))
-                                         definition &key class)
-  (make-instance (or
-                  (getx definition :class)
-                  class)
-                 :name (getx definition :name)
-                 :location (getx definition :location)
-
-                 :store-class (getx definition :store-class)))
-
-(defmethod instance-from-definition ((multiverse multiverse)
-                                     (definition-type (eql :universe))
-                                     definition &key class persist-p)
-  (let ((instance (raw-instance-from-definition definition-type definition
-                                                :class class)))
-    (when instance
-      (setf (multiverse instance) multiverse)
-      (add-multiverse-element multiverse instance :persist-p persist-p))
-    instance))
-
-(defmethod raw-instance-from-definition ((definition-type (eql :store))
-                                         definition &key class)
-  (make-instance (or
-                  (getx definition :class)
-                  class)
-                 :name (getx definition :name)
-                 :location (getx definition :location)
-                 :collection-class (getx definition :store-class)))
-
-(defmethod instance-from-definition ((universe universe) (definition-type (eql :store))
-                                     definition &key class persist-p)
-  (let ((instance (raw-instance-from-definition definition-type definition
-                                                :class class)))
-    (when instance
-      (setf (universe instance) universe)
-      (add-multiverse-element universe instance :persist-p persist-p))
-    instance))
-
-(defmethod raw-instance-from-definition ((definition-type (eql :collection))
-                                         definition &key class)
-  (make-instance (or
-                  (getx definition :class)
-                  class)
-                 :name (getx definition :name)
-                 :location (getx definition :location)))
-
-(defmethod instance-from-definition ((store store) (definition-type (eql :collection))
-                                     definition &key class persist-p)
-  (let ((instance (raw-instance-from-definition definition-type definition
-                                                :class class)))
-    (when instance
-      (setf (store instance) store)
-      (add-multiverse-element store instance :persist-p t))
-
-    (when persist-p
-      (persist-collection-def instance))
-    instance))
-
-;;There is no persist-p option for this function because their is no
-;;point in saving definitions that where just read.
-(defun instances-from-definitions (location definition-type &key class)
-  (mapcar (lambda (definition)
-            (raw-instance-from-definition definition-type definition :class class))
-          (get-definitions location
-                           definition-type)))
-
-(defun raw-instance-from-definition-file (location definition-type name &key class)
-  (let ((definition (get-definition
-                     location
-                     definition-type
-                     name)))
-    (when definition
-      (raw-instance-from-definition definition-type definition :class class))))
-
-(defgeneric instance-from-definition-file (location parent definition-type name
-                                           &key class))
-
-(defmethod instance-from-definition-file (location parent
-                                          definition-type
-                                          name &key class)
-  (let ((definition (get-definition
-                     location
-                     definition-type
-                     name)))
-    (when definition
-      (instance-from-definition parent definition-type definition
-                                :class class :persist-p nil))))
-
-(defun get-store-from-def (universe store-name)
-  "Tries to find a store definition file on disk and returns a store instance."
-  (let ((store-def (naive-impl:sexp-from-file
-                    (cl-fad:merge-pathnames-as-file
-                     (pathname (location universe))
-                     (make-pathname :directory (list :relative store-name)
-                                    :name store-name
-                                    :type "store"))))
-        (store))
-
-    (when store-def
-      (setf store
-            (make-instance (store-class universe)
-                           :name (getx store-def :name)
-                           :location (getx store-def :location))))
-    store))
-
-;;TODO: Revisit this function to see if it can be deprecated in favour
-;;of some instance-from-* function.  Initial investigation shows that
-;;document-types has a its own implementation that loads
-;;document-types for the store because the collection instance needs a
-;;reference to the document-type. For that it needs the store instance
-;;which seems to be an issue since instance-from-* functions does not
-;;have access to the store.
-(defgeneric get-collection-from-def (store collection-name)
-  (:documentation "Tries to find the collection definition file on disk and loads it into the store, but it does not load the collection's data."))
-
-(defmethod get-collection-from-def ((store store) collection-name)
-  (let ((collection-def (naive-impl:sexp-from-file
-                         (cl-fad:merge-pathnames-as-file
-                          (pathname (location store))
-                          (make-pathname :name collection-name
-                                         :type "col")))))
-    (when collection-def
-      (make-instance (or
-                      (getx collection-def :class)
-                      (collection-class store))
-                     :store store
-                     :name (getx collection-def :name)
-                     :document-type (getx collection-def :document-type)
-                     :location (getx collection-def :location)))))
-
-;;TODO: Suspect that noting is done if the collection already exist to
-;;ensure that a colletion is not reloaded during an attempt to lazy
-;;load. why would lazy loading try to reload the collection? Surely
-;;the existance of the collection is checked first?
-;;
-;;OR was this done because some user code was being lazy and not
-;;checking before trying to add a collection?
-
-(defgeneric add-collection (store collection)
-  (:documentation "Adds a collection to a store.
-If the collection with the same name already exists in the store nothing is done. "))
-
-(defmethod add-collection ((store store) (collection collection))
-  (add-multiverse-element store collection))
-
 (defgeneric clear-collection (collection)
   (:documentation "Clears documents indexes etc from collection."))
 
@@ -830,21 +677,19 @@ If the collection with the same name already exists in the store nothing is done
     (clear-collection collection))
   (setf (stores universe) (remove universe (stores universe))))
 
+;;TODO: Deprecated remove sometime
 (defgeneric remove-collection (store collection)
   (:documentation "Removes a collection to a store."))
 
+;;TODO: Deprecated remove sometime
 (defmethod remove-collection ((store store) (collection collection))
   (clear-collection collection)
   (setf (collections store) (remove collection (collections store))))
 
-(defgeneric load-data (collection &key force-reload-p shard-macs &allow-other-keys)
+(defgeneric load-data (collection &key shard-macs parallel-p &allow-other-keys)
   (:documentation "Loads the data documents of a collection from file or files if sharding is used. If the data is already loaded it wont reload it, if you want the data to be reloaded use force-reload-p.
 
-shard-macs is a list of shard macs to indicate which shards should be used. If no shards are specified all shards will be loaded.
-
-NOTES:
-
-load-data could have been used to load universe or store as well but those have a wealth of other key word parameters to control exactly what to do that makes the load-data signature a nightmare to understand. So separate methods load-stores (for universe) and load-collections (for a store) exists for that."))
+shard-macs is a list of shard macs to indicate which shards should be used. If no shards are specified all shards will be loaded."))
 
 (defgeneric ensure-location (object)
   (:documentation "Tries to find or build path to cl-naive-store files."))
@@ -892,7 +737,6 @@ This physically checks each collection's underlying concrete data structure for 
 
 If you change the underlying container for (shards collection) or the container for (docutments shard) you have to implement data-loaded-p. Your implementation is expected to physically check for document count > 0 and not some status set. Be smart about it you are not expected to return a count so dont waist time counting just check if there is at least one document in the container."))
 
-;;TODO: Deal with shards.
 (defmethod data-loaded-p ((collection collection) &key shard-macs &allow-other-keys)
 
   (let ((all-shards-p nil))

@@ -9,6 +9,7 @@
                "cl-getx" "cl-murmurhash" "ironclad"
                "lparallel" "cl-cpus"
                "bordeaux-threads"
+               "cl-naive-ptrees"
                "cl-naive-deprecation")
   :components
   ((:file "src/naive-store/packages")
@@ -24,6 +25,8 @@
     :depends-on ("src/naive-store/naive-impl/files"))
    (:file "src/naive-store/naive-core"
     :depends-on ("src/naive-store/naive-impl/logs"))
+   (:file "src/naive-store/definitions"
+    :depends-on ("src/naive-store/naive-core"))
    (:file "src/naive-store/documents"
     :depends-on ("src/naive-store/naive-core"))
    (:file "src/naive-store/blob"

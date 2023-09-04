@@ -6,7 +6,7 @@
 #-sbcl (ignore-errors (delete-package :naive-examples))
 
 (defpackage :naive-examples
-  (:use :cl :cl-getx :cl-naive-store.definitions))
+  (:use :cl :cl-getx :cl-naive-store.naive-core))
 (in-package :naive-examples)
 
 (defparameter *multiverse* nil)
@@ -244,7 +244,7 @@
    results
    (test-something
     (lambda ()
-      (cl-naive-store.definitions:add-definition-element
+      (cl-naive-store.naive-core:add-definition-element
        :universe
        `(:multiverse
          (:name "multiverse"
@@ -337,7 +337,7 @@
    results
    (test-something
     (lambda ()
-      (cl-naive-store.definitions::remove-definition-element
+      (cl-naive-store.naive-core::remove-definition-element
        :universe
        `(:multiverse
          (:name "multiverse"
@@ -417,7 +417,7 @@
    results
    (test-something
     (lambda ()
-      (cl-naive-store.definitions:add-definition-element
+      (cl-naive-store.naive-core:add-definition-element
        :store
        `(:multiverse
          (:name "multiverse"
@@ -506,7 +506,7 @@
    results
    (test-something
     (lambda ()
-      (cl-naive-store.definitions::remove-definition-element
+      (cl-naive-store.naive-core::remove-definition-element
        :store
        `(:multiverse
          (:name "multiverse"
@@ -585,7 +585,7 @@
    results
    (test-something
     (lambda ()
-      (cl-naive-store.definitions:add-definition-element
+      (cl-naive-store.naive-core:add-definition-element
        :document-type
        `(:multiverse
          (:name "multiverse"
@@ -662,7 +662,7 @@
    results
    (test-something
     (lambda ()
-      (cl-naive-store.definitions::remove-definition-element
+      (cl-naive-store.naive-core::remove-definition-element
        :document-type
        `(:multiverse
          (:name "multiverse"
@@ -734,7 +734,7 @@
    results
    (test-something
     (lambda ()
-      (cl-naive-store.definitions:add-definition-element
+      (cl-naive-store.naive-core:add-definition-element
        :collection
        `(:multiverse
          (:name "multiverse"
@@ -793,7 +793,7 @@
    results
    (test-something
     (lambda ()
-      (cl-naive-store.definitions::remove-definition-element
+      (cl-naive-store.naive-core::remove-definition-element
        :collection
        `(:multiverse
          (:name "multiverse"
@@ -849,8 +849,8 @@
     results))
 
   ;;TODO: Add more tests to check if directories exist with definition files etc.
-  (setf *multiverse* (cl-naive-store.definitions::create-multiverse
-                      *multiverse-definition* t))
+  (setf *multiverse* (cl-naive-store.naive-core:load-from-definition
+                      *multiverse-definition* :with-children-p t))
 
   (assert *multiverse*)
 

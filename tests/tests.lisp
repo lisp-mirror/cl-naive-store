@@ -128,52 +128,58 @@ which contain the actual data. Each collection will have its own directory and f
   (when location
     (setf (location *universe*) location))
 
-  (let* ((store (add-store *universe*
-                           (make-instance (if (equalp *document-type* 'document)
-                                              'document-store
-                                              *store-class*)
-                                          :name "simple-store"
-                                          :collection-class *collection-class*)))
+  (let* ((store (add-multiverse-element
+                 *universe*
+                 (make-instance (if (equalp *document-type* 'document)
+                                    'document-store
+                                    *store-class*)
+                                :name "simple-store"
+                                :collection-class *collection-class*)
+                 :persist-p t))
          (document-types (if (equalp *document-type* 'document)
                              (init-document-type store))))
 
-    (add-collection store
-                    (if (equalp *document-type* 'document)
-                        (make-instance 'document-collection
-                                       :name "asset-collection"
-                                       :document-type (first document-types)
-                                       :keys '(:asset-no))
-                        (if (equalp *collection-class* 'collection-indexed)
-                            (make-instance *collection-class*
-                                           :name "asset-collection"
-                                           :keys '(:asset-no))
-                            (make-instance *collection-class*
-                                           :name "asset-collection"
-                                           :keys '(:asset-no)))))
+    (add-multiverse-element
+     store
+     (if (equalp *document-type* 'document)
+         (make-instance 'document-collection
+                        :name "asset-collection"
+                        :document-type (first document-types)
+                        :keys '(:asset-no))
+         (if (equalp *collection-class* 'collection-indexed)
+             (make-instance *collection-class*
+                            :name "asset-collection"
+                            :keys '(:asset-no))
+             (make-instance *collection-class*
+                            :name "asset-collection"
+                            :keys '(:asset-no))))
+     :persist-p t)
 
-    (add-collection store
-                    (if (equalp *document-type* 'document)
-                        (make-instance 'document-collection
-                                       :name "simple-collection"
-                                       :document-type (second document-types)
-                                       ;;not setting keys to make sure fallback to document-type
-                                       ;;is done, need to add tests for both
-                                       ;;:keys '(:emp-no)
-                                       :shard-elements (if *use-shards*
-                                                           (list :race))
-                                       :indexes '((:gender :race :surname)))
-                        (if (equalp *collection-class* 'collection-indexed)
-                            (make-instance *collection-class*
-                                           :name "simple-collection"
-                                           :keys '(:emp-no)
-                                           :indexes '((:gender :race :surname))
-                                           :shard-elements (if *use-shards*
-                                                               (list :race)))
-                            (make-instance *collection-class*
-                                           :name "simple-collection"
-                                           :keys '(:emp-no)
-                                           :shard-elements (if *use-shards*
-                                                               (list :race))))))))
+    (add-multiverse-element
+     store
+     (if (equalp *document-type* 'document)
+         (make-instance 'document-collection
+                        :name "simple-collection"
+                        :document-type (second document-types)
+                        ;;not setting keys to make sure fallback to document-type
+                        ;;is done, need to add tests for both
+                        ;;:keys '(:emp-no)
+                        :shard-elements (if *use-shards*
+                                            (list :race))
+                        :indexes '((:gender :race :surname)))
+         (if (equalp *collection-class* 'collection-indexed)
+             (make-instance *collection-class*
+                            :name "simple-collection"
+                            :keys '(:emp-no)
+                            :indexes '((:gender :race :surname))
+                            :shard-elements (if *use-shards*
+                                                (list :race)))
+             (make-instance *collection-class*
+                            :name "simple-collection"
+                            :keys '(:emp-no)
+                            :shard-elements (if *use-shards*
+                                                (list :race)))))
+     :persist-p t)))
 
 (defun tear-down-universe ()
   "Deletes any peristed data from exmaples."

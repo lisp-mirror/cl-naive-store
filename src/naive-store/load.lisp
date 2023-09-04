@@ -1,5 +1,6 @@
 (in-package :cl-naive-store.naive-core)
 
+;;TODO: Should be replaced with get-definitions
 (defun find-collection-files (collection)
   (let ((path (cl-fad:merge-pathnames-as-file
                (pathname (ensure-location collection))
@@ -29,8 +30,9 @@
 ;;TODO: Add a catch all error thingy so that the status does not get stuck in :loading
 ;;TODO: add a wait with a time out if .lock file exists?
 
-;;Dont try to do compose-document asyncronously because the order in which the documents
-;;are loaded in the underlying container matter, for deleted documents and document history both!!!!
+;;Dont try to do compose-document asyncronously because the order in
+;;which the documents are loaded in the underlying container matter,
+;;for deleted documents and document history both!!!!
 (defmethod load-shard ((collection collection) shard filename &key &allow-other-keys)
 
   (unless (equalp (status shard) :loading)
@@ -39,14 +41,16 @@
 
         (setf (status shard) :loading)
 
-        (naive-impl::debug-log (frmt "load-shard begin ") :file-p t :args (list shard filename))
+        (naive-impl::debug-log (frmt "load-shard begin ")
+                               :file-p t :args (list shard filename))
         (with-open-file (in (or filename (location shard)) :if-does-not-exist :create)
           (when in
 
             ;;TODO: Reconsider this!!!
 
-            ;;Reading the file and releasing it as soon as possible ... not sure it is a good
-            ;;idea ... there is no difference in speed. It also doubles the memory use!!!
+            ;;Reading the file and releasing it as soon as possible
+            ;;... not sure it is a good idea ... there is no
+            ;;difference in speed. It also doubles the memory use!!!
             (setf sexps
                   (loop :for document-form = (read in nil)
                         :while document-form
@@ -74,12 +78,14 @@
                        ;; therefore it must be :shared t in ccl.
                        #+ccl :shared #+ccl t))
 
-(defmethod load-data ((collection collection) &key shard-macs (parallel-p t) &allow-other-keys)
+(defmethod load-data ((collection collection) &key shard-macs (parallel-p t)
+                      &allow-other-keys)
   (let ((tasks))
     (unless parallel-p
       (unless (> (length (shards collection)) 0)
         (let ((files (or (gethash collection *files*)
-                         (setf (gethash collection *files*) (find-collection-files collection)))))
+                         (setf (gethash collection *files*)
+                               (find-collection-files collection)))))
 
           (naive-impl::debug-log (frmt "load-data") :file-p t :args files)
 
@@ -107,7 +113,8 @@
     (when parallel-p
       (unless (> (length (shards collection)) 0)
         (let ((files (or (gethash collection *files*)
-                         (setf (gethash collection *files*) (find-collection-files collection)))))
+                         (setf (gethash collection *files*)
+                               (find-collection-files collection)))))
           (when files
             (let ((channel (lparallel:make-channel)))
               (dolist (filename files)
@@ -148,70 +155,3 @@
                 ;;without this it gets stuck on loading naive-documents some time.
                 (sleep 0.0001)
                 (lparallel:receive-result channel)))))))))
-
-(defun find-collection-definitions (store)
-  (directory
-   (cl-fad:merge-pathnames-as-file (pathname (ensure-location store))
-                                   (make-pathname :directory '(:relative :wild-inferiors)
-                                                  :name :wild
-                                                  :type "col"))))
-
-(defun find-store-definitions (universe)
-  (directory
-   (cl-fad:merge-pathnames-as-file (pathname (ensure-location universe))
-                                   (make-pathname :directory '(:relative :wild-inferiors)
-                                                  :name :wild
-                                                  :type "store"))))
-
-(defgeneric load-collections (store  &key with-data-p &allow-other-keys)
-  (:documentation "Finds and loads collections of a store, with or without documents."))
-
-(defmethod load-collections ((store store) &key with-data-p &allow-other-keys)
-  "Finds and loads collection for a store, with or without documents."
-  (let ((files (find-collection-definitions store)))
-    (dolist (file files)
-      (let ((file-contents))
-        (with-open-file (in file :if-does-not-exist :create)
-          (when in
-            (setf file-contents (read in nil))
-            (close in)))
-
-        (when file-contents
-          (let ((collection
-                  (add-collection
-                   store
-                   (make-instance (collection-class store)
-                                  :name (getx file-contents :name)
-                                  :location (getx file-contents :location)
-                                  :filter (getx file-contents :filter)))))
-            (when with-data-p
-              (load-data collection))))))))
-
-(defgeneric load-stores (universe  &key with-collections-p with-data-p &allow-other-keys)
-  (:documentation "Finds and loads collections a store, with or without data documents."))
-
-(defmethod load-stores (universe &key with-collections-p with-data-p &allow-other-keys)
-  "Loads a whole universe, with or without collections and data documents."
-  (let ((files (find-store-definitions universe)))
-    (dolist (file files)
-      (let ((file-contents))
-        (with-open-file (in file :if-does-not-exist :create)
-          (when in
-            (setf file-contents (read in nil))
-            (close in)))
-        (when file-contents
-          (let ((store (add-store
-                        universe
-                        (make-instance
-                         (store-class universe)
-                         :name (getx file-contents :name)
-                         :location (getx file-contents :location)))))
-
-            (when (or with-collections-p with-data-p)
-              (load-collections store :with-data-p with-data-p))))))))
-
-(defgeneric load-store (store &key &allow-other-keys)
-  (:documentation "Loads the document-types and collections, with or without the actual data documents."))
-
-(defmethod load-store ((store store) &key with-data-p &allow-other-keys)
-  (load-collections store :with-data-p with-data-p))

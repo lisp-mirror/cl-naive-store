@@ -1,14 +1,12 @@
 (in-package :cl-naive-store.naive-core)
 
-;;;; Query and naive-reduce exists to hide the structure/internals of the
-;;;; collection from the user, so its for convenience all the functionality
-;;;; here could be done with plain map and reduce cl functions.
+;;;; Query and naive-reduce exists to hide the structure/internals of
+;;;; the collection from the user and for lazy loading.
 
 ;;;;TODO: Consider integrating/extending query-* for queries accross http aka naive-api's
 
 (defgeneric naive-reduce (collection &key query function initial-value &allow-other-keys)
-  (:documentation "Uses query to select data documents from a collection and applies the function to
-those documents returning the result.
+  (:documentation "Uses query to select data documents from a collection and applies the function to those documents returning the result.
 
 NOTES:
 
@@ -103,11 +101,8 @@ Does lazy loading."))
   (let ((collection (get-multiverse-element :collection store collection-name)))
 
     (unless collection
-      (setf collection (get-collection-from-def
-                        store
-                        collection-name))
-      (when collection
-        (add-collection store collection))
+      (setf collection (load-from-definition-file store :collection collection-name))
+
       (unless collection
         (error "Could not find or create collection ~A" collection-name)))
 

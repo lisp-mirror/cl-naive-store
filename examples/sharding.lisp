@@ -5,7 +5,6 @@
                              :cl-getx :cl-naive-store.naive-core
                              :cl-naive-store.naive-indexed
                              :cl-naive-store.document-types
-                             :cl-naive-store.document-type-defs
                              :cl-naive-store.naive-documents))
 (in-package :naive-examples)
 
@@ -59,17 +58,26 @@
                 :attributes (:display t :editable t)))
     :documentation "This type represents a simple employee master."))
 
+(defparameter *multiverse*
+  (make-instance
+   'multiverse
+   :location "~/multiverse/" ;Setting the location on disk.
+   :universe-class 'universe))
+
 ;;Create a universe
-(defparameter *universe* (make-instance
-                          'universe
-                          :location "~/data-universe/" ;Setting the location on disk.
-                          :store-class 'store))
+(defparameter *universe*
+  (make-instance
+   'universe
+   :multiverse *multiverse*
+   :location "~/multiverse/universe/" ;Setting the location on disk.
+   :store-class 'store))
 
 (let* (;;Create a store and add it to the universe
-       (store (add-store *universe*
-                         (make-instance 'document-store
-                                        :name "simple-store"
-                                        :collection-class 'collection)))
+       (store (add-multiverse-element *universe*
+                                      (make-instance 'document-store
+                                                     :name "simple-store"
+                                                     :collection-class 'collection)
+                                      :persist-p t))
        (employee-collection)
        (asset-collection)
        (employee-elements)
@@ -90,13 +98,14 @@
                     :concrete-type (getf element :concrete-type)
                     :attributes (getf element :attributes))))))
 
-  (setf employee-document-type (add-document-type
+  (setf employee-document-type (add-multiverse-element
                                 store
                                 (make-instance
                                  'document-type
                                  :name (getf *employee-document-type* :name)
                                  :label (getf *employee-document-type* :label)
-                                 :elements employee-elements)))
+                                 :elements employee-elements)
+                                :persist-p t))
 
   ;;initialize the data asset data definition.
   (dolist (element (getf *asset-document-type* :elements))
@@ -110,37 +119,40 @@
                     :concrete-type (getf element :concrete-type)
                     :attributes (getf element :attributes))))))
 
-  (setf asset-document-type (add-document-type
+  (setf asset-document-type (add-multiverse-element
                              store
                              (make-instance
                               'document-type
                               :name (getf *asset-document-type* :name)
                               :label (getf *asset-document-type* :label)
-                              :elements asset-elements)))
+                              :elements asset-elements)
+                             :persist-p t))
 
   ;;Create a collection and add it to the store
   (setf employee-collection
-        (add-collection store
-                        (make-instance 'document-collection ;;using documents collection.
-                                       :name "simple-collection"
-                                       :document-type employee-document-type
-                                       :keys '(:emp-no)
-                                       :indexes '((:surname))
-                                       ;;Creating shards based on the
-                                       ;;country that the employee
-                                       ;;belongs to. It is a bad
-                                       ;;example you should not shard
-                                       ;;on any value that could
-                                       ;;change!!!!!
-                                       :shard-elements (list :country))))
+        (add-multiverse-element store
+                                (make-instance 'document-collection ;;using documents collection.
+                                               :name "simple-collection"
+                                               :document-type employee-document-type
+                                               :keys '(:emp-no)
+                                               :indexes '((:surname))
+                                               ;;Creating shards based on the
+                                               ;;country that the employee
+                                               ;;belongs to. It is a bad
+                                               ;;example you should not shard
+                                               ;;on any value that could
+                                               ;;change!!!!!
+                                               :shard-elements (list :country))
+                                :persist-p t))
 
   ;;Create a collection and add it to the store
   (setf asset-collection
-        (add-collection store
-                        (make-instance 'document-collection
-                                       :name "asset-collection"
-                                       :document-type asset-document-type
-                                       :keys '(:asset-no))))
+        (add-multiverse-element store
+                                (make-instance 'document-collection
+                                               :name "asset-collection"
+                                               :document-type asset-document-type
+                                               :keys '(:asset-no))
+                                :persist-p t))
 
   ;;Add some documents to the collections
   (let ((emp-country '("Afghanistan"

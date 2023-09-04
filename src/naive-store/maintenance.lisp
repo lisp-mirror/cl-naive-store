@@ -7,25 +7,25 @@
 
 (defmethod sanitize-data-file ((collection collection) &key &allow-other-keys)
   (let ((documents (query-data
-		    collection))
-	(log-file (cl-fad:merge-pathnames-as-file
-		   (pathname (location collection))
-		   (make-pathname :name (name collection)
-				  :type "log")))
-	(new-file (cl-fad:merge-pathnames-as-file
-		   (pathname (location collection))
-		   (make-pathname :name (name collection)
-				  :type "new")))
-	(old-file (cl-fad:merge-pathnames-as-file
-		   (pathname (location collection))
-		   (make-pathname :name (name collection)
-				  :type "old")))
-	(old-old-file (cl-fad:merge-pathnames-as-file
-		       (pathname (location collection))
-		       (make-pathname :name (name collection)
-				      :type "old.old"))))
+                    collection))
+        (log-file (cl-fad:merge-pathnames-as-file
+                   (pathname (location collection))
+                   (make-pathname :name (name collection)
+                                  :type "log")))
+        (new-file (cl-fad:merge-pathnames-as-file
+                   (pathname (location collection))
+                   (make-pathname :name (name collection)
+                                  :type "new")))
+        (old-file (cl-fad:merge-pathnames-as-file
+                   (pathname (location collection))
+                   (make-pathname :name (name collection)
+                                  :type "old")))
+        (old-old-file (cl-fad:merge-pathnames-as-file
+                       (pathname (location collection))
+                       (make-pathname :name (name collection)
+                                      :type "old.old"))))
     (when (probe-file
-	   old-file)
+           old-file)
       (fad:copy-file old-file old-old-file :overwrite t))
 
     (fad:copy-file log-file old-file :overwrite t)
@@ -35,14 +35,18 @@
         (cl-naive-store.naive-core::persist-document collection  document
                                                      :file-name new-file))
       (fad:copy-file new-file
-		     log-file
-		     :overwrite t))))
+                     log-file
+                     :overwrite t))))
 
 (defgeneric sanitize-universe (universe &key &allow-other-keys)
   (:documentation "Sanitize all collections of a universe. See sanitize-data-file for details."))
 
 (defmethod sanitize-universe (universe &key &allow-other-keys)
-  (load-stores universe)
+  (cl-naive-store.naive-core:load-from-definitions universe
+                                                   :store
+                                                   :class nil
+                                                   :with-children-p t
+                                                   :with-data-p t)
 
   (dolist (store (stores universe))
     (dolist (collection (collections store))

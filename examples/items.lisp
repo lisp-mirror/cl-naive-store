@@ -5,7 +5,6 @@
                              :cl-getx :cl-naive-store.naive-core
                              :cl-naive-store.naive-indexed
                              :cl-naive-store.document-types
-                             :cl-naive-store.definitions
                              :cl-naive-store.naive-documents))
 (in-package :naive-examples)
 
@@ -29,17 +28,26 @@
                 :attributes (:display t :editable t)))
     :documentation "This type represents a simple employee master."))
 
+(defparameter *multiverse*
+  (make-instance
+   'multiverse
+   :location "~/multiverse/" ;Setting the location on disk.
+   :universe-class 'universe))
+
 ;;Create a universe
-(defparameter *universe* (make-instance
-                          'universe
-                          :location "~/data-universe/" ;Setting the location on disk.
-                          :store-class 'store))
+(defparameter *universe*
+  (make-instance
+   'universe
+   :multiverse *multiverse*
+   :location "~/multiverse/universe/" ;Setting the location on disk.
+   :store-class 'document-store))
 
 (let* (;;Create a store and add it to the universe
-       (store (add-store *universe*
-                         (make-instance 'document-store
-                                        :name "simple-store"
-                                        :collection-class 'collection)))
+       (store (add-multiverse-element *universe*
+                                      (make-instance 'document-store
+                                                     :name "simple-store"
+                                                     :collection-class 'collection)
+                                      :persist-p t))
        (collection)
        (elements)
        (document-type)
@@ -57,30 +65,32 @@
                     :concrete-type (getf element :concrete-type)
                     :attributes (getf element :attributes))))))
 
-  (setf document-type (add-document-type
+  (setf document-type (add-multiverse-element
                        store
                        (make-instance
                         'document-type
                         :name (getf *employee-document-type* :name)
                         :label (getf *employee-document-type* :label)
-                        :elements elements)))
+                        :elements elements)
+                       :persist-p t))
 
   ;;Create a collection and add it to the store
-  (setf collection (add-collection store
-                                   (make-instance 'document-collection ;;using documents collection.
-                                                  :name "simple-collection"
-                                                  :document-type document-type
-                                                  ;;Not specifying the
-                                                  ;;keys to show that
-                                                  ;;they are retrieved
-                                                  ;;from the
-                                                  ;;document-type if
-                                                  ;;no key is set.
-                                                  ;;:keys ...
-                                                  ;;Specifying the
-                                                  ;;elements to set up
-                                                  ;;indexes for.
-                                                  :indexes '((:name :surname)))))
+  (setf collection (add-multiverse-element store
+                                           (make-instance 'document-collection ;;using documents collection.
+                                                          :name "simple-collection"
+                                                          :document-type document-type
+                                                          ;;Not specifying the
+                                                          ;;keys to show that
+                                                          ;;they are retrieved
+                                                          ;;from the
+                                                          ;;document-type if
+                                                          ;;no key is set.
+                                                          ;;:keys ...
+                                                          ;;Specifying the
+                                                          ;;elements to set up
+                                                          ;;indexes for.
+                                                          :indexes '((:name :surname)))
+                                           :persist-p t))
   ;;Add some documents to the collection
   (persist-document collection
                     (make-document

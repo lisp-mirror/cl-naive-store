@@ -5,12 +5,12 @@
   "Used internally to find or return a store created from its store definition.."
   (let ((store (get-multiverse-element :store universe name)))
     (unless store
-      (setf store (cl-naive-store.naive-core::raw-instance-from-definition-file
-                   (location universe)
+      (setf store (cl-naive-store.naive-core::load-from-definition-file
+                   universe
                    :store
                    name
                    :class (store-class universe)))
-      (add-store universe store))
+      (add-multiverse-element universe store))
     store))
 
 ;;TODO:Deprecated remove some time
@@ -18,11 +18,7 @@
   "Used internally to find or create a new collection."
   (let ((collection (get-multiverse-element :collection store name)))
     (unless collection
-      (setf collection (get-collection-from-def store name))
-
-      (when collection
-        (add-collection store collection))
-
+      (setf collection (load-from-definition-file store :collection name))
       (unless collection
         (error "Could not create collection ~A in store ~A" name (and store (name store)))))
     collection))

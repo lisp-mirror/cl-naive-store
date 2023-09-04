@@ -5,23 +5,25 @@
 
 ;;Create a universe
 (defparameter *universe* (make-instance
-			  'universe
-			  :location "~/data-universe/" ;Setting the location on disk.
-			  :store-class 'store))
+                          'universe
+                          :location "~/data-universe/" ;Setting the location on disk.
+                          :store-class 'store))
 
 (let* (;;Create a store and add it to the universe
-       (store (add-store *universe*
-			 (make-instance 'store
-					:name "simple-store"
-       					:collection-class 'collection)))
+       (store (add-multiverse-element *universe*
+                                      (make-instance 'store
+                                                     :name "simple-store"
+                                                     :collection-class 'collection)
+                                      :persist-p t))
 
        ;;Create a collection and add it to the store
        (collection
-	 (add-collection store
-			 (make-instance 'collection
-					:name "simple-collection"
-					;;Specifying the key element, else its :key
-					:keys '(:id)))))
+         (add-multiverse-element store
+                                 (make-instance 'collection
+                                                :name "simple-collection"
+                                                ;;Specifying the key element, else its :key
+                                                :keys '(:id))
+                                 :persist-p t)))
 
   ;;Add some documents to the collection
   (persist-document collection (list :name "Piet" :surname "Gieter" :id 123))
@@ -33,5 +35,5 @@
 
   ;;Query the collection, query-data will load the data from file if the collection is empty
   (query-data collection :query (lambda (document)
-				  (<= (getx document :id) 900))))
+                                  (<= (getx document :id) 900))))
 

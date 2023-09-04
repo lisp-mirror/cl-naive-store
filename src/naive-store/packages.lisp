@@ -81,11 +81,17 @@
 
    :get-definition
 
-   :raw-instance-from-definition
+   :add-definition-element
+   :remove-definition-element
+   :get-definition-element
+   :find-named-element
+   :definition-body
    :instance-from-definition
-   :raw-instance-from-definition-file
-   :instance-from-definiton-file
+   :load-from-definition
+   :instance-from-definition-file
+   :load-from-definition-file
    :instances-from-definitions
+   :load-from-definitions
    :get-store-from-def
    :get-collection-from-def
 
