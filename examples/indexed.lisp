@@ -31,7 +31,7 @@
 
        ;;Create a collection and add it to the store
        (collection
-         (add-multiverse-element store
+         (add-muLtiverse-element store
                                  (make-instance 'indexded-collection
                                                 :name "simple-collection"
                                                 ;;Specifying the key element, else its :key

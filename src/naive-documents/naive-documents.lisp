@@ -37,6 +37,11 @@
     (when instance
       (setf (store instance) store)
 
+      (setf (document-type instance)
+            (when (getx definition-body :document-type)
+              (get-multiverse-element :document-type store
+                                      (getx definition-body :document-type))))
+
       (when persist-p
         (ensure-location instance)
 

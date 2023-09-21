@@ -1,5 +1,26 @@
 (in-package :cl-naive-store.utils)
 
+;;Used to prepare docs to be sent over HTTP etc.
+(defun docs-to-sexps (documents)
+  (loop for document in documents
+        collect (doc-to-sexp document)))
+
+(defun doc-to-sexp (document &key (versions-p t))
+  `(:hash
+    ,(cl-getx:getx document :hash)
+    :elements ,(loop for (key value) on
+                     (cl-getx:getx document :elements)
+                     by #'cddr
+                     collect key
+                     if (cl-naive-store.naive-documents:document-p value)
+                     collect ()
+                     else
+                     collect value)
+    :versions ,(when versions-p
+                 (docs-to-sexps
+                  (cl-getx:getx document :versions)))
+    :deleted-p ,(cl-getx:getx document :deleted-p)))
+
 ;;;;TODO: Everything below should be moved some where else!
 
 ;;TODO: Use some ptrees function

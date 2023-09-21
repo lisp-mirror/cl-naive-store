@@ -138,12 +138,14 @@ and parent definition."))
 
        (let* ((elements (or (and ,name-path%
                                  (getx
-                                  (second
-                                   (car
-                                    (query-chain
-                                     ,definition%
-                                     (cl-naive-store.naive-core::build-name-path-chain
-                                      ,name-path%))))
+                                  (if ,name-path%
+                                      (second
+                                       (car
+                                        (query-chain
+                                         ,definition%
+                                         (cl-naive-store.naive-core::build-name-path-chain
+                                          ,name-path%))))
+                                      ,definition%)
                                   ,list-key%))
                             (getx ,definition% ,list-key%)))
               (existing-element (find-named-element ,element-type%
@@ -156,9 +158,13 @@ and parent definition."))
 
          (if existing-element
              (if (not ,replace-p%)
-                 (error "Collection definition already exsists: ~A"
-                        (digx ,element% :collection :name))
-                 (setf elements (nsubstitute ,element% existing-element elements)))
+                 (progn
+                   (break "~S" existing-element)
+                   (error "~A definition already exsists: ~A"
+                          ,element-type%
+                          (digx ,element% ,element-type% :name))
+
+                   (setf elements (nsubstitute ,element% existing-element elements))))
              (nconc elements (list ,element)))
          ,definition%))))
 
@@ -574,7 +580,6 @@ class)
                                              definition)))
 
     (when instance
-
       (setf (store instance) store)
 
       (when persist-p
