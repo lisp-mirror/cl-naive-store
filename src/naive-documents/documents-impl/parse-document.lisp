@@ -6,8 +6,10 @@
 
 (defun ensure-document-type (store document-type)
   (cond ((stringp document-type)
-         (or (get-multiverse-element :document-type store document-type)
-             document-type))
+         (let ((doc-type (or (get-multiverse-element :document-type store document-type)
+                             document-type)))
+           (setf (gethash `(:universe doc-type) *multi-elements-cache*) doc-type)
+           doc-type))
         (t document-type)))
 
 (defun ensure-universe (multiverse universe)
@@ -116,7 +118,7 @@
                        (getx sexp :document-type)
                        (cl-naive-store.document-types:document-type collection)))
 
-                     :hash (frmt "~A" (digx sexp :hash))
+                     :hash (frmt "~A" (getx sexp :hash))
                      :elements resolved-values))
               (add-document collection final-document))))
 

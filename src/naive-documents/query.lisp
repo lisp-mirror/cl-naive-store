@@ -17,42 +17,44 @@ The convention is to append %% to these accessors, for two reasons. First to sho
 :changes~ = document-changes
 :versions~ = document-versions
 :deleted-p~ = document-deleted-p"
-  (cond ((equalp accessor :hash)
-         (document-hash document))
-        ((equalp accessor :collection~)
-         (document-collection document))
-        ((equalp accessor :store~)
+
+  (case accessor
+    (:hash
+     (document-hash document))
+    (:collection~
+     (document-collection document))
+    (:store~
+     (or
+      (document-store document)
+      (and (document-collection document)
+           (store (document-collection document)))))
+    (:universe~
+     (or (document-universe document)
+         (and (document-collection document)
+              (store (document-collection document))
+              (universe (store (document-collection document))))))
+    (:document-type~
+     (if (stringp (document-document-type document))
          (or
-          (document-store document)
           (and (document-collection document)
-               (store (document-collection document)))))
-        ((equalp accessor :universe~)
-         (or (document-universe document)
-             (and (document-collection document)
-                  (store (document-collection document))
-                  (universe (store (document-collection document))))))
-        ((equalp accessor :document-type~)
-         (if (stringp (document-document-type document))
-             (or
-              (and (document-collection document)
-                   (get-multiverse-element
-                    :document-type
-                    (store (document-collection document))
-                    (document-document-type document)))
-              (document-type (document-collection document)))
-             (or
-              (document-document-type document)
-              (document-type (document-collection document)))))
-        ((equalp accessor :elements~)
-         (document-elements document))
-        ((equalp accessor :changes~)
-         (document-changes document))
-        ((equalp accessor :deleted-p~)
-         (document-deleted-p document))
-        (t
+               (get-multiverse-element
+                :document-type
+                (store (document-collection document))
+                (document-document-type document)))
+          (document-type (document-collection document)))
          (or
-          (getx (document-changes document) accessor)
-          (getx (document-elements document) accessor)))))
+          (document-document-type document)
+          (document-type (document-collection document)))))
+    (:elements~
+     (document-elements document))
+    (:changes~
+     (document-changes document))
+    (:deleted-p~
+     (document-deleted-p document))
+    (otherwise
+     (or
+      (getx (document-changes document) accessor)
+      (getx (document-elements document) accessor)))))
 
 (defparameter *change-control-p* t
   "Set change tracking when using setf getx for document values.
@@ -63,31 +65,32 @@ By default it is on.")
                         ;;(use-element-definition-p)
                         &allow-other-keys)
 
-  (cond ((equalp accessor :hash)
-         (setf (document-hash document) value))
-        ((equalp accessor :collection~)
-         (setf (document-collection document) value))
-        ((equalp accessor :store~)
-         (setf (document-store document) value))
-        ((equalp accessor :universe~)
-         (setf (document-universe document) value))
-        ((equalp accessor :document-type~)
-         (setf (document-document-type document) value))
-        ((equalp accessor :elements~)
-         (setf (document-elements document) value))
-        ((equalp accessor :changes~)
-         (setf (document-changes document) value))
-        ((equalp accessor :deleted-p~)
-         (setf (document-deleted-p document) value))
-        (t
-         (when change-control-p
-           (unless (document-changes document)
-             (setf (document-changes document)
-                   (copy-list (document-elements document))))
-           (setf (getx (document-changes document) accessor) value))
+  (case accessor
+    (:hash
+     (setf (document-hash document) value))
+    (:collection~
+     (setf (document-collection document) value))
+    (:store~
+     (setf (document-store document) value))
+    (:universe~
+     (setf (document-universe document) value))
+    (:document-type~
+     (setf (document-document-type document) value))
+    (:elements~
+     (setf (document-elements document) value))
+    (:changes~
+     (setf (document-changes document) value))
+    (:deleted-p~
+     (setf (document-deleted-p document) value))
+    (otherwise
+     (when change-control-p
+       (unless (document-changes document)
+         (setf (document-changes document)
+               (copy-list (document-elements document))))
+       (setf (getx (document-changes document) accessor) value))
 
-         (unless change-control-p
-           (setf (getx (document-elements document) accessor) value))))
+     (unless change-control-p
+       (setf (getx (document-elements document) accessor) value))))
   value)
 
 ;;TODO: Is this still needed???
@@ -130,6 +133,7 @@ By default it is on.")
     place))
 
 (defmethod digx ((place document) &rest indicators)
+  (declare (inline naive-dig))
   (naive-dig place indicators))
 
 (defmethod (setf digx) (value (place document) &rest indicators)

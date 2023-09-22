@@ -33,7 +33,10 @@
                                                                 ;;Specifying the key element, else its :key
                                                                 :keys '(:id))))
 
+(require :sb-sprof)
+
 (break "~S" collection)
+
 (let* (;;Create a store and add it to the universe
        (storex)
 
@@ -51,8 +54,12 @@
   ;;(add-document collection (list :name "Piet" :surname "Gieter" :id 123))
 
   (time (cl-naive-store.naive-core::clear-collection collection))
-
-  (time (load-data collection))
+  (flamegraph:save-flame-graph ("~/temp/load.stack")
+    (sb-sprof:with-profiling
+        (:max-samples 10000
+         :report :flat
+         :loop nil)
+      (load-data collection)))
 
   ;;Query the collection
   (time
