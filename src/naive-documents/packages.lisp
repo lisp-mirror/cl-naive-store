@@ -12,11 +12,13 @@
    ;;Items
    :document-collection
    :document-store
+   :document-universe
 
-   :document-collection
+   :document-type
    :document
    :make-document
    :document-hash
+
    :document-document-type
    :document-elements
    :document-changes

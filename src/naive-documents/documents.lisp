@@ -68,18 +68,22 @@
         (naive-impl::debug-log "created new shard in add-document" :file-p t :args mac)))
 
     (unless (document-p document)
+
       (setf document (make-document
+                      :universe (universe (store collection))
                       :store (store collection)
                       :collection collection
-                      :document-type (when (document-type collection)
-                                       (if (stringp (document-type collection))
-                                           (document-type (document-type collection))
-
-                                           (name (document-type collection))))
+                      :document-type (document-type collection)
                       :elements document)))
 
     (unless (document-collection document)
       (setf (document-collection document) collection))
+
+    (unless (document-store document)
+      (setf (document-store document) (store collection)))
+
+    (unless (document-universe document)
+      (setf (document-universe document) (universe (store collection))))
 
     (unless (document-document-type document)
       (setf (document-document-type document) (document-type collection)))
@@ -88,6 +92,7 @@
       (cond ((or delete-p (deleted-p document))
              (naive-impl:persist-delete-document collection shard document file :shard shard))
             (t
+
              (let* ((existing-document
                       (existing-document collection document :shard shard))
                     (original-document-parsed
@@ -103,7 +108,6 @@
 
                     ;;parsing the documents because its the easiest way to check
                     ;;value equality of documents, especially hierarchical documents.
-
                     (prepped-document-parsed
                       (naive-impl:persist-form
                        collection

@@ -136,7 +136,9 @@ cl-naive-store does not have a update-document function, add-document does both 
 
 If a document with the same keys exists in the collection the supplied the existing document will be replaced with the supplied document.
 
-If you set replace-existing-p to nil then an existing document wont be replaced by the supplied document. Basically nothing will be done."
+If you set replace-existing-p to nil then an existing document wont be replaced by the supplied document. Basically nothing will be done.
+
+Note that if the document has child documents that come from another collection and you changed them add-document will not try to sync those with existing documents!"
   (let ((mac (document-shard-mac collection document)))
     (setf shard (ensure-shard shard collection mac 'add-document)))
 

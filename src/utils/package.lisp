@@ -5,9 +5,9 @@
   (:export
 
    ;;Used for sending docs over http.
-   :doc-to-sexp
-   :docs-to-sexps
-
+   :naive-document-to-sexp
+   :naive-documents-to-sexps
+   :sexp-to-naive-document
    :make-elements
    :definition-keys
    :implement-document-definition

@@ -11,6 +11,8 @@
 
 When documents are read from a file the references need to be converted to documents but for that to happen the collection containing the referenced documents need to be loaded first."
 
+  ;;(break "load ref collection ~S"  document-ref)
+
   ;;TODO: Doing this and other crazies for backwards compatibility,
   ;;should be removed at some stage and an error should be raised if
   ;;no multiverse is set for the universe.
@@ -32,51 +34,61 @@ When documents are read from a file the references need to be converted to docum
                    universe)
               (and (equalp (getx document-ref :universe) (name universe))
                    universe)
+              (let ((ref-uni (cl-naive-store.naive-core:get-multiverse-element
+                              :universe
+                              (multiverse universe)
+                              (getx document-ref :universe))))
+                (unless ref-uni
+
+                  (and (get-definition (location multiverse)
+                                       :universe universe-name)
+                       (cl-naive-store.naive-core::instance-from-definition-file
+                        (location multiverse)
+                        :universe
+                        (getx document-ref :universe)))))
               (progn
-                (break "Fuck ~S" (getx document-ref :universe))
-                (cl-naive-store.naive-core:get-multiverse-element
-                 :universe
-                 (multiverse universe)
-                 (getx document-ref :universe))
-                (and (get-definition (location multiverse)
-                                     :universe universe-name)
-                     (cl-naive-store.naive-core::instance-from-definition-file
-                      (location multiverse)
-                      multiverse :universe (getx document-ref :universe))))
-              ;;If we get here then it means we are dealing with a
-              ;;very brokend database. Should consider removing this.
-              (make-instance (universe-class multiverse)
-                             :name universe-name
-                             :location (cl-fad:merge-pathnames-as-directory
-                                        (location multiverse)
-                                        (make-pathname
-                                         :directory (list :relative
-                                                          universe-name)))
-                             :store-class 'store)))
-           (store (or
-                   (cl-naive-store.naive-core:get-multiverse-element
-                    :store
-                    reference-universe
-                    (getx document-ref :store))
-                   (cl-naive-store.naive-core::instance-from-definition-file
-                    (location reference-universe)
-                    reference-universe :store (getx document-ref :store))))
-           (collection (or
+                ;;If we get here then it means we are dealing with a
+                ;;very brokend database. Should consider removing this.
+
+                (error "Reference Universe does not exist ~S" document-ref)
+
+                #|
+                (make-instance (universe-class multiverse)
+                :name universe-name
+                :location (cl-fad:merge-pathnames-as-directory
+                (location multiverse)
+                (make-pathname
+                :directory (list :relative
+                universe-name)))
+                :store-class 'store)|#)))
+           (store (and reference-universe
+                       (or
                         (cl-naive-store.naive-core:get-multiverse-element
-                         :collection
-                         store
-                         (getx document-ref :collection))
+                         :store
+                         reference-universe
+                         (getx document-ref :store))
                         (cl-naive-store.naive-core::instance-from-definition-file
-                         (location store)
-                         reference-universe :collection
-                         (getx document-ref :collection))))
+                         (location reference-universe)
+                         :store
+                         (getx document-ref :store)))))
+           (collection (and store
+                            (or
+                             (cl-naive-store.naive-core:get-multiverse-element
+                              :collection
+                              store
+                              (getx document-ref :collection))
+                             (cl-naive-store.naive-core::instance-from-definition-file
+                              (location store)
+                              :collection
+                              (getx document-ref :collection)))))
            (shard-mac (getx document-ref :shard-mac)))
 
       (if shard-mac
           (let ((shard (get-shard collection shard-mac)))
-            (when shard
-              (cl-naive-store.naive-core::load-shard collection shard nil)))
 
+            (if shard
+                (cl-naive-store.naive-core::load-shard collection shard nil)
+                (load-data collection :parallel-p nil)))
           (load-data collection :parallel-p nil))
 
       collection)))
@@ -86,7 +98,6 @@ When documents are read from a file the references need to be converted to docum
 
 ;;TODO: Deal with shards.
 (defmethod find-document-by-hash (collection hash &key shards &allow-other-keys)
-
   (do-sequence (shard (if shards shards
                           (shards collection))
                 :parallel-p
@@ -94,7 +105,7 @@ When documents are read from a file the references need to be converted to docum
 
     (do-sequence (document (documents shard))
       (when (string-equal
-             (digx document :hash)
+             (getx document :hash)
              hash)
 
         (return-from find-document-by-hash document)))))
@@ -154,8 +165,8 @@ When documents are read from a file the references need to be converted to docum
                           ;; override it to the current one (which is
                           ;; BEING loaded).
 
-                          (if (and (digx sexp :collection)
-                                   (digx sexp :store))
+                          (if (and (getx sexp :collection)
+                                   (getx sexp :store))
                               sexp
                               (list* :collection (name collection)
                                      :store (name (store collection))
@@ -163,9 +174,10 @@ When documents are read from a file the references need to be converted to docum
          (ref-document (and collection
                             (find-document-by-hash
                              ref-collection
-                             (digx sexp :hash)
+                             (getx sexp :hash)
                              :shards (shards ref-collection)))))
 
+    ;; (break "compose reference ~S" ref-collection)
     (unless ref-document
       (write-log (location (universe (store collection)))
                  :error (list "Could not resolve reference" sexp)))

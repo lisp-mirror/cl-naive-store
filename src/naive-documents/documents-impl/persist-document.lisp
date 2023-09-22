@@ -40,20 +40,14 @@
                                     &key root parent &allow-other-keys)
   (declare  (ignorable shard root parent))
   (list
-   :universe  (if (and (not (document-store document))
-                       (document-collection document))
-                  (name (universe (store (document-collection document))))
-                  (name (universe (document-store document))))
-   :store (if (and (not (document-store document))
-                   (document-collection document))
-              (name (store (document-collection document)))
-              (name (document-store document)))
-   :collection (name (document-collection document))
-   :type (if (stringp (document-document-type document))
-             (document-document-type document)
-             (if (document-document-type document)
-                 (name (document-document-type document))
-                 (error "Missing type def")))
+   :universe (and (getx document :universe~)
+                  (name (getx document :universe~)))
+   :store (and (getx document :store~)
+               (name (getx document :store~)))
+   :collection (and (getx document :collection~)
+                    (name (getx document :collection~)))
+   :document-type (and (getx document :document-type~)
+                       (name (getx document :document-type~)))
    :hash (document-hash document)
    :shard-mac (cl-naive-store.naive-core:document-shard-mac
                (document-collection document) document)
@@ -65,14 +59,8 @@
   (declare  (ignorable root) (ignorable parent))
 
   (list
-   :document-type (if (stringp (document-document-type document))
-                      (document-document-type document)
-                      (if (not (document-document-type document))
-                          (break "Cannot save children with on document-type ~%~S" document)
-                          ;;TODO: Need to see why objects with no full doc type is arriving here
-                          (if (symbolp (document-document-type document))
-                              (document-document-type document)
-                              (name (document-document-type document)))))
+   :document-type (and (getx document :document-type~)
+                       (name (getx document :document-type~)))
    :hash (document-hash document)
    :elements (naive-impl:persist-parse collection
                                        shard
@@ -88,6 +76,17 @@
   (declare  (ignorable root) (ignorable parent))
 
   (list
+   :universe (and (getx document :universe~)
+                  (name (getx document :universe~)))
+   :store (and (getx document :store~)
+               (name (getx document :store~)))
+   :collection (and (getx document :collection~)
+                    (name (getx document :collection~)))
+   :document-type (and (or (getx document :document-type~)
+                           (document-type collection))
+                       (name (or (getx document :document-type~)
+                                 (document-type collection))))
+
    :hash (document-hash document)
    :deleted-p (if (document-deleted-p document)
                   t

@@ -1,6 +1,8 @@
 (in-package :cl-naive-store.naive-documents)
 
-(defclass document-collection (indexed-collection-mixin document-type-collection-mixin collection)
+(defclass document-collection (indexed-collection-mixin
+                               document-type-collection-mixin
+                               collection)
   ()
   (:documentation "Document collection class used to specialize on for cl-naive-store.naive-documents."))
 
@@ -77,6 +79,7 @@ versions = older key value pairs that represent older versions of the document
 deleted-p = indicates that the document was deleted.
 persisted-p = indicates that the document has been peristed.
 "
+  universe
   store
   collection
   document-type

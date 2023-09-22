@@ -32,10 +32,15 @@
 
 ;;Dont try to do compose-document asyncronously because the order in
 ;;which the documents are loaded in the underlying container matter,
-;;for deleted documents and document history both!!!!
+;;for deleted documents and document history (aka versions) both!!!!
 (defmethod load-shard ((collection collection) shard filename &key &allow-other-keys)
+  ;;(break "file ~S~%~S~%~S" filename (location shard) (status shard))
 
-  (unless (equalp (status shard) :loading)
+  ;;TODO: Added a check for :loaded as well else it reloads the shard
+  ;;when reference collections are found and that causes crap versions.
+  ;;Now need to see if lazy loading still works with this change.
+  (unless (or (equalp (status shard) :loading)
+              (equalp (status shard) :loaded))
     (unless (probe-file (format nil "~a.lock" (location shard)))
       (let ((sexps))
 
@@ -58,8 +63,11 @@
             (close in)
 
             (loop :for document-form in sexps
-                  :do (naive-impl::compose-document
-                       collection (or shard naive-impl:%loading-shard%) document-form)))))
+                  :do
+                  (progn
+                    ;;(break "load ~S" document-form)
+                    (naive-impl::compose-document
+                     collection (or shard naive-impl:%loading-shard%) document-form))))))
 
       (naive-impl::debug-log (frmt "load-shard end ") :file-p t :args (list shard filename))
       (setf (status shard) :loaded))))

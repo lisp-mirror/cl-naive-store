@@ -9,34 +9,45 @@ Because we mangled getx to give us element values we need a way to get to the or
 
 The convention is to append %% to these accessors, for two reasons. First to show that they are special, accessing meta data not actual values of document. Second to avoid any name clashes with actual data members.
 
-:collection%% = document-collection
-:store%% = document-store or (store collection)
-:universe%% = (universe store)
-:type%% = type
-:elements%% = document-elements
-:changes%% = document-changes
-:versions%% = document-versions
-:deleted-p%% = document-deleted-p"
+:collection~ = document-collection
+:store~ = document-store or (store collection)
+:universe~ = document-universe or (universe store)
+:document-type~ = document-document-type
+:elements~ = document-elements
+:changes~ = document-changes
+:versions~ = document-versions
+:deleted-p~ = document-deleted-p"
   (cond ((equalp accessor :hash)
          (document-hash document))
-        ((equalp accessor :collection%%)
+        ((equalp accessor :collection~)
          (document-collection document))
-        ((equalp accessor :store%%)
+        ((equalp accessor :store~)
          (or
           (document-store document)
           (and (document-collection document)
                (store (document-collection document)))))
-        ((equalp accessor :universe%%)
-         (and (document-collection document)
-              (store (document-collection document))
-              (universe (store (document-collection document)))))
-        ((equalp accessor :document-type%%)
-         (document-document-type document))
-        ((equalp accessor :elements%%)
+        ((equalp accessor :universe~)
+         (or (document-universe document)
+             (and (document-collection document)
+                  (store (document-collection document))
+                  (universe (store (document-collection document))))))
+        ((equalp accessor :document-type~)
+         (if (stringp (document-document-type document))
+             (or
+              (and (document-collection document)
+                   (get-multiverse-element
+                    :document-type
+                    (store (document-collection document))
+                    (document-document-type document)))
+              (document-type (document-collection document)))
+             (or
+              (document-document-type document)
+              (document-type (document-collection document)))))
+        ((equalp accessor :elements~)
          (document-elements document))
-        ((equalp accessor :changes%%)
+        ((equalp accessor :changes~)
          (document-changes document))
-        ((equalp accessor :deleted-p%%)
+        ((equalp accessor :deleted-p~)
          (document-deleted-p document))
         (t
          (or
@@ -54,19 +65,19 @@ By default it is on.")
 
   (cond ((equalp accessor :hash)
          (setf (document-hash document) value))
-        ((equalp accessor :collection%%)
+        ((equalp accessor :collection~)
          (setf (document-collection document) value))
-        ((equalp accessor :store%%)
+        ((equalp accessor :store~)
          (setf (document-store document) value))
-        ((equalp accessor :universe%%)
-         (error "Not allowed set universe%%."))
-        ((equalp accessor :document-type%%)
+        ((equalp accessor :universe~)
+         (setf (document-universe document) value))
+        ((equalp accessor :document-type~)
          (setf (document-document-type document) value))
-        ((equalp accessor :elements%%)
+        ((equalp accessor :elements~)
          (setf (document-elements document) value))
-        ((equalp accessor :changes%%)
+        ((equalp accessor :changes~)
          (setf (document-changes document) value))
-        ((equalp accessor :deleted-p%%)
+        ((equalp accessor :deleted-p~)
          (setf (document-deleted-p document) value))
         (t
          (when change-control-p
