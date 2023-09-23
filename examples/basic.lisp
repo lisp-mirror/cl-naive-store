@@ -33,7 +33,7 @@
                                                                 ;;Specifying the key element, else its :key
                                                                 :keys '(:id))))
 
-(require :sb-sprof)
+;;(require :sb-sprof)
 
 (break "~S" collection)
 
@@ -54,12 +54,16 @@
   ;;(add-document collection (list :name "Piet" :surname "Gieter" :id 123))
 
   (time (cl-naive-store.naive-core::clear-collection collection))
-  (flamegraph:save-flame-graph ("~/temp/load.stack")
-    (sb-sprof:with-profiling
-        (:max-samples 10000
-         :report :flat
-         :loop nil)
-      (load-data collection)))
+  #|
+  (time (flamegraph:save-flame-graph ("~/temp/load.stack")
+  (sb-sprof:with-profiling
+  (:max-samples 10000
+  :report :flat
+  :loop nil)
+  (load-data collection))))
+  |#
+
+  (time (load-data collection))
 
   ;;Query the collection
   (time
