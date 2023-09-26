@@ -1,301 +1,237 @@
-* Document Type Definitions
+* Definitions
 
+There are two main sources of definitions, hand crafted or persisted
+definitions.
 
-=cl-naive-store.definitions= is a "declarative" implementation (I am
-using the word loosely) of =cl-naive-document-type=.
+Persisted definitions are found for individual elements along the
+directory structure of the peristed data and is relative to the
+multiverse/universe/store/collection structure. These definitions can
+be considered as partial definitions because they do not contain any
+information about their children. This is because they are created
+during add-multiverse-element and at that stage the element might not
+have any children yet. It also means that there is not one central
+complete definition that can show what the full store structure
+looks like.
 
-It can be used to create universes and everything they contain from a
-simple definitions sexp.
+A complete definition of all the multiverse elments is typically
+created by hand as a plist tree. You could of course create such a
+complete definition by walking the directory tree. A complete
+definition could be used for bootstrapping the database if
+needed. Bootstrapping the whole database is of course counter to the
+lazy loading principal that is supported by naive-store.
 
-What use are type-defs? Well they are there to describe the document
-type, i.e. more information about elements of a document type and the
-document type itself. Such information could cover any thing from the
-basics to the esoteric, and that is one of the reasons why this is a
-"declarative" implementation. The information covered is not always
-relevant to the database but could be extra information needed by a
-GUI to display an update a document and its elements correctly.
+The definition manipulation functions supplied are simple in the sense
+that they will not ensure the integrity of the final definition. For
+example if you remove a document-type that document-type might still
+be used by a collection which will cause errors when loading from such
+a broken definition.
 
-To understand the "loose" protocol/interface of =cl-naive-type-defs= we
-will look at the parts of the type def.
+** Example Definition
 
-** :document-type
 
 #+BEGIN_SRC lisp
-  (:document-type
-   (:name "for use by programs"
-    :label "name for use by humans"
-    :elements "a list of elements that make up the document type"
-    :attributes "anything else you want to share about the data type"
-    :documentation ""))
+(:multiverse
+    (:name "multiverse"
+     :universe-class cl-naive-store.naive-core:universe
+     :location ,(test-location)
+     :universes
+
+     ((:universe
+       (:name "test-universe"
+        :location ,(test-location)
+        ;;Universe classes can be specific to a universe.
+        :universe-class cl-naive-store.naive-core:universe
+        :store-class cl-naive-store.naive-documents:document-store
+        :collection-class cl-naive-store.naive-documents:document-collection
+        :document-type-class cl-naive-store.document-types:document-type
+        :stores ((:store
+                  (:name "human-resources"
+                   :collections ((:collection
+                                  (:name "laptop"
+                                   :label "Laptop"
+                                   :document-type "laptop"))
+                                 (:collection
+                                  (:name "employees"
+                                   :label "Employees"
+                                   :document-type "employee")))
+                   :document-types
+                         ((:document-type
+                           (:name "laptop"
+                            :label "Laptop"
+                            :elements ((:element
+                                        (:name :id
+                                         :label "Serial No"
+                                         :key-p t
+                                         :concrete-type (:type :string)
+                                         :attributes ((:attribute
+                                                       (:name :display
+                                                        :value t))
+                                                      (:attribute
+                                                       (:name :editable
+                                                        :value t)))
+                                         :documentation "Unique no that identifies the laptop."))
+                                       (:element
+                                        (:name :make
+                                         :label "Manufaturer"
+                                         :concrete-type (:type :string)
+                                         :attributes ((:attribute
+                                                       (:name :display
+                                                        :value t))
+                                                      (:attribute
+                                                       (:name :editable
+                                                        :value t)))
+                                         :documentation "Then manufaturer of the laptop."))
+                                       (:element (:name :model
+                                                  :label "Model"
+                                                  :concrete-type (:type :string)
+                                                  :attributes ((:attribute
+                                                                (:name :display
+                                                                 :value t))
+                                                               (:attribute
+                                                                (:name :editable
+                                                                 :value t)))
+                                                  :documentation "Model of the laptop.")))
+                            :attributes ()
+                            :documentation "List of laptops the company owns."))
+
+                          (:document-type
+                           (:name "child"
+                            :label "Child"
+                            :elements ((:element
+                                        (:name :name
+                                         :label "Name"
+                                         :key-p t
+                                         :concrete-type (:type :string)
+                                         :attributes ((:attribute
+                                                       (:name :display
+                                                        :value t))
+                                                      (:attribute
+                                                       (:name :editable
+                                                        :value t)))
+                                         :documentation "Name of child"))
+                                       (:element
+                                        (:name :sex
+                                         :label "Gender"
+                                         :concrete-type (:type :keyword)
+                                         :attributes ((:attribute
+                                                       (:name :display
+                                                        :value t))
+                                                      (:attribute
+                                                       (:name :editable
+                                                        :value t))
+                                                      (:attribute
+                                                       (:name :value-list
+                                                        :value (:male :female))))
+                                         :documentation "Gender of the child, can only be male or female."))
+                                       (:element
+                                        (:name :age
+                                         :label "Age"
+                                         :concrete-type (:type :number)
+                                         :attributes
+                                               ((:attribute
+                                                 (:name :display
+                                                  :value t))
+                                                (:attribute
+                                                 (:name :editable
+                                                  :value t))
+                                                (:attribute
+                                                 (:name :setf-validate
+                                                  :value
+                                                        (lambda (age)
+                                                          (if (<= age 21)
+                                                              (values t nil)
+                                                              (values nil "Child is to old"))))))
+                                         :documentation "How old the child is")))
+                            :attributes ()
+                            :documentation "List of laptops the company owns."))
+
+                          (:document-type
+                           (:name "employee"
+                            :label "Employee"
+                            :elements ((:element
+                                        (:name :emp-
+                                         :label "Employee Number"
+                                         :key-p t
+                                         :concrete-type (:type :number)
+                                         :attributes ((:attribute
+                                                       (:name :display
+                                                        :value t))
+                                                      (:attribute
+                                                       (:name :editable
+                                                        :value t)))
+                                         :documentation "Unique identifier of employee."))
+                                       (:element (:name :name
+                                                  :label "Name"
+                                                  :concrete-type (:type :string)
+                                                  :attributes ((:attribute
+                                                                (:name :display
+                                                                 :value t))
+                                                               (:attribute
+                                                                (:name :editable
+                                                                 :value t)))
+                                                  :documentation "Name of employee"))
+                                       (:element
+                                        (:name :sex
+                                         :label "Gender"
+                                         :concrete-type (:type :keyword)
+                                         :attributes
+                                               ((:attribute
+                                                 (:name :display
+                                                  :value t))
+                                                (:attribute
+                                                 (:name :editable
+                                                  :value t))
+                                                (:attribute
+                                                 (:name :value-list
+                                                  :value (:male :female))))
+
+                                         :documentation "Gender of the child, can only be male or female."))
+                                       (:element
+                                        (:name :dependents
+                                         :label "Children"
+                                         :concrete-type (:type :list
+                                                         :spec (:type :document
+                                                                :spec (:type "child"
+                                                                       :accessor (:name))))
+
+                                         :attributes ((:attribute
+                                                       (:name :display
+                                                        :value t))
+                                                      (:attribute
+                                                       (:name :editable
+                                                        :value t)))
+                                         :documentation "List of the employees children"))
+                                       (:element
+                                        (:name :laptop
+                                         :label "Laptop"
+                                         :concrete-type (:type :document
+                                                         :spec (:type "laptop"
+                                                                :collection "laptop-collection"
+                                                                :accessor (:id)))
+
+                                         :attributes ((:attribute
+                                                       (:name :display
+                                                        :value t))
+                                                      (:attribute
+                                                       (:name :editable
+                                                        :value t)))
+                                         :documentation "Laptop allocated to employee"))
+                                       (:element
+                                        (:name :first-born
+                                         :label "First Born Child"
+                                         :concrete-type (:type :document
+                                                         :spec (:type "child"
+                                                                :collection "employees"
+                                                                :accessor (:emp-no :dependents :name)))
+
+                                         :attributes ((:attribute
+                                                       (:name :display
+                                                        :value t))
+                                                      (:attribute
+                                                       (:name :editable
+                                                        :value t)))
+                                         :documentation "List of the employees children")))
+                            :attributes ()
+                            :documentation "List of laptops the company owns.")))))))))))
 #+END_SRC
 
-Looks familiar? Well it should look and smell like a naive-document-type
-
-*** :document-type :elements
-
-#+BEGIN_SRC lisp
-  ((:name "for use by programs, by convention KEYWORD to encourage data portability"
-    :label "name for use by humans"
-    :key-p "is this a key element"
-    :concrete-type "how is the data represented in a program, ie string,
-		    integer, document etc"
-    :attributes "anything else you want to share about the element"
-    :documentation "")
-
-   ...)
-#+END_SRC
-
-**** :element :attributes
-
-#+BEGIN_SRC lisp
-  (:property-name-1 'value :property-name-2 'value)
-#+END_SRC
-
-**** :element :concrete-type
-
-These can be simple or complex.
-
-Simple concrete type would be :string or :number
-
-Complex concrete type examples:
-
-Simple concrete type would be :string or :number
-
-Complex concrete type examples:
-
-Type of document:
-
-#+BEGIN_SRC lisp
-  (:type (:document
-	  (:type "Employee"
-	   :accessor (:emp-no))))
-#+END_SRC
-
-List of strings:
-
-#+BEGIN_SRC lisp
-  (:type (:list :string))
-#+END_SRC
-
-List of document:s
-
-#+BEGIN_SRC lisp
-  (:type (:list
-	  (:document
-	   (:type "Child"
-	    :accessor (:name)))))
-#+END_SRC
-
-A reference doc. (Document residing in a different place (ie collection))
-
-#+BEGIN_SRC lisp
-  (:type (:document
-	  (:type "Laptop"
-	   :collection "laptop-collection"
-	   :accessor (:id))))
-#+END_SRC
-
-The convention is to stop at 2 layers of element type, any deeper
-becomes unwieldy. That does not mean that you can only stop at two
-levels of document hierarchy you can have doc types within doc types
-and so on, but the complex document type only needs to know about it
-self and one layer down.
-
-You can have self referencing types, see the first-born element in the
-full example.
-
-** Collections
-
-To be able to fully define reference types we need to also give defs
-of collections.
-
-Collections are specified separate from a document type definition
-because different collections could use the same document type
-definition.
-
-#+BEGIN_SRC lisp
-  (:collection
-   (:name "laptops"
-    :label "Company Laptops"
-    :data-type "laptop"))
-
-** The full Example:
-:PROPERTIES:
-:CUSTOM_ID: full-example
-:END:
-
-Because tyge-defs uses cl lists you are well on your way to a domain
-specific language, your imagination is your only limitation.
-
-You can use type-defs to bootstrap an application, creating stores and
-collections on the fly. They also come in very handy when you
-implement a GUI because they are so rich in information.
-
-=cl-naive-store= does not use type-defs internally. All it does is give
-you =cl-document-types= which gives you a place to load your defs and
-access them at run time. It will also persist the type defs for you.
-
-=cl-document-types= requirements are minimal and its up to you to load
-your type-defs into the store so that means you can do with or
-structure your type defs any way you want. But if you want to share
-typedefs portably then you might have to consider sticking to what
-=cl-document-type-defs= offer, at least as a minimal baseline.
-
-There are a couple of helper functions to get you started using type
-defs.
-
-This full example is referred to as a "definitions collection" because it
-contains multiple document type definitions and collection definitions.
-
-If you are going to use your definitions collection to startup and
-load a database try to order the type and collection definitions in
-the sequence that they need to be loaded - that is, if you reference
-documents in another collection, that collection should be loaded
-before loading the referencing collection.
-
-#+BEGIN_SRC lisp
-  '((:document-type
-     (:name "laptop"
-      :label "Laptop"
-      :elements ((:name :id
-		  :label "Serial No"
-		  :key-p t
-		  :concrete-type :string
-		  :attributes (:display t :editable t)
-		  :documentation "Unique no that identifies the laptop.")
-		 (:name :make
-		  :label "Manufaturer"
-		  :concrete-type :string
-		  :attributes (:display t :editable t)
-		  :documentation "Then manufaturer of the laptop.")
-		 (:name :model
-		  :label "Model"
-		  :concrete-type :string
-		  :attributes (:display t :editable t)
-		  :documentation "Model of the laptop."))
-      :attributes ()
-      :documentation "List of laptops the company owns."))
-
-    (:collection
-     (:name "laptops"
-      :label "Company Laptops"
-      :data-type "laptop"))
-
-    (:document-type
-     (:name "child"
-      :label "Child"
-      :elements ((:name :name
-		  :label "Name"
-		  :key-p t
-		  :concrete-type :string
-		  :attributes (:display t :editable t)
-		  :documentation "Name of child")
-		 (:name :sex
-		  :label "Gender"
-		  :concrete-type :key-word
-		  :value-list (:male :female)
-		  :attributes (:display t :editable t)
-		  :documentation "Gender of the child, can only be male or female.")
-		 (:name :age
-		  :label "Age"
-		  :concrete-type :number
-		  :attributes (:display t :editable t
-			       ;;setf-validate-is called for (setf getxe)
-			       :setf-validate
-			       (lambda (age)
-				 (if (<= age 21)
-				     (values t nil)
-				     (values nil "Child is to old"))))
-		  :documentation "How old the child is"))
-      :attributes ()
-      :documentation "List of laptops the company owns."))
-
-    (:document-type
-     (:name "employee"
-      :label "Employee"
-      :elements ((:name :emp-
-		  :label "Employee Number"
-		  :key-p t
-		  :concrete-type :number
-		  :attributes (:display t :editable t)
-		  :documentation "Unique identifier of employee.")
-		 (:name :name
-		  :label "Name"
-		  :concrete-type :string
-		  :attributes (:display t :editable t)
-		  :documentation "Name of employee")
-                 (:name :surname
-		  :label "Surname"
-		  :concrete-type :string
-		  :attributes (:display t :editable t)
-		  :documentation "Surname of employee")
-		 (:name :sex
-		  :label "Gender"
-		  :concrete-type :key-word
-		  :value-list (:male :female)
-		  :attributes (:display t :editable t)
-		  :documentation "Gender of the child, can only be male or female.")
-		 (:name :dependents
-		  :label "Children"
-		  :concrete-type (:type (:list
-					 (:document
-					  (:type "Child"
-					   :accessor (:name)))))
-		  :attributes (:display t :editable t)
-		  :documentation "List of the employees children")
-		 (:name :laptop
-		  :label "Laptop"
-		  :concrete-type (:type (:document
-					 (:type "laptop"
-					  :collection "laptop-collection"
-					  :accessor (:id))))
-		  :attributes (:display t :editable t)
-		  :documentation "Laptop allocated to employee")
-		 (:name :first-born
-		  :label "First Born Child"
-		  :concrete-type (:type (:document
-					 (:type "child"
-					  :collection "employees"
-					  :accessor (:emp-no :dependents :name))))
-		  :attributes (:display t :editable t)
-		  :documentation "List of the employees children"))
-      :attributes ()
-      :documentation "List of laptops the company owns."))
-
-    (:collection
-     (:name "employees"
-      :label "Company Employees"
-      :data-type "employee"
-      :indexes ((:gender) (:surname)))))
-#+END_SRC
-
-
-** getx
-
-=cl-naive-type= defs offer us the opportunity to use an element-def as
-the accessor to the value of the element in the document. =getx= is used
-to achieve this, the specialization makes full use of the the type
-defs to implement much more complex/intelligent getting and setting of
-the values. It does that by calling =getxe= that has specializations
-that understand complex types and what to do.
-
-Simple validation at =setf= time is also offered by supplying a function
-to setf-validate in attributes of an element. Validation functions
-must return 2 values the first indicates pass or fail the second is a
-message which is usually the reason for failure.
-
-#+BEGIN_SRC lisp
-  (:name :age
-   :label "Age"
-   :concrete-type :number
-   :attributes (:display t :editable t
-		:setf-validate ;;setf-validate-is called for (setf getxe)
-			 (lambda (age)
-			   (if (<= age 21)
-			       (values t nil)
-			       (values nil "Child is to old"))))
-   :documentation "How old the child is")
-#+END_SRC
-
-
-[[file:home.org][Home]] [[file:overview.org][Previous]]

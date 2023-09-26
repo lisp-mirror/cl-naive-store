@@ -72,12 +72,17 @@
    :location "~/multiverse/universe/" ;Setting the location on disk.
    :store-class 'store))
 
+;;Add universe to multiverse.
+(add-multiverse-element *multiverse* *universe*)
+
 (let* (;;Create a store and add it to the universe
-       (store (add-multiverse-element *universe*
-                                      (make-instance 'document-store
-                                                     :name "simple-store"
-                                                     :collection-class 'collection)
-                                      :persist-p t))
+       (store (add-multiverse-element
+               *universe*
+               (make-instance 'document-store
+                              :name "simple-store"
+                              :collection-class 'collection
+                              :location "~/multiverse/universe/simple-store/")
+               :persist-p t))
        (employee-collection)
        (asset-collection)
        (employee-elements)

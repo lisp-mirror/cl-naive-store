@@ -1,5 +1,7 @@
 * Bench Marks
 
+;;TODO: These benchmarks are dated need to rerun them.
+
 These are just rough benchmarks taken from the sharding example. To
 get these on your local machine just load cl-naive-store and compile
 the sharding.lisp in examples/ folder.

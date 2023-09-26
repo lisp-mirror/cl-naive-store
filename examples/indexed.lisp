@@ -8,37 +8,35 @@
 (defclass indexded-collection (indexed-collection-mixin collection)
   ())
 
-(defparameter *multiverse*
-  (make-instance
-   'multiverse
-   :location "~/multiverse/" ;Setting the location on disk.
-   :universe-class 'universe))
-
-;;Create a universe
-(defparameter *universe*
-  (make-instance
-   'universe
-   :multiverse *multiverse*
-   :location "~/multiverse/universe/" ;Setting the location on disk.
-   :store-class 'store))
-
-(let* (;;Create a store and add it to the universe
-       (store (add-multiverse-element *universe*
-                                      (make-instance 'store
-                                                     :name "simple-store"
-                                                     :collection-class 'collection)
-                                      :persist-p t))
+(let* (;;Create a multiverse.
+       (multiverse (make-instance
+                    'multiverse
+                    :name "multiverse"
+                    :location "~/multiverse/" ;Setting the location on disk.
+                    :universe-class 'universe))
+       ;;Create a universe and add it to the multiverse
+       (universe (add-multiverse-element
+                  multiverse
+                  (make-instance
+                   'universe
+                   :name "universe"
+                   :multiverse multiverse
+                   :location "~/multiverse/universe/" ;Setting the location on disk.
+                   :store-class 'store)))
+       ;;Create a store and add it to the universe
+       (store (add-multiverse-element
+               universe
+               (make-instance 'store
+                              :name "simple-store"
+                              :collection-class 'indexed-collection)))
 
        ;;Create a collection and add it to the store
-       (collection
-         (add-muLtiverse-element store
-                                 (make-instance 'indexded-collection
-                                                :name "simple-collection"
-                                                ;;Specifying the key element, else its :key
-                                                :keys '(:id)
-                                                ;;Specifying the elements to set up indexes for.
-                                                :indexes '((:name :surname)))
-                                 :persist-p t))
+       (collection (add-multiverse-element
+                    store
+                    (make-instance 'collection
+                                   :name "simple-collection"
+                                   ;;Specifying the key element, else its :key
+                                   :keys '(:id))))
        (results))
 
   ;;Add some documents to the collection

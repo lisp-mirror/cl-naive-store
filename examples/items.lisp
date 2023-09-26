@@ -28,6 +28,7 @@
                 :attributes (:display t :editable t)))
     :documentation "This type represents a simple employee master."))
 
+;;Create multiverse
 (defparameter *multiverse*
   (make-instance
    'multiverse
@@ -41,6 +42,9 @@
    :multiverse *multiverse*
    :location "~/multiverse/universe/" ;Setting the location on disk.
    :store-class 'document-store))
+
+;;Add universe to multiverse.
+(add-multiverse-element *multiverse* *universe*)
 
 (let* (;;Create a store and add it to the universe
        (store (add-multiverse-element *universe*
@@ -75,22 +79,23 @@
                        :persist-p t))
 
   ;;Create a collection and add it to the store
-  (setf collection (add-multiverse-element store
-                                           (make-instance 'document-collection ;;using documents collection.
-                                                          :name "simple-collection"
-                                                          :document-type document-type
-                                                          ;;Not specifying the
-                                                          ;;keys to show that
-                                                          ;;they are retrieved
-                                                          ;;from the
-                                                          ;;document-type if
-                                                          ;;no key is set.
-                                                          ;;:keys ...
-                                                          ;;Specifying the
-                                                          ;;elements to set up
-                                                          ;;indexes for.
-                                                          :indexes '((:name :surname)))
-                                           :persist-p t))
+  (setf collection (add-multiverse-element
+                    store
+                    (make-instance 'document-collection ;;using documents collection.
+                                   :name "simple-collection"
+                                   :document-type document-type
+                                   ;;Not specifying the
+                                   ;;keys to show that
+                                   ;;they are retrieved
+                                   ;;from the
+                                   ;;document-type if
+                                   ;;no key is set.
+                                   ;;:keys ...
+                                   ;;Specifying the
+                                   ;;elements to set up
+                                   ;;indexes for.
+                                   :indexes '((:name :surname)))
+                    :persist-p t))
   ;;Add some documents to the collection
   (persist-document collection
                     (make-document

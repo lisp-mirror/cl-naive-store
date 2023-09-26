@@ -1,8 +1,9 @@
 * cl-naive-store
 
-=cl-naive-store= is a database (document store to more precise) which is
-persistent, in-memory (lazily-loaded), indexed, and written completely in
-Common Lisp.
+=cl-naive-store= is a log structured document store. Documents are
+loaded in-memory to give facilitate fast querying. Depending on how
+you use the store documents will be lazy loaded. indexed, and written
+completely in Common Lisp.
 
 The "naive" comes from the fact that data is persisted
 as plists in files to make them human and machine readable, also there
@@ -14,8 +15,9 @@ what is possible.
 
 ** Layered Design
 
-=cl-naive-store= can do a lot but you as the user decides how much of
-the store's functionality you want to use for your own project.
+=cl-naive-store= can do a lot but you as the user must decide how much
+of the store's functionality you want to use for your own project. See
+[[file:overview.org][Choosing Layers of Functionality]] for more information.
 
 Functionality was broken down into these packages:
 

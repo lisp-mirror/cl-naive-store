@@ -1,34 +1,5 @@
 (in-package :cl-naive-store.naive-core)
 
-;;; There are two main sources of definitions, hand crafted or persited definitions.
-
-;;; Persisted definitions are found for individual elements along the
-;;; directory structure of the peristed data and is relative to the
-;;; multivers/universe/store/collection structure. These definitions
-;;; can be considered as partial definitions because they do not
-;;; contain any information about the children. This is because they
-;;; are created during add-multiverse-element and at that stage the
-;;; element might not have any children yet. It also means that there
-;;; is not one central complete definition that can show what the full
-;;; database structure looks like.
-
-;;; A complete definition of all the multiverse elments is typically
-;;; created by hand as a plist tree. You could of course create such a
-;;; complete definition by walking the directory tree. A complete
-;;; definition could be used for bootstrapping the database if
-;;; needed. Bootstrapping the whole database is of course counter to
-;;; the lazy loading principal that is supported by naive-store.
-
-;;;The funcitons and methods in this file relates to definition
-;;;manipulation and the creation of multiverse elements from
-;;;definitions.
-
-;;; The definition manipulation functions are simple in the sense that
-;;; they will not ensure the integrity of the final definition. For
-;;; example if you remove a document-type that document-type might
-;;; still be used by a collection which will cause errors when loading
-;;; from such a broken definition.
-
 ;;TODO: Do some work on ensuring entegrity when dealing with document-type also split out document-type stuff to document-types.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -159,7 +130,6 @@ and parent definition."))
          (if existing-element
              (if (not ,replace-p%)
                  (progn
-                   (break "~S" existing-element)
                    (error "~A definition already exsists: ~A"
                           ,element-type%
                           (digx ,element% ,element-type% :name))
@@ -338,10 +308,11 @@ If no definition-type is not supplied the definition of the object is returned."
                                       (format nil "~(~a~)" definition-type)))
                                definition-type)))
          (file (car (directory filename))))
+
     (when error-p
       (unless file
         (error "Defintion file not found for ~A." filename)))
-    (naive-impl:sexp-from-file filename)))
+    (naive-impl:sexp-from-file file)))
 
 ;;TODO: Should we split this out into its own file?
 
