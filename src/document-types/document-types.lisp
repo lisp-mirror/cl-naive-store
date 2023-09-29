@@ -335,16 +335,15 @@ IMPL NOTES: To deal with customization of document-type.")
     (let ((location (location document-type)))
 
       (when location
-        (ensure-directories-exist (pathname location)))
+        (ensure-directories-exist (location store)))
+
       (unless location
         (setf location
               (cl-fad:merge-pathnames-as-file
                (pathname (location store))
                (make-pathname :directory (list :relative (name document-type))
                               :name (name document-type)
-                              :type "type")))
-
-        (ensure-directories-exist location))
+                              :type "type"))))
 
       (setf (location document-type) (pathname location))
       (pushnew document-type (document-types store))
@@ -436,7 +435,8 @@ IMPL NOTES: To deal with customization of document-type.")
                      (pathname (location (store object)))
                      (make-pathname :directory (list :relative (name object))
                                     :name (name object)
-                                    :type "type")))))))
+                                    :type "type")))
+              (error "Store location is empty can't manufacture document-type location from it.")))))
 
 (defmethod cl-naive-store.naive-core:load-from-definition
     ((store document-type-store-mixin) (definition-type (eql :document-type))

@@ -483,6 +483,8 @@ class)
                                               'store)
                                              definition)))
 
+    ;;(break "~S" instance)
+
     (when instance
       (setf (universe instance) universe)
 

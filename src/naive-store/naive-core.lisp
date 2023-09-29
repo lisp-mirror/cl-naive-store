@@ -710,7 +710,8 @@ shard-macs is a list of shard macs to indicate which shards should be used. If n
                      (pathname (location (multiverse object)))
                      (make-pathname :directory (list :relative (name object))
                                     :name (name object)
-                                    :type "universe")))))))
+                                    :type "universe")))
+              (error "Multiverse location is empty can't manufacture universe location from it.")))))
 
 (defmethod ensure-location ((object store))
   (if (not (empty-p (location object)))
@@ -718,12 +719,15 @@ shard-macs is a list of shard macs to indicate which shards should be used. If n
       (if (not (universe object))
           (error "Store universe not set, cant ensure location.")
           (if (not (empty-p (ensure-location (universe object))))
-              (setf (location object)
-                    (cl-fad:merge-pathnames-as-file
-                     (pathname (location (universe object)))
-                     (make-pathname :directory (list :relative (name object))
-                                    :name (name object)
-                                    :type "store")))))))
+              (if (not (name object))
+                  (error "Store has no name cannot manufacture location.")
+                  (setf (location object)
+                        (cl-fad:merge-pathnames-as-file
+                         (pathname (location (universe object)))
+                         (make-pathname :directory (list :relative (name object))
+                                        :name (name object)
+                                        :type "store"))))
+              (error "Universe location is empty can't manufacture store location from it.")))))
 
 (defmethod ensure-location ((object collection))
   (if (and (not (empty-p (location object)))
@@ -739,7 +743,8 @@ shard-macs is a list of shard macs to indicate which shards should be used. If n
                      (make-pathname :directory
                                     (list :relative (name object))
                                     :name (name object)
-                                    :type "log")))))))
+                                    :type "log")))
+              (error "Store location is empty can't manufacture collection location from it.")))))
 
 (defgeneric data-loaded-p (container &key *allow-other-keys)
   (:documentation "Checks if the data is loaded for the container, be it universe , store or collection.
