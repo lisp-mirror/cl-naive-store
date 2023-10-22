@@ -1,6 +1,6 @@
 (defsystem "cl-naive-store"
   :description "This is a persisted, in memory (lazy loading) document store for Common Lisp."
-  :version "2021.5.18"
+  :version "2023.10.18"
   :author "Phil Marneweck"
   :licence "MIT"
   ;;TODO: add feature to conditional depend on UUID and cl-murmurhash...really?
@@ -9,6 +9,6 @@
                "cl-naive-store.naive-documents"
                "cl-naive-store.naive-indexed"
                "cl-naive-store.naive-merkle")
-  :components ()
+  :components ((:file "src/packages"))
   #+asdf-unicode :encoding #+asdf-unicode :utf-8
   #+adsf3 :in-order-to #+adsf3 ((asdf:test-op (asdf:test-op "cl-naive-store.test"))))

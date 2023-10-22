@@ -1,7 +1,5 @@
 (in-package :naive-impl)
 
-(local-time:enable-read-macros)
-
 (defun map-append (fn &rest lists)
   "Non distructive version of mapcan.
 Source: On Lisp"
