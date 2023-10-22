@@ -4,7 +4,6 @@
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defparameter *cl-naive-store-api-packages*
     '(
-      :cl-naive-store.definitions
       :cl-naive-store.document-types
       :cl-naive-store.naive-core
       :cl-naive-store.naive-documents

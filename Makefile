@@ -69,5 +69,4 @@ help:
 	@ printf $(FMT) test-run-tests      'Run the test properly.'
 	@ printf $(FMT) test-load-systems   'Compile and load the systems.'
 	@ printf $(FMT) documentation       'Build the documentation.'
-	@ : printf $(FMT) examples            'Build the examples.'
 	@ printf $(FMT) clean               'Remove old products.'
