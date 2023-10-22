@@ -14,4 +14,4 @@ completely in Common Lisp."
                "cl-naive-store.naive-merkle")
   :components ((:file "src/packages"))
   #+asdf-unicode :encoding #+asdf-unicode :utf-8
-  #+adsf3 :in-order-to #+adsf3 ((asdf:test-op (asdf:test-op "cl-naive-store.test"))))
+  #+adsf3 :in-order-to #+adsf3 ((asdf:test-op (asdf:test-op "cl-naive-store.tests"))))

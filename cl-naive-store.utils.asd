@@ -5,6 +5,7 @@
   :licence "MIT"
   :depends-on ("cl-naive-store.naive-core"
                "cl-naive-store.naive-indexed"
+               "cl-naive-store.naive-documents"
                "cl-naive-store.document-types")
   :components
   ((:file "src/utils/package")

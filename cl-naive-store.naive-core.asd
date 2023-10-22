@@ -44,4 +44,4 @@
    (:file "src/naive-store/maintenance"
     :depends-on ("src/naive-store/naive-impl/persist-document")))
   #+asdf-unicode :encoding #+asdf-unicode :utf-8
-  #+adsf3 :in-order-to #+adsf3 ((asdf:test-op (asdf:test-op "cl-naive-store.test"))))
+  #+adsf3 :in-order-to #+adsf3 ((asdf:test-op (asdf:test-op "cl-naive-store.tests"))))

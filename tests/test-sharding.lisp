@@ -1,7 +1,9 @@
 (ignore-errors (delete-package :test-sharding-simple))
 
 (defpackage :test-sharding-simple
-  (:use :cl :cl-getx :cl-naive-store.tests :cl-naive-store.naive-core))
+  (:use :cl :cl-getx :cl-naive-store.tests :cl-naive-store.naive-core)
+  (:use  :cl-naive-store.naive-indexed :cl-naive-store.document-types
+         :cl-naive-store.naive-documents))
 
 (in-package :test-sharding-simple)
 

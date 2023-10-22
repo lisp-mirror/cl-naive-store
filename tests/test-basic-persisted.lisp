@@ -31,125 +31,88 @@
                         :name "simple-collection"
                         ;; Specifying the key element, else its :key
                         :keys '(:id)))))
-(pprint (macroexpand-1 '
-  (cl-naive-tests:define-suite (:test-basic-persisted)
-      (cl-naive-tests:testcase
-       :count-1
-       :expected 1
-       :actual (progn
-                 (persist-document *collection*
-                                   (list :name "Piet"
-                                         :surname "Gieter"
-                                         :id 123))
-                 (length (documents *collection*))))
-    (cl-naive-tests:testcase
-     :count-2
-     :expected 2
-     :actual (progn
-               (persist-document *collection*
-                                 (list :name "Sannie"
-                                       :surname "Gieter"
-                                       :id 321))
-               (length (documents *collection*))))
-    (cl-naive-tests:testcase
-     :count-3
-     :expected 3
-     :actual (progn
-               (persist-document *collection*
-                                 (list :name "Koos"
-                                       :surname "Van"
-                                       :id 999))
-               (length (documents *collection*))))
-    (cl-naive-tests:testcase
-     :test-update
-     :expected '(3 "Koos Snr")
-     :actual (let ((document (persist-document *collection*
-                                               (list :name "Koos Snr"
-                                                     :surname "Van"
-                                                     :id 999))))
-               (list
-                (length (documents *collection*))
-                (getx document :name))))
-    (cl-naive-tests:testcase
-     :clear-collection
-     :expected 0
-     :actual (progn
-               (clear-collection *collection*)
-               (length (documents *collection*))))
-    (cl-naive-tests:testcase
-     :test-lazy-loading
-     :expected 2
-     :actual (length (query-data
-                      *collection*
-                      :query (lambda (document)
-                               (<= (getx document :id) 900)))))
-    (cl-naive-tests:testcase
-     :count-lines-in-file
-     :expected 4
-     :actual (count-lines-in-file (location *collection*)))
-    (cl-naive-tests:testcase
-     :delete
-     :expected (list 1 6)
-     :actual (let ((results (query-data *collection*
-                                        :query (lambda (document)
-                                                 (<= (getx document :id) 900)))))
-               (mapcar #'(lambda (doc)
-                           (delete-document *collection* doc))
-                       results)
 
-               ;;Delete should remove 2 of the 3 documents from the
-               ;;collection and write the deleted documents to file.
-               (list
-                (length (documents *collection*))
-                (count-lines-in-file (location *collection*)))))
+(cl-naive-tests:define-suite (:test-basic-persisted)
+  (cl-naive-tests:testcase
+   :count-1
+   :expected 1
+   :actual (progn
+             (persist-document *collection*
+                               (list :name "Piet"
+                                     :surname "Gieter"
+                                     :id 123))
+             (length (documents *collection*))))
+  (cl-naive-tests:testcase
+   :count-2
+   :expected 2
+   :actual (progn
+             (persist-document *collection*
+                               (list :name "Sannie"
+                                     :surname "Gieter"
+                                     :id 321))
+             (length (documents *collection*))))
+  (cl-naive-tests:testcase
+   :count-3
+   :expected 3
+   :actual (progn
+             (persist-document *collection*
+                               (list :name "Koos"
+                                     :surname "Van"
+                                     :id 999))
+             (length (documents *collection*))))
+  (cl-naive-tests:testcase
+   :test-update
+   :expected '(3 "Koos Snr")
+   :actual (let ((document (persist-document *collection*
+                                             (list :name "Koos Snr"
+                                                   :surname "Van"
+                                                   :id 999))))
+             (list
+              (length (documents *collection*))
+              (getx document :name))))
+  (cl-naive-tests:testcase
+   :clear-collection
+   :expected 0
+   :actual (progn
+             (clear-collection *collection*)
+             (length (documents *collection*))))
+  (cl-naive-tests:testcase
+   :test-lazy-loading
+   :expected 2
+   :actual (length (query-data
+                    *collection*
+                    :query (lambda (document)
+                             (<= (getx document :id) 900)))))
+  (cl-naive-tests:testcase
+   :count-lines-in-file
+   :expected 4
+   :actual (count-lines-in-file (location *collection*)))
+  (cl-naive-tests:testcase
+   :delete
+   :expected (list 1 6)
+   :actual (let ((results (query-data *collection*
+                                      :query (lambda (document)
+                                               (<= (getx document :id) 900)))))
+             (mapcar #'(lambda (doc)
+                         (delete-document *collection* doc))
+                     results)
 
-    (cl-naive-tests:testcase
-     :sanitize-data-file
-     :expected 1
-     :actual (progn
-               (sanitize-data-file *collection*
-                                   :if-does-not-exist :create)
-               ;;Should only contain 1 document now as sanitize
-               ;;persists only what is live in the *collection* in a
-               ;;new file that replaces the old.
-               (count-lines-in-file (location *collection*)))))))
+             ;;Delete should remove 2 of the 3 documents from the
+             ;;collection and write the deleted documents to file.
+             (list
+              (length (documents *collection*))
+              (count-lines-in-file (location *collection*)))))
 
-(progn
- (defmethod cl-naive-tests:create-suite ((cl-naive-tests::test-name (eql ':test-basic-persisted)))
-   (cl-naive-tests:testsuite ':test-basic-persisted
-     (cl-naive-tests:testcase :count-1 :expected 1 :actual
-                              (progn
-                               (persist-document *collection* (list :name "Piet" :surname "Gieter" :id 123))
-                               (length (documents *collection*))))
-     (cl-naive-tests:testcase :count-2 :expected 2 :actual
-                              (progn
-                               (persist-document *collection* (list :name "Sannie" :surname "Gieter" :id 321))
-                               (length (documents *collection*))))
-     (cl-naive-tests:testcase :count-3 :expected 3 :actual
-                              (progn
-                               (persist-document *collection* (list :name "Koos" :surname "Van" :id 999))
-                               (length (documents *collection*))))
-     (cl-naive-tests:testcase :test-update :expected '(3 "Koos Snr") :actual
-                              (let ((document
-                                     (persist-document *collection* (list :name "Koos Snr" :surname "Van" :id 999))))
-                                (list (length (documents *collection*)) (getx document :name))))
-     (cl-naive-tests:testcase :clear-collection :expected 0 :actual
-                              (progn (clear-collection *collection*) (length (documents *collection*))))
-     (cl-naive-tests:testcase :test-lazy-loading :expected 2 :actual
-                              (length
-                               (query-data *collection* :query (lambda (document) (<= (getx document :id) 900)))))
-     (cl-naive-tests:testcase :count-lines-in-file :expected 4 :actual (count-lines-in-file (location *collection*)))
-     (cl-naive-tests:testcase :delete :expected (list 1 6) :actual
-                              (let ((results
-                                     (query-data *collection* :query (lambda (document) (<= (getx document :id) 900)))))
-                                (mapcar #'(lambda (doc) (delete-document *collection* doc)) results)
-                                (list (length (documents *collection*)) (count-lines-in-file (location *collection*)))))
-     (cl-naive-tests:testcase :sanitize-data-file :expected 1 :actual
-                              (progn
-                               (sanitize-data-file *collection* :if-does-not-exist :create)
-                               (count-lines-in-file (location *collection*))))))
- (push ':test-basic-persisted cl-naive-tests::*test-suite-names*)
- ':test-basic-persisted)
+  (cl-naive-tests:testcase
+   :sanitize-data-file
+   :expected 1
+   :actual (progn
+             (sanitize-data-file *collection*
+                                 :if-does-not-exist :create)
+             ;;Should only contain 1 document now as sanitize
+             ;;persists only what is live in the *collection* in a
+             ;;new file that replaces the old.
+             (count-lines-in-file (location *collection*)))))
 
 (defmethod cl-naive-tests:tear-down-suite ((test-name (eql :test-basic-persisted)))
   (setf *collection* nil)
