@@ -197,7 +197,7 @@ files are loaded. (see store notes for more about this.).")
                     :collections (collections store)))
       (print-unreadable-object (store stream :type t :identity t)
         (format stream "~S" (list :name (name store)
-                                  :colletions (map 'list (function name) (collections store))))))
+                                  :collections (map 'list (function name) (collections store))))))
   store)
 
 (defmethod getx ((multiverse multiverse) accessor &key &allow-other-keys)

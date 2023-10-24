@@ -8,7 +8,7 @@
   (cond ((stringp document-type)
          (let ((doc-type (or (get-multiverse-element :document-type store document-type)
                              document-type)))
-           (setf (gethash `(:universe doc-type) *multi-elements-cache*) doc-type)
+           ;; (setf (gethash `(:universe doc-type) *multi-elements-cache*) doc-type)
            doc-type))
         (t document-type)))
 
