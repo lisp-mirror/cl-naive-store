@@ -2,6 +2,8 @@
   (:use :cl :cl-getx :cl-naive-store.naive-core)
   (:export
 
+   :initialize
+   
    ;;COMMON
 
    :frmt

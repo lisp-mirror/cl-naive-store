@@ -131,15 +131,7 @@ This is used to create shard filenames."))
 (defun set-query-cache (key value)
   (setf (gethash-safe key *query-cache*) value))
 
-(setf lparallel:*kernel* (lparallel:make-kernel
-                          ;; In ccl, cl-cpus:get-number-of-processors returns 0.
-                          (max 2 (cl-cpus:get-number-of-processors))
-                          :context #'(lambda (x)
-                                       (let ((*query-cache* *query-cache*))
-                                         (declare (ignorable *query-cache*))
-                                         (funcall x)))))
-
-(defparameter *disable-parallel-p* nil
+(defvar *disable-parallel-p* nil
   "Depending on the data and how naive-store is used switching of parallel processing could produce better performance. This does not disable parallel loading of shards but it does disable all other parallel processing.
 
 Switching off parallel processing is achieved by ignoring the parallel-p argument of do-sequence when *disable-parallel-p* is t.
@@ -147,6 +139,21 @@ Switching off parallel processing is achieved by ignoring the parallel-p argumen
 So if you are customising cl-naive-store use do-sequence for simple parallel processing or make sure that your customization obeys *disable-parallel-p* where possible.
 
 ")
+
+(defun initialize ()
+  ;; We cannot fork threads while compilinging systems because this prevents saving a lisp image!!!
+  ;; Instead, we must defer forking threads to when we launch the executable image, and initialize
+  ;; the program.
+  (unless lparallel:*kernel*
+    (setf lparallel:*kernel* (lparallel:make-kernel
+                              ;; In ccl, cl-cpus:get-number-of-processors returns 0.
+                              (max 2 (cl-cpus:get-number-of-processors))
+                              :context #'(lambda (x)
+                                           (let ((*query-cache* *query-cache*))
+                                             (declare (ignorable *query-cache*))
+                                             (funcall x)))))))
+
+
 
 (defun call-do-sequence (thunk with-index-p sequence &key parallel-p)
   (if (and (not *disable-parallel-p*) parallel-p)
