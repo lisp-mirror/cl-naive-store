@@ -128,10 +128,10 @@
 ;;;
 
 (defparameter *store*
-  (add-store *universe*
-             (make-instance (store-class *universe*)
-                            :name "simple-store"
-                            :collection-class 'document-collection)))
+  (add-multiverse-element *universe*
+                          (make-instance (store-class *universe*)
+                                         :name "simple-store"
+                                         :collection-class 'document-collection)))
 
 ;;;
 ;;; Employees
@@ -162,16 +162,16 @@
                        *employee-elements*)))
 
 (defparameter *employee-collection*
-  (add-collection *store*
-                  (make-instance (collection-class *store*)
-                                 :name "simple-collection"
-                                 :document-type *employee-document-type*
-                                 :keys '(:emp-no)
-                                 :indexes '((:surname))
-                                 ;; Creating shards based on the country that the employee
-                                 ;; belongs to.  It is a bad example you should not shard on
-                                 ;; any value that could change!
-                                 :shard-elements (list :country))))
+  (add-multiverse-element *store*
+                          (make-instance (collection-class *store*)
+                                         :name "simple-collection"
+                                         :document-type *employee-document-type*
+                                         :keys '(:emp-no)
+                                         :indexes '((:surname))
+                                         ;; Creating shards based on the country that the employee
+                                         ;; belongs to.  It is a bad example you should not shard on
+                                         ;; any value that could change!
+                                         :shard-elements (list :country))))
 
 ;;;
 ;;; Assets
@@ -195,10 +195,10 @@
                        *asset-elements*)))
 
 (defparameter *asset-collection*
-  (add-collection *store* (make-instance (collection-class *store*)
-                                         :name "asset-collection"
-                                         :document-type *asset-document-type*
-                                         :keys '(:asset-no))))
+  (add-multiverse-element *store* (make-instance (collection-class *store*)
+                                                 :name "asset-collection"
+                                                 :document-type *asset-document-type*
+                                                 :keys '(:asset-no))))
 
 (let ((results      '())
       (emp-country  0)

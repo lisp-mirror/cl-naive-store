@@ -24,11 +24,12 @@
    :document-type-class
    :document-types
 
-   :get-document-type-from-def
-   :get-document-type
-   :add-document-type
-
    :document-of-type-p
    :get-element
-   :get-attribute))
+   :get-attribute)
+
+  (:export ;; deprecated
+   :add-document-type
+   :get-document-type
+   :get-document-type-from-def))
 

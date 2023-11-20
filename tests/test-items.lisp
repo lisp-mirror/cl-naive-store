@@ -56,7 +56,8 @@
     :documentation "This type represents a simple employee master."))
 
 (defparameter *store*
-  (add-store   *universe* (make-instance (store-class *universe*)
+  (add-multiverse-element *universe*
+                          (make-instance (store-class *universe*)
                                          :name "simple-store"
                                          :collection-class 'document-collection)))
 
@@ -78,15 +79,17 @@
                   :elements *elements*)))
 
 (defparameter *collection*
-  (add-collection *store* (make-instance (collection-class *store*)
-                                         :name "simple-collection"
-                                         :document-type *document-type*
-                                         ;; Not specifying the keys to show
-                                         ;; that they are retrieved from the document-type
-                                         ;; if if no key is set.
-                                         ;; :keys ...
-                                         ;; Specifying the elements to set up indexes for.
-                                         :indexes '((:name :surname)))))
+  (add-multiverse-element
+   *store*
+   (make-instance (collection-class *store*)
+                  :name "simple-collection"
+                  :document-type *document-type*
+                  ;; Not specifying the keys to show
+                  ;; that they are retrieved from the document-type
+                  ;; if if no key is set.
+                  ;; :keys ...
+                  ;; Specifying the elements to set up indexes for.
+                  :indexes '((:name :surname)))))
 
 ;; Add some documents to the *collection*
 (persist-document *collection*
@@ -162,6 +165,7 @@
     (push sannie results))
 
   (print :success)
+
   (pprint (reverse results)))
 
 ;;;; THE END ;;;;

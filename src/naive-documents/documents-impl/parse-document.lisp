@@ -12,30 +12,6 @@
            doc-type))
         (t document-type)))
 
-(defun ensure-universe (multiverse universe)
-  (cond ((stringp universe)
-         (let ((uni (get-multiverse-element :universe multiverse universe)))
-           ;;TODO: try to load the store from a definition file
-           (unless uni (error "Universe does not exist in the multiverse: ~a" universe))
-           uni))
-        (t universe)))
-
-(defun ensure-store (universe store)
-  (cond ((stringp store)
-         (let ((sto (get-multiverse-element :store universe store)))
-           (unless sto (error "Store does not exist in the multiverse: ~A : ~A"
-                              universe  store))
-           sto))
-        (t store)))
-
-(defun ensure-collection (store collection)
-  (cond ((stringp collection)
-         (let ((col (get-multiverse-element :collection store collection)))
-           (unless col (error "Collection does not exist in the store: ~A : ~A"
-                              store collection))
-           col))
-        (t collection)))
-
 (defmethod naive-impl:type-of-sexp ((collection document-collection) document-form)
   (cond ((and (listp document-form)
               (equalp (first document-form) :blob%))
@@ -101,7 +77,14 @@
                     (make-document
                      :universe (ensure-universe
                                 (multiverse (universe (store collection)))
-                                (or (getx sexp :universe)
+
+                                (or (when (getx sexp :universe)
+                                      (if (and (universe (store collection))
+                                               (equalp
+                                                (name (universe (store collection)))
+                                                (getx sexp :universe)))
+                                          (universe (store collection))
+                                          (getx sexp :universe)))
                                     (universe (store collection))))
                      :store (ensure-store
                              (universe (store collection))
@@ -131,7 +114,16 @@
 
   (let* ((ref-universe (ensure-universe
                         (multiverse (universe (store collection)))
-                        (or (getx sexp :universe)
+                        ;;TODO: This is done for backwards
+                        ;;compatibility and should be removed some
+                        ;;time.
+                        (or (when (getx sexp :universe)
+                              (if (and (universe (store collection))
+                                       (equalp
+                                        (name (universe (store collection)))
+                                        (getx sexp :universe)))
+                                  (universe (store collection))
+                                  (getx sexp :universe)))
                             (universe (store collection)))))
          (ref-store (ensure-store
                      ref-universe

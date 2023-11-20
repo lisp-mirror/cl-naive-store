@@ -37,14 +37,14 @@
                    :store-class 'store)))
 
 (defparameter *store*
-  (add-store   *universe* (make-instance (store-class *universe*)
-					 :name "simple-store"
-       					 :collection-class 'collection)))
+  (add-multiverse-element *universe* (make-instance (store-class *universe*)
+                                                    :name "simple-store"
+                                                    :collection-class 'collection)))
 
 (defparameter *collection*
-  (add-collection *store* (make-instance (collection-class *store*)
-					 :name "simple-collection"
-					 :keys '(:id)))) ; Specifying the key element, else its :key
+  (add-multiverse-element *store* (make-instance (collection-class *store*)
+                                                 :name "simple-collection"
+                                                 :keys '(:id)))) ; Specifying the key element, else its :key
 
 ;; Add some documents to the *collection*
 (persist-document *collection* (list :name "Piet"   :surname "Gieter" :id 123))

@@ -32,21 +32,21 @@
   (progn
     (tear-down-universe)
     (make-instance 'universe
-		   :location (test-location)
-		   :store-class 'store)))
+                   :location (test-location)
+                   :store-class 'store)))
 
 (defparameter *store*
-  (add-store   *universe* (make-instance (store-class *universe*)
-					 :name "simple-store"
-       					 :collection-class 'indexed-collection)))
+  (add-multiverse-element   *universe* (make-instance (store-class *universe*)
+                                                      :name "simple-store"
+                                                      :collection-class 'indexed-collection)))
 
 (defparameter *collection*
-  (add-collection *store* (make-instance (collection-class *store*)
-					 :name "simple-collection"
-					 ;; Specifying the key element, else its :key
-					 :keys '(:id)
-					 ;; Specifying the elements to set up indexes for.
-					 :indexes '((:name :surname)))))
+  (add-multiverse-element *store* (make-instance (collection-class *store*)
+                                                 :name "simple-collection"
+                                                 ;; Specifying the key element, else its :key
+                                                 :keys '(:id)
+                                                 ;; Specifying the elements to set up indexes for.
+                                                 :indexes '((:name :surname)))))
 
 ;; Add some documents to the collection
 
@@ -65,13 +65,13 @@
 
   ;; Lookup koos using index values and add it to results
   (push (index-lookup-values *collection* '((:name "Koos") (:surname "Van")))
-	results)
+        results)
   (assert (first results))
   (assert (= 1 (length results)))
 
   ;; Lookup Frikkedel using index values and add it to results
   (push (index-lookup-values *collection* '(:surname "Frikkedel"))
-	results)
+        results)
   (assert (first results))
   (assert (= 2 (length results)))
 
@@ -79,8 +79,8 @@
   ;; and add it to the results
 
   (push (query-data *collection* :query (lambda (document)
-					  (<= (getx document :id) 900)))
-	results)
+                                          (<= (getx document :id) 900)))
+        results)
   (assert (first results))
   (assert (= 3 (length results)))
 

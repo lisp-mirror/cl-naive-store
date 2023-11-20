@@ -368,7 +368,9 @@ IMPL NOTES: To deal with customization of document-type.")
                              (document-type
                               (document-type collection))
                              (t
-                              (get-document-type store (document-type collection))))))
+                              (get-multiverse-element :document-type
+                                                      store
+                                                      (document-type collection))))))
         (when document-type
           (let (keys)
             (dolist (element (elements document-type))
@@ -518,7 +520,8 @@ IMPL NOTES: To deal with customization of document-type.")
                                          (getx definition-body :document-type)))))
 
     (when (getx definition-body :document-type)
-      (let ((document-type (get-document-type
+      (let ((document-type (get-multiverse-element
+                            :document-type
                             store
                             (getx definition-body :document-type))))
 
@@ -558,12 +561,6 @@ IMPL NOTES: To deal with customization of document-type.")
     :document-type (and (document-type collection) (name (document-type collection))))
 
    :if-exists :supersede))
-
-(defgeneric get-document-type (store type-name)
-  (:documentation "Returns a document-type document if found in the store."))
-
-(defmethod get-document-type ((store document-type-store-mixin) type-name)
-  (get-multiverse-element :document-type store type-name))
 
 (defun values-from-key-elements% (elements document)
   (let ((keys)

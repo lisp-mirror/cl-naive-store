@@ -302,7 +302,8 @@ beyond repair when you possibly hacked the sexp.
                       (pathname (cl-naive-store.naive-core:location
                                  store))))
           :document-type
-          (cl-naive-store.document-types:get-document-type
+          (cl-naive-store.naive-core:get-multiverse-element
+           :document-type
            store
            (getf collection-definition :data-type)))
          :persist-p persist-p)))))
@@ -533,7 +534,8 @@ from the first itteration and create any collections.
 
     (mapcar (lambda (def)
               (when (equal (car def) :collection)
-                (let* ((document-type (cl-naive-store.naive-core:get-document-type
+                (let* ((document-type (cl-naive-store.naive-core:get-multiverse-element
+                                       :document-type
                                        store
                                        (getf (second def) :data-type)))
                        (collection

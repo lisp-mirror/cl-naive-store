@@ -86,8 +86,59 @@
                        ;; therefore it must be :shared t in ccl.
                        #+ccl :shared #+ccl t))
 
+(defun ensure-universe (multiverse universe)
+  (cond ((stringp universe)
+         (let ((uni (get-multiverse-element :universe multiverse universe)))
+           ;;TODO: try to load the store from a definition file
+           (unless uni (error "Universe does not exist in the multiverse: ~a" universe))
+           uni))
+        (t universe)))
+
+(defun ensure-store (universe store)
+  (cond ((stringp store)
+         (let ((sto (get-multiverse-element :store universe store)))
+           (unless sto (error "Store does not exist in the multiverse: ~A : ~A"
+                              universe  store))
+           sto))
+        (t store)))
+
+(defun ensure-collection (store collection)
+  (cond ((stringp collection)
+         (let ((col (get-multiverse-element :collection store collection)))
+           (unless col (error "Collection does not exist in the store: ~A : ~A"
+                              store collection))
+           col))
+        (t collection)))
+
+(defun ensure-structure (collection &optional create-multiverse-p)
+  (if (store collection)
+      (if (get-multiverse-element :collection (store collection) (name collection))
+          (if (universe (store collection))
+              (if (get-multiverse-element :store (universe (store collection))
+                                          (name (store collection)))
+                  (if (multiverse (universe (store collection)))
+                      (if (get-multiverse-element
+                           :universe
+                           (multiverse (universe (store collection)))
+                           (name (universe (store collection))))
+                          t
+                          (error "The collection parent store's universe is not registered with the parent multiverse."))
+                      (if create-multiverse-p
+                          (add-multiverse-element (make-instance 'multiverse
+
+                                                                 :name "backwards-multiverse")
+                                                  (universe (store collection)))
+                          (error "The collection parent store's universe has no parent multiverse.")))
+                  (error "The collection prarent store is not registered with its set universe."))
+              (error "The colection parent store has no parent universe."))
+          (error "The collection is not registered with its set parent store. "))
+      (error "The collection has no parent store.")))
+
 (defmethod load-data ((collection collection) &key shard-macs (parallel-p t)
                       &allow-other-keys)
+
+  (ensure-structure collection t)
+
   (let ((tasks))
     (unless parallel-p
       (unless (> (length (shards collection)) 0)

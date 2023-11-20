@@ -108,7 +108,10 @@ persisted-p = indicates that the document has been peristed.
   (murmurhash:murmurhash (hash document)))
 
 (defmethod murmurhash:murmurhash ((timestamp local-time:timestamp) &key)
-  (murmurhash:murmurhash (let ((poes)) (local-time:format-timestring poes  timestamp) poes)))
+  (break "Fuck")
+  (murmurhash:murmurhash (let ((poes))
+                           (local-time:format-timestring poes timestamp)
+                           poes)))
 
 ;;TODO: Consider removing these getx* thingies.
 (defgeneric getxo (document element-name)

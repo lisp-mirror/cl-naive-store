@@ -68,11 +68,6 @@
    :deleted-p
    :delete-document
 
-   :get-store
-   :get-document-type
-   :get-collection
-   :find-collection-definitions
-
    :query-multiverse
    :get-multiverse-element
    :add-multiverse-element
@@ -92,17 +87,12 @@
    :load-from-definition-file
    :instances-from-definitions
    :load-from-definitions
-   :get-store-from-def
-   :get-collection-from-def
 
    ;;adding
-   :add-store
-   :add-collection
-   :add-document-type
 
    ;;Removing
    :clear-collection
-   :remove-collection
+
    :clear-documents
 
    ;;:persist
@@ -111,6 +101,10 @@
 
    ;;;loading
    :ensure-location
+   :ensure-collection
+   :ensure-store
+   :ensure-universe
+   :ensure-structure
    :load-data
    :data-loaded-p
 
@@ -133,12 +127,24 @@
    :write-blob
 
    ;;####load.lisp
-   :load-store
-   :load-stores
+
    :sanitize-data-file
 
    ;;####query.lisp
    :naive-reduce
    :query-data
-   :query-document))
+   :query-document)
+
+  (:export ;; deprecated api
+   :get-store
+   :get-collection
+   :get-collection-from-def
+   :find-collection-definitions
+   :get-store-from-def
+   :add-store
+   :add-collection
+   :remove-collection
+   :load-store
+   :load-stores
+   :get-document-type))
 

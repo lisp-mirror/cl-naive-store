@@ -25,4 +25,14 @@
                             (,persist-p% ,persist-p))
                         (add-multiverse-element ,store%
                                                 ,document-type%
-                                                :perist-p persist-p%)))))
+                                                :perist-p persist-p%))))
+
+ (generic-function get-document-type (store type-name) replaced-by
+                   get-multiverse-element as
+                   (let ((store% (gensym))
+                         (type-name% (gensym)))
+                     `(let ((,store% ,store)
+                            (,type-name% ,type-name))
+                        (get-multiverse-element :document-type
+                                                ,store%
+                                                ,type-name%)))))

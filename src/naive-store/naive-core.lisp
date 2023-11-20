@@ -200,6 +200,28 @@ files are loaded. (see store notes for more about this.).")
                                   :collections (map 'list (function name) (collections store))))))
   store)
 
+(defmethod print-object ((universe universe) stream)
+  (if *print-readably*
+      (format stream "(~S ~S)" (class-name (class-of universe))
+              (list :name (name universe)
+                    :collections (stores universe)))
+      (print-unreadable-object (universe stream :type t :identity t)
+        (format stream "~S" (list :name (name universe)
+                                  :collections (map 'list (function name)
+                                                    (stores universe))))))
+  universe)
+
+(defmethod print-object ((multiverse multiverse) stream)
+  (if *print-readably*
+      (format stream "(~S ~S)" (class-name (class-of multiverse))
+              (list :name (name multiverse)
+                    :collections (universes multiverse)))
+      (print-unreadable-object (multiverse stream :type t :identity t)
+        (format stream "~S" (list :name (name multiverse)
+                                  :collections (map 'list (function name)
+                                                    (universes multiverse))))))
+  multiverse)
+
 (defmethod getx ((multiverse multiverse) accessor &key &allow-other-keys)
   ""
   (cond ((equalp accessor :name)

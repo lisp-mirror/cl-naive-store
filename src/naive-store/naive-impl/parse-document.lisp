@@ -17,14 +17,7 @@ When documents are read from a file the references need to be converted to docum
   ;;should be removed at some stage and an error should be raised if
   ;;no multiverse is set for the universe.
   (let ((multiverse (or (multiverse universe)
-                        (make-instance 'multiverse
-                                       :name "multiverse"
-                                       :location (cl-fad:pathname-parent-directory
-                                                  (location universe))))))
-
-    (unless (multiverse universe)
-      (setf (multiverse universe)
-            multiverse))
+                        (error "Universe has no parent multiverse."))))
 
     (let* ((universe-name (or (getx document-ref :universe)
                               (name universe)))
