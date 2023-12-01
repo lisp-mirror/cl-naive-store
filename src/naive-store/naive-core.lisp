@@ -62,11 +62,19 @@ For collections that use cl-naive-document-type there is a fallback the document
 
   (:documentation "A collection of documents of a specific document-type."))
 
+;;TODO: add parameter to select vector or list as output
+(defmethod documents ((collection collection))
+  "Loops over all the shards for a collection to gather all the documents."
+  (let ((documents))
+    (do-sequence (shard (shards collection))
+      (setf documents (concatenate 'list documents (documents shard))))
+    documents))
+
 (defclass store ()
   ((universe :initarg :universe
              :accessor universe
              :initform nil
-             :documentation "The universe this store belongs to.")
+             :documentation "The universe the store belongs to.")
    (name :initarg :name
          :accessor name
          :documentation "Store name.")
@@ -93,7 +101,7 @@ collection-class and document-type-class is delcaritively specied here because t
   ((multiverse :initarg :multiverse
                :accessor multiverse
                :initform nil
-               :documentation "The multiverse this universe belongs to.")
+               :documentation "The multiverse the universe belongs to.")
    (name :initarg :name
          :accessor name
          ;;Initializing name to help with backwards
@@ -115,7 +123,7 @@ NOTES:
 
 store-class is delcaritively specied here because stores are dynamicly
 created when definition files are loaded. (see store notes for more
-about this.).")
+about this.)")
    (location :initarg :location
              :accessor location
              :initform nil
@@ -150,8 +158,9 @@ about this.).")
 
 NOTES:
 
-universe-class is delcaritively specied here because stores are dynamicly created when definition
-files are loaded. (see store notes for more about this.).")
+universe-class is delcaritively specied here because stores are
+dynamicly created when definition files are loaded. (see store notes
+for more about this.)")
    (location :initarg :location
              :accessor location
              :initform (cl-fad:merge-pathnames-as-directory
@@ -182,10 +191,13 @@ files are loaded. (see store notes for more about this.).")
       (format stream "(~S ~S)" (class-name (class-of collection))
               (list :name (name collection)
                     :store (store collection)
+                    :location (location collection)
                     :shards (shards collection)))
       (print-unreadable-object (collection stream :type t :identity t)
         (format stream "~S" (list :name (name collection)
-                                  :store (name (store collection))
+                                  :store (and (store collection)
+                                              (name (store collection)))
+                                  :location (location collection)
                                   :shards (map 'list (function short-mac)
                                                (shards collection))))))
   collection)
@@ -194,32 +206,45 @@ files are loaded. (see store notes for more about this.).")
   (if *print-readably*
       (format stream "(~S ~S)" (class-name (class-of store))
               (list :name (name store)
+                    :universe (universe store)
+                    :location (location store)
                     :collections (collections store)))
       (print-unreadable-object (store stream :type t :identity t)
         (format stream "~S" (list :name (name store)
-                                  :collections (map 'list (function name) (collections store))))))
+                                  :universe (and (universe store)
+                                                 (name (universe store)))
+                                  :location (location store)
+                                  :collections (map 'list (function name)
+                                                    (collections store))))))
   store)
 
 (defmethod print-object ((universe universe) stream)
   (if *print-readably*
       (format stream "(~S ~S)" (class-name (class-of universe))
               (list :name (name universe)
-                    :collections (stores universe)))
+                    :multiverse (multiverse universe)
+                    :location (location universe)
+                    :stores (stores universe)))
       (print-unreadable-object (universe stream :type t :identity t)
         (format stream "~S" (list :name (name universe)
-                                  :collections (map 'list (function name)
-                                                    (stores universe))))))
+                                  :multiverse (and (multiverse universe)
+                                                   (name (multiverse universe)))
+                                  :location (location universe)
+                                  :stores (map 'list (function name)
+                                               (stores universe))))))
   universe)
 
 (defmethod print-object ((multiverse multiverse) stream)
   (if *print-readably*
       (format stream "(~S ~S)" (class-name (class-of multiverse))
               (list :name (name multiverse)
-                    :collections (universes multiverse)))
+                    :location (location multiverse)
+                    :universes (universes multiverse)))
       (print-unreadable-object (multiverse stream :type t :identity t)
         (format stream "~S" (list :name (name multiverse)
-                                  :collections (map 'list (function name)
-                                                    (universes multiverse))))))
+                                  :location (location multiverse)
+                                  :universes (map 'list (function name)
+                                                  (universes multiverse))))))
   multiverse)
 
 (defmethod getx ((multiverse multiverse) accessor &key &allow-other-keys)
@@ -315,13 +340,6 @@ files are loaded. (see store notes for more about this.).")
       (symbol status)
       (cons   (car status)))))
 
-;;TODO: add parameter to select vector or list
-(defmethod documents ((collection collection))
-  (let ((documents))
-    (do-sequence (shard (shards collection))
-      (setf documents (concatenate 'list documents (documents shard))))
-    documents))
-
 (defun match-shard (filename shards)
   "Check filename against a list of shards to find the matching shard."
   (dolist (mac shards)
@@ -332,7 +350,10 @@ files are loaded. (see store notes for more about this.).")
       (return-from match-shard (values mac filename)))))
 
 (defgeneric get-shard (collection shard-mac &key &allow-other-keys)
-  (:documentation "Get the shard object by its mac. Shard lookups are done so much that there is no choice but to cache them in a hashtable, but that hashtable needs to be thread safe so using safe functions to get and set."))
+  (:documentation "Get the shard object by its mac. Shard lookups are done so much that
+there is no choice but to cache them in a hashtable, but that
+hashtable needs to be thread safe so using safe functions to get and
+set."))
 
 (defvar *shards-cache-lock* (bt:make-lock))
 
@@ -452,7 +473,7 @@ files are loaded. (see store notes for more about this.).")
              element))))))
 
 (defgeneric get-multiverse-element (element-type parent name)
-  (:documentation "Fetches an element of the type "))
+  (:documentation "Fetches an element of the type with matching name."))
 
 (defmethod get-multiverse-element ((element-type (eql :universe))
                                    (multiverse multiverse) name)
@@ -466,56 +487,17 @@ files are loaded. (see store notes for more about this.).")
                                    (store store) name)
   (get-multiverse-element* store collections name))
 
-;;TODO:Deprecated remove some time
-(defgeneric get-store (universe store-name)
-  (:documentation "Returns a store if found in the universe."))
+(defgeneric persist-definition (element)
+  (:documentation "Persists multiverse element definitions."))
 
-;;TODO:Deprecated remove some time
-(defmethod get-store ((universe universe) store-name)
-  (get-multiverse-element :store universe store-name))
+(defmethod persist-definition ((multiverse multiverse))
+  "Persists a multiverse definition and not what it contains! Path to
+file is of this general format /multiverse/multiverse-name.universe."
 
-;;TODO:Deprecated remove some time
-(defgeneric get-collection (store collection-name)
-  (:documentation "Returns a collection document if found in the store."))
+  (ensure-location multiverse)
+  (unless (location multiverse)
+    (error "Cannot persist the universe, there is no location."))
 
-;;TODO:Deprecated remove some time
-(defmethod get-collection ((store store) collection-name)
-  (get-multiverse-element :collection store collection-name))
-
-(defgeneric persist (object &key &allow-other-keys)
-  (:documentation "Writes various store structural objects to "))
-
-(defmethod persist ((store store) &key &allow-other-keys)
-  "Persists a store definition and not what it contains! Path to file is of this general format
-/universe/store-name/store-name.store."
-  (naive-impl:write-to-file
-   (cl-fad:merge-pathnames-as-file
-    (pathname (location store))
-    (make-pathname :name (name store)
-                   :type "store"))
-   (list :name (name store)
-         :class (type-of store)
-         :location (location store))
-
-   :if-exists :supersede))
-
-(defmethod persist ((universe universe) &key &allow-other-keys)
-  "Persists a universe definition and not what it contains! Path to file is of this general format
-/multiverse/universe-name/universe-name.universe."
-  (naive-impl:write-to-file
-   (cl-fad:merge-pathnames-as-file
-    (pathname (location universe))
-    (make-pathname :name (name universe)
-                   :type "universe"))
-   (list :name (name universe)
-         :class (type-of universe)
-         :location (location universe))
-
-   :if-exists :supersede))
-
-(defmethod persist ((multiverse multiverse) &key &allow-other-keys)
-  "Persists a universe definition and not what it contains! Path to file is of this general format
-/multiverse/universe-name/universe-name.universe."
   (naive-impl:write-to-file
    (cl-fad:merge-pathnames-as-file
     (pathname (location multiverse))
@@ -527,13 +509,80 @@ files are loaded. (see store notes for more about this.).")
 
    :if-exists :supersede))
 
-;;TODO: Need to sort out the inconsistencies between persist and
-;;persist-collection-* funcitons some time. It is just plain confusing
-;;even if it might have been convenient at one time.
-(defgeneric persist-collection-def (collection)
-  (:documentation "Persists a collection definition. Path to file is of this general format /multiverse/universe/store-name/collection-name.col."))
+(defmethod persist ((multiverse multiverse) &key definitions-only-p
+                    (children-p t) &allow-other-keys)
 
-(defmethod persist-collection-def ((collection collection))
+  (persist-definition multiverse)
+
+  (when children-p
+    (dolist (universe (getx multiverse :universes))
+      (persist universe :definitions-only-p definitions-only-p
+                        :children-p children-p))))
+
+(defmethod persist-definition ((universe universe))
+  "Persists a universe definition and not what it contains! Path to file is of this general format
+/multiverse/universe-name/universe-name.universe."
+
+  (ensure-location universe)
+  (unless (location universe)
+    (error "Cannot persist the universe, there is no location."))
+
+  (naive-impl:write-to-file
+   (cl-fad:merge-pathnames-as-file
+    (pathname (location universe))
+    (make-pathname :name (name universe)
+                   :type "universe"))
+   (list :name (name universe)
+         :class (type-of universe)
+         :location (location universe))
+
+   :if-exists :supersede))
+
+(defmethod persist ((universe universe) &key definitions-only-p
+                    (children-p t) &allow-other-keys)
+
+  (persist-definition universe)
+
+  (when children-p
+    (dolist (store (getx universe :stores))
+      (persist store :definitions-only-p definitions-only-p
+                     :children-p children-p))))
+
+(defmethod persist-definition ((store store))
+  "Persists a store definition and not what it contains! Path to file is of this general format
+/universe/store-name/store-name.store."
+
+  (ensure-location store)
+  (unless (location store)
+    (error "Cannot persist the store, there is no location."))
+
+  (naive-impl:write-to-file
+   (cl-fad:merge-pathnames-as-file
+    (pathname (location store))
+    (make-pathname :name (name store)
+                   :type "store"))
+   (list :name (name store)
+         :class (type-of store)
+         :location (location store))
+
+   :if-exists :supersede))
+
+(defmethod persist ((store store) &key definitions-only-p
+                    (children-p t) &allow-other-keys)
+  (persist-definition store)
+
+  (when children-p
+    (dolist (collection (getx store :collections))
+      (persist collection :definitions-only-p definitions-only-p
+                          :children-p children-p))))
+
+(defmethod persist-definition ((collection collection))
+  "Persists a collection definition. Path to file is of this general format /multiverse/universe/store-name/collection-name.col."
+
+  (ensure-location collection)
+  (unless (location collection)
+    (error "Cannot persist the collection, there is no location."))
+
   (naive-impl:write-to-file
    (cl-fad:merge-pathnames-as-file
     (pathname (location (store collection)))
@@ -558,7 +607,6 @@ files are loaded. (see store notes for more about this.).")
              (stream (location shard))
 
            (if (hash-table-p (documents shard))
-
                (maphash (lambda (key doc)
                           (declare (ignore key))
                           (persist-document collection doc :shard shard :file-stream stream))
@@ -569,17 +617,22 @@ files are loaded. (see store notes for more about this.).")
       i
       (lparallel:receive-result channel))))
 
-(defmethod persist ((collection collection) &key &allow-other-keys)
+(defmethod persist ((collection collection) &key definition-only-p
+                    (children-p t) &allow-other-keys)
   "Persists a collection definition and the documents in a collection.
 Path to file for data is this general format /multiverse/universe/store-name/collection-name/collection-name.log."
-  (persist-collection-def collection)
-  (persist-collection collection))
+  (persist-definition collection)
 
-(defgeneric add-multiverse-element (parent element &key persist-p)
-  (:documentation "Adds an instance of a multiverse element to the parent instance"))
+  (unless definition-only-p
+    (when children-p
+      (persist-collection collection))))
+
+(defgeneric add-multiverse-element (parent element)
+  (:documentation "Adds an instance of a multiverse element to the parent instance."))
 
 (defun set-and-ensure-locations (parent child)
   "Used internally to create child location if it does not exist and to ensure the location exists."
+  ;;(break "? ~S~%~%~S" parent child)
   (if (location child)
       (ensure-directories-exist (pathname (location child)))
       (let ((location
@@ -590,14 +643,11 @@ Path to file for data is this general format /multiverse/universe/store-name/col
         (ensure-directories-exist location)
         (setf (location child) (pathname location)))))
 
-(defmacro add-multiverse-element* (parent child persist-p
-                                   parent-type child-type child-list-name)
+(defmacro add-multiverse-element* (parent child parent-type child-type child-list-name)
   (let ((parent% (gensym))
-        (child% (gensym))
-        (persist-p% (gensym)))
+        (child% (gensym)))
     `(let ((,parent% ,parent)
-           (,child% ,child)
-           (,persist-p% ,persist-p))
+           (,child% ,child))
        (if (not (,parent-type ,child-type))
            (setf (,parent-type ,child-type) ,parent-type)
            (unless (eql (,parent-type ,child-type) ,parent-type)
@@ -611,32 +661,26 @@ Path to file for data is this general format /multiverse/universe/store-name/col
                          :keyword)
                 ,parent% (name ,child%))
 
+         (setf (,parent-type ,child%) ,parent%)
+
          (set-and-ensure-locations ,parent-type ,child-type)
 
-         (setf (,parent-type ,child%) ,parent%)
-         (if ,persist-p%
-             (persist ,child%))
          (pushnew ,child% (,child-list-name ,parent%)))
        ,child%)))
 
-(defmethod add-multiverse-element ((multiverse multiverse) (universe universe)
-                                   &key persist-p)
+(defmethod add-multiverse-element ((multiverse multiverse) (universe universe))
   (add-multiverse-element* multiverse universe
-                           persist-p
                            multiverse universe
                            universes))
 
-(defmethod add-multiverse-element ((universe universe) (store store)
-                                   &key persist-p)
+(defmethod add-multiverse-element ((universe universe) (store store))
   (add-multiverse-element* universe store
-                           persist-p
                            universe store
                            stores))
 
 ;;Cant use add-multiverse-element* because the path merge is different
 
-(defmethod add-multiverse-element ((store store) (collection collection)
-                                   &key persist-p)
+(defmethod add-multiverse-element ((store store) (collection collection))
   (if (not (store collection))
       (setf (store collection) store)
       (unless (eql (store collection) store)
@@ -661,9 +705,7 @@ Path to file for data is this general format /multiverse/universe/store-name/col
 
       (setf (location collection) (pathname location))
       (pushnew collection (collections store))
-      (setf (store collection) store)
-      (when persist-p
-        (persist-collection-def collection))))
+      (setf (store collection) store)))
   collection)
 
 (defgeneric clear-collection (collection)
@@ -680,7 +722,7 @@ Path to file for data is this general format /multiverse/universe/store-name/col
   (setf (shards collection) (make-array 1 :fill-pointer 0 :adjustable t :initial-element nil)))
 
 (defgeneric remove-multiverse-element (parent element &key)
-  (:documentation "Removes an instance of a multiverse element from the parent instance"))
+  (:documentation "Removes an instance of a multiverse element from the parent instance."))
 
 (defmethod remove-multiverse-element ((store store) (collection collection) &key)
   (clear-collection collection)
@@ -699,17 +741,8 @@ Path to file for data is this general format /multiverse/universe/store-name/col
     (clear-collection collection))
   (setf (stores universe) (remove universe (stores universe))))
 
-;;TODO: Deprecated remove sometime
-(defgeneric remove-collection (store collection)
-  (:documentation "Removes a collection to a store."))
-
-;;TODO: Deprecated remove sometime
-(defmethod remove-collection ((store store) (collection collection))
-  (clear-collection collection)
-  (setf (collections store) (remove collection (collections store))))
-
 (defgeneric load-data (collection &key shard-macs parallel-p &allow-other-keys)
-  (:documentation "Loads the data documents of a collection from file or files if sharding is used. If the data is already loaded it wont reload it, if you want the data to be reloaded use force-reload-p.
+  (:documentation "Loads the data documents of a collection from file or files if sharding is used. If the data is already loaded it wont reload it.
 
 shard-macs is a list of shard macs to indicate which shards should be used. If no shards are specified all shards will be loaded."))
 

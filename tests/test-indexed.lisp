@@ -13,40 +13,57 @@
 (defclass indexed-collection (indexed-collection-mixin collection)
   ())
 
-(defvar *universe* nil)
+(defvar *multiverse* nil)
 
 (defun test-location ()
   (cl-fad:merge-pathnames-as-directory
    (user-homedir-pathname)
-   (make-pathname :directory (list :relative "test-universe"))))
+   (make-pathname :directory (list :relative "test-multiverse"))))
 
-(defun tear-down-universe ()
+(defun tear-down-multiverse ()
   "Deletes any peristed data from examples."
   (cl-fad:delete-directory-and-files
-   (if *universe*
-       (location *universe*)
+   (if *multiverse*
+       (location *multiverse*)
        (test-location))
    :if-does-not-exist :ignore))
 
+;;Create multiverse
+(defparameter *multiverse*
+  (progn (tear-down-multiverse)
+         (make-instance
+          'multiverse
+          :name "multiverse"
+          :universe-class 'universe)))
+
 (defparameter *universe*
-  (progn
-    (tear-down-universe)
-    (make-instance 'universe
-                   :location (test-location)
-                   :store-class 'store)))
+  (add-multiverse-element *multiverse*
+                          (make-instance 'universe
+                                         :name "universe"
+                                         :store-class 'store)))
+
+;;Add universe to multiverse.
 
 (defparameter *store*
-  (add-multiverse-element   *universe* (make-instance (store-class *universe*)
-                                                      :name "simple-store"
-                                                      :collection-class 'indexed-collection)))
+  (add-multiverse-element
+   *universe*
+   (make-instance (store-class *universe*)
+                  :name "simple-store"
+                  :collection-class 'indexed-collection)))
 
 (defparameter *collection*
-  (add-multiverse-element *store* (make-instance (collection-class *store*)
-                                                 :name "simple-collection"
-                                                 ;; Specifying the key element, else its :key
-                                                 :keys '(:id)
-                                                 ;; Specifying the elements to set up indexes for.
-                                                 :indexes '((:name :surname)))))
+  (add-multiverse-element
+   *store*
+   (make-instance (collection-class *store*)
+                  :name "simple-collection"
+                  ;; Specifying the key element, else its :key
+                  :keys '(:id)
+                  ;; Specifying the elements to set up indexes for.
+                  :indexes '((:name :surname)))))
+
+;;Persisting definitions
+
+(persist *multiverse* :definitions-only-p t)
 
 ;; Add some documents to the collection
 

@@ -13,27 +13,36 @@
    :cl-naive-store.naive-documents))
 (in-package :naive-examples)
 
-(defvar *universe* nil)
+(defvar *multiverse* nil)
 
 (defun test-location ()
   (cl-fad:merge-pathnames-as-directory
    (user-homedir-pathname)
-   (make-pathname :directory (list :relative "test-universe"))))
+   (make-pathname :directory (list :relative "test-multiverse"))))
 
-(defun tear-down-universe ()
+(defun tear-down-multiverse ()
   "Deletes any peristed data from examples."
   (cl-fad:delete-directory-and-files
-   (if *universe*
-       (location *universe*)
+   (if *multiverse*
+       (location *multiverse*)
        (test-location))
    :if-does-not-exist :ignore))
 
+;;Create multiverse
+(defparameter *multiverse*
+  (progn (tear-down-multiverse)
+         (make-instance
+          'multiverse
+          :name "multiverse"
+          :location "~/multiverse/" ;Setting the location on disk.
+          :universe-class 'universe)))
+
 (defparameter *universe*
-  (progn
-    (tear-down-universe)
-    (make-instance 'universe
-                   :location (test-location)
-                   :store-class 'document-store)))
+  (make-instance 'universe
+                 :name "universe"
+                 :store-class 'document-store))
+
+(add-multiverse-element *multiverse* *universe*)
 
 ;; Create a data definition for an employee
 ;; It looks like a lot but dont panic its simple.
@@ -90,6 +99,8 @@
                   ;; :keys ...
                   ;; Specifying the elements to set up indexes for.
                   :indexes '((:name :surname)))))
+
+(persist *multiverse* :definitions-only-p t)
 
 ;; Add some documents to the *collection*
 (persist-document *collection*

@@ -5,7 +5,7 @@
 the collection to retrieve the 50 documents that have a :emp-no >= 50.
 Only persisted if persist-p is t."
   ;;Clear any residual
-  (tear-down-universe)
+  (tear-down-multiverse)
   ;;Setup the data universe aka the documents that will contain the data
   (setup-universe)
   ;;Generate some data and put it in the universe documents

@@ -23,7 +23,7 @@
 (defmethod cl-naive-store.naive-core:load-from-definition
     ((store cl-naive-store.naive-documents:document-store)
      (definition-type (eql :collection))
-     definition &key class persist-p
+     definition &key class
      with-children-p
      with-data-p)
 
@@ -44,13 +44,7 @@
               (get-multiverse-element :document-type store
                                       (getx definition-body :document-type))))
 
-      (when persist-p
-        (ensure-location instance)
-
-        (unless (location instance)
-          (error "Cannot persist the universe, there is no location.")))
-
-      (add-multiverse-element store instance :persist-p persist-p))
+      (add-multiverse-element store instance))
 
     (when with-data-p
       (load-data instance))

@@ -328,11 +328,9 @@ This method has no knowledge of or ignores the existance of parents and children
 
 ;;TODO: Should we check if the defintion is already loaded before we try to load it???
 (defgeneric load-from-definition (parent definition-type definition
-                                  &key class persist-p with-children-p
+                                  &key class with-children-p
                                   with-data-p)
   (:documentation "Instanciates an element from the definition for the likes of multiverse, universe, store, collection or document-type and loads it into the multiverse using the parent.
-
-If persist-p the definition is persisted along with any child definitions  that where instanciated.
 
 Multiverse elements usually have a reference to the parent that needs to be set. For instance a collection will have a reference to its store.
 
@@ -382,7 +380,7 @@ class)
                    :universe-class (getx definition-body :universe-class))))
 
 (defmethod load-from-definition (parent (definition-type (eql :multiverse))
-                                 definition &key class persist-p
+                                 definition &key class
                                  with-children-p
                                  with-data-p)
   ;;Parent is irrelevant for multiverse it cannot have a parent.
@@ -395,12 +393,6 @@ class)
                                               'multiverse)
                                              definition)))
 
-    (when instance
-      (when persist-p
-        (ensure-location instance)
-        (unless (location instance)
-          (error "Cannot persist the multiverse, there is no location."))))
-
     (when (or with-data-p with-children-p)
 
       (dolist (child-definition (or (getx definition-body :universes)
@@ -411,7 +403,6 @@ class)
          instance
          :universe child-definition
          :class (getx definition-body :universe-class)
-         :persist-p persist-p
          :with-children-p with-children-p
          :with-data-p with-data-p)))
 
@@ -426,7 +417,7 @@ class)
 
 (defmethod load-from-definition ((multiverse multiverse)
                                  (definition-type (eql :universe))
-                                 definition &key class persist-p
+                                 definition &key class
                                  with-children-p
                                  with-data-p)
 
@@ -441,12 +432,7 @@ class)
     (when instance
       (setf (multiverse instance) multiverse)
 
-      (when persist-p
-        (ensure-location instance)
-        (unless (location instance)
-          (error "Cannot persist the universe, there is no location.")))
-
-      (add-multiverse-element multiverse instance :persist-p persist-p))
+      (add-multiverse-element multiverse instance))
 
     (when (or with-data-p with-children-p)
       (dolist (child-definition (or (getx definition-body :stores)
@@ -457,7 +443,6 @@ class)
          :store
          child-definition
          :class (getx definition-body :store-class)
-         :persist-p persist-p
          :with-children-p with-children-p
          :with-data-p with-data-p)))
 
@@ -471,7 +456,7 @@ class)
                    :collection-class (getx definition-body :collecition-class))))
 
 (defmethod load-from-definition ((universe universe) (definition-type (eql :store))
-                                 definition &key class persist-p
+                                 definition &key class
                                  with-children-p
                                  with-data-p)
 
@@ -488,12 +473,7 @@ class)
     (when instance
       (setf (universe instance) universe)
 
-      (when persist-p
-        (ensure-location instance)
-        (unless (location instance)
-          (error "Cannot persist the store, there is no location.")))
-
-      (add-multiverse-element universe instance :persist-p persist-p))
+      (add-multiverse-element universe instance))
 
     (when (or with-data-p with-children-p)
 
@@ -509,7 +489,6 @@ class)
          :document-type
          child-definition
          :class (getx definition-body :document-type-class)
-         :persist-p persist-p
          :with-children-p with-children-p
          :with-data-p with-data-p))
 
@@ -525,7 +504,6 @@ class)
          :collection
          child-definition
          :class (getx definition-body :collection-class)
-         :persist-p persist-p
          :with-children-p with-children-p
          :with-data-p with-data-p)))
 
@@ -538,7 +516,7 @@ class)
                    :location (getx definition-body :location))))
 
 (defmethod load-from-definition ((store store) (definition-type (eql :collection))
-                                 definition &key class persist-p
+                                 definition &key class
                                  with-children-p
                                  with-data-p)
 
@@ -555,21 +533,13 @@ class)
     (when instance
       (setf (store instance) store)
 
-      (when persist-p
-        (ensure-location instance)
-
-        (unless (location instance)
-          (error "Cannot persist the collection, there is no location.")))
-
-      (add-multiverse-element store instance :persist-p persist-p))
+      (add-multiverse-element store instance))
 
     (when with-data-p
       (load-data instance))
 
     instance))
 
-;;There is no persist-p option for this function because their is no
-;;point in saving definitions that where just read.
 (defun instances-from-definitions (location definition-type)
   (mapcar (lambda (definition)
             (instance-from-definition (getx (definition-body definition) :class)
@@ -618,7 +588,6 @@ class)
     (when definition
       (load-from-definition parent definition-type definition
                             :class class
-                            :persist-p nil
                             :with-children-p with-children-p
                             :with-data-p with-data-p))))
 

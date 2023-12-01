@@ -61,6 +61,7 @@
 (defparameter *multiverse*
   (make-instance
    'multiverse
+   :name "multiverse"
    :location "~/multiverse/" ;Setting the location on disk.
    :universe-class 'universe))
 
@@ -68,6 +69,7 @@
 (defparameter *universe*
   (make-instance
    'universe
+   :name "universe"
    :multiverse *multiverse*
    :location "~/multiverse/universe/" ;Setting the location on disk.
    :store-class 'store))
@@ -75,14 +77,16 @@
 ;;Add universe to multiverse.
 (add-multiverse-element *multiverse* *universe*)
 
+;;Persisting the multiverse and universe definitions in one step
+(persist *multiverse* :definitions-only-p t)
+
 (let* (;;Create a store and add it to the universe
        (store (add-multiverse-element
                *universe*
                (make-instance 'document-store
                               :name "simple-store"
                               :collection-class 'collection
-                              :location "~/multiverse/universe/simple-store/")
-               :persist-p t))
+                              :location "~/multiverse/universe/simple-store/")))
        (employee-collection)
        (asset-collection)
        (employee-elements)
@@ -130,8 +134,8 @@
                               'document-type
                               :name (getf *asset-document-type* :name)
                               :label (getf *asset-document-type* :label)
-                              :elements asset-elements)
-                             :persist-p t))
+                              :elements asset-elements)))
+  (persist asset-document-type :definitions-only-p t)
 
   ;;Create a collection and add it to the store
   (setf employee-collection
@@ -147,8 +151,9 @@
                                                ;;example you should not shard
                                                ;;on any value that could
                                                ;;change!!!!!
-                                               :shard-elements (list :country))
-                                :persist-p t))
+                                               :shard-elements (list :country))))
+
+  (persist employee-collection :definitions-only-p t)
 
   ;;Create a collection and add it to the store
   (setf asset-collection
@@ -156,8 +161,9 @@
                                 (make-instance 'document-collection
                                                :name "asset-collection"
                                                :document-type asset-document-type
-                                               :keys '(:asset-no))
-                                :persist-p t))
+                                               :keys '(:asset-no))))
+
+  (persist asset-collection :definitions-only-p t)
 
   ;;Add some documents to the collections
   (let ((emp-country '("Afghanistan"

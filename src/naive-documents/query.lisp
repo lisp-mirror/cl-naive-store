@@ -20,7 +20,8 @@ The convention is to append %% to these accessors, for two reasons. First to sho
 
   (case accessor
     (:hash
-     (document-hash document))
+
+     (hash document))
     (:collection~
      (document-collection document))
     (:store~
@@ -67,7 +68,7 @@ By default it is on.")
 
   (case accessor
     (:hash
-     (setf (document-hash document) value))
+     (setf (hash document) value))
     (:collection~
      (setf (document-collection document) value))
     (:store~
@@ -133,7 +134,6 @@ By default it is on.")
     place))
 
 (defmethod digx ((place document) &rest indicators)
-  (declare (inline naive-dig))
   (naive-dig place indicators))
 
 (defmethod (setf digx) (value (place document) &rest indicators)

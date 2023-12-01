@@ -10,12 +10,19 @@
 (in-package :naive-examples)
 
 (defparameter *multiverse* nil)
-(defparameter *universe* nil)
 
 (defun test-location ()
   (cl-fad:merge-pathnames-as-directory
    (user-homedir-pathname)
    (make-pathname :directory (list :relative "test-multiverse"))))
+
+(defun tear-down-multiverse ()
+  "Deletes any peristed data from examples."
+  (cl-fad:delete-directory-and-files
+   (test-location)
+   :if-does-not-exist :ignore))
+
+(defparameter *universe* nil)
 
 (defparameter *multiverse-definition*
   `(:multiverse
@@ -26,7 +33,9 @@
 
      ((:universe
        (:name "test-universe"
-        :location ,(test-location)
+        :location ,(cl-fad:merge-pathnames-as-directory
+                    (test-location)
+                    (make-pathname :directory (list :relative "universe")))
         ;;Universe classes can be specific to a universe.
         :universe-class cl-naive-store.naive-core:universe
         :store-class cl-naive-store.naive-documents:document-store
@@ -223,12 +232,6 @@
                             :documentation "List of laptops the company owns."))))))))))))
 
 (defparameter *universes* nil)
-
-(defun tear-down-universe ()
-  "Deletes any peristed data from examples."
-  (cl-fad:delete-directory-and-files
-   "~/temp/test-universe/"
-   :if-does-not-exist :ignore))
 
 (defun test-something (test-lambda expected-result error-message results
                        &key (test #'equalp))

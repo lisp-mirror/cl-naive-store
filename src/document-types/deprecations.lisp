@@ -23,9 +23,9 @@
                      `(let ((,store% ,store)
                             (,document-type% ,document-type)
                             (,persist-p% ,persist-p))
+                        ;;Throwing away perist-p
                         (add-multiverse-element ,store%
-                                                ,document-type%
-                                                :perist-p persist-p%))))
+                                                ,document-type%))))
 
  (generic-function get-document-type (store type-name) replaced-by
                    get-multiverse-element as

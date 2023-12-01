@@ -27,8 +27,7 @@
                      `(let ((,universe% ,universe)
                             (,store% ,store))
                         (add-multiverse-element ,universe%
-                                                ,store%
-                                                :persist-p t))))
+                                                ,store%))))
 
  (generic-function get-collection (store collection-name) replaced-by
                    get-multiverse-element as
@@ -53,8 +52,7 @@
                          (collection% (gensym)))
                      `(let ((,store% ,store)
                             (,collection% ,collection))
-                        (add-multiverse-element ,store% ,collection%
-                                                :persist-p t))))
+                        (add-multiverse-element ,store% ,collection%))))
 
  (function get-store-from-def (universe store-name) replaced-by
            load-from-definition-file as
@@ -106,4 +104,12 @@
                  :collection
                  :class nil
                  :with-children-p t
-                 :with-data-p ,with-data-p%)))))
+                 :with-data-p ,with-data-p%))))
+
+ (function persist-collection-def (collection) replaced-by
+           persist-definition as
+           (let ((collection% (gensym))
+                 (with-data-p% (gensym)))
+             `(let ((,collection% ,collection))
+                (persist-definition
+                 ,collection%)))))

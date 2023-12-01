@@ -168,3 +168,13 @@ FAILURE COUNT:        0
 TOTAL TESTS:         46
 Completed Test CL-NAIVE-STORE-TESTS:TEST-ALL
 #+END_EXAMPLE
+
+
+Alternatively if you want to run the tests manually
+
+#+BEGIN_SRC lisp
+  (ql:quickload :cl-naive-store.tests)
+  (cl-naive-store.tests:test-all)
+#+END_SRC
+
+

@@ -9,20 +9,30 @@
   (:use :cl :cl-getx :cl-naive-store.naive-core))
 (in-package :naive-examples)
 
-(defvar *universe* nil)
+(defvar *multiverse* nil)
 
 (defun test-location ()
   (cl-fad:merge-pathnames-as-directory
    (user-homedir-pathname)
-   (make-pathname :directory (list :relative "test-universe"))))
+   (make-pathname :directory (list :relative "test-multiverse"))))
 
-(defun tear-down-universe ()
+(defun tear-down-multiverse ()
   "Deletes any peristed data from examples."
   (cl-fad:delete-directory-and-files
-   (if *universe*
-       (location *universe*)
+   (if *multiverse*
+       (location *multiverse*)
        (test-location))
    :if-does-not-exist :ignore))
+
+;;Create multiverse
+(defparameter *multiverse*
+  (progn (tear-down-multiverse)
+         (make-instance
+          'multiverse
+          :name "multiverse"
+          :universe-class 'universe)))
+
+(add-multiverse-element *multiverse* *universe*)
 
 (defun count-lines-in-file (path)
   (with-input-from-string (file-content (naive-impl::file-to-string path))
@@ -30,11 +40,9 @@
           while line count line)))
 
 (defparameter *universe*
-  (progn
-    (tear-down-universe)
-    (make-instance 'universe
-                   :location (test-location)
-                   :store-class 'store)))
+  (make-instance 'universe
+                 :name "universe"
+                 :store-class 'store))
 
 (defparameter *store*
   (add-multiverse-element *universe* (make-instance (store-class *universe*)
@@ -45,6 +53,8 @@
   (add-multiverse-element *store* (make-instance (collection-class *store*)
                                                  :name "simple-collection"
                                                  :keys '(:id)))) ; Specifying the key element, else its :key
+
+(persist *multiverse* :definitions-only-p t)
 
 ;; Add some documents to the *collection*
 (persist-document *collection* (list :name "Piet"   :surname "Gieter" :id 123))

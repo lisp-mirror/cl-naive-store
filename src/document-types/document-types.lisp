@@ -32,6 +32,20 @@ Elements can reference simple types, a complex document or documents based on ot
 
 naive-store can be used as a hierarchical database or a flat databases or a mix."))
 
+(defmethod print-object ((element element) stream)
+  (if *print-readably*
+      (format stream "(~S ~S)" (class-name (class-of element))
+              (list :name (name element)
+                    :document-type (document-type element)
+                    :location (location element)
+                    :attributes (attributes element)))
+      (print-unreadable-object (element stream :type t :identity t)
+        (format stream "~S" (list :name (name element)
+                                  :document-type (and (document-type element)
+                                                      (name (document-type element)))
+                                  :attributes (attributes element)))))
+  element)
+
 (defclass document-type ()
   ((store :initarg :store
           :accessor store
@@ -71,12 +85,47 @@ GUI's like cl-wfx use these to help with generic rendering of user input screens
 
 See cl-naive-type-defs:*example-type-defs* for examples of type definitions to get a feel for the intended use."))
 
+(defmethod print-object ((document-type document-type) stream)
+  (if *print-readably*
+      (format stream "(~S ~S)" (class-name (class-of document-type))
+              (list :name (name document-type)
+                    :store (store document-type)
+                    :location (location document-type)
+                    :elements (elements document-type)))
+      (print-unreadable-object (document-type stream :type t :identity t)
+        (format stream "~S" (list :name (name document-type)
+                                  :store (and (store document-type)
+                                              (name (store document-type)))
+                                  :elements (map 'list (function name)
+                                                 (elements document-type))))))
+  document-type)
+
 (defclass document-type-collection-mixin ()
   ((document-type :initarg :document-type
                   :accessor document-type
                   :initform nil
                   :documentation "The document-type that this collection contains documents of."))
   (:documentation "Collection extention to make collection of a specific document-type."))
+
+(defmethod print-object ((collection document-type-collection-mixin) stream)
+  (if *print-readably*
+      (format stream "(~S ~S)" (class-name (class-of collection))
+              (list :name (name collection)
+                    :store (store collection)
+                    :location (location collection)
+                    :document-type (document-type collection)
+                    :shards (shards collection)))
+      (print-unreadable-object (collection stream :type t :identity t)
+        (format stream "~S" (list :name (name collection)
+                                  :store (and (store collection)
+                                              (name (store collection)))
+                                  :location (location collection)
+                                  :document-type (and (document-type collection)
+                                                      (name (document-type collection)))
+
+                                  :shards (map 'list (function short-mac)
+                                               (shards collection))))))
+  collection)
 
 (defclass document-type-store-mixin ()
   ((document-type-class :initarg :document-type-class
@@ -89,6 +138,23 @@ IMPL NOTES: To deal with customization of document-type.")
                    :accessor document-types
                    :initform nil
                    :documentation "List of document-types represented by this store's collections.")))
+
+(defmethod print-object ((store document-type-store-mixin) stream)
+  (if *print-readably*
+      (format stream "(~S ~S)" (class-name (class-of store))
+              (list :name (name store)
+                    :universe (universe store)
+                    :location (location store)
+                    :document-types (document-types store)
+                    :collections (collections store)))
+      (print-unreadable-object (store stream :type t :identity t)
+        (format stream "~S" (list :name (name store)
+                                  :universe (and (universe store)
+                                                 (name (universe store)))
+                                  :location (location store)
+                                  :collections (map 'list (function name)
+                                                    (collections store))))))
+  store)
 
 (defmethod getx ((store document-type-store-mixin) accessor &key &allow-other-keys)
   ""
@@ -238,8 +304,8 @@ IMPL NOTES: To deal with customization of document-type.")
         ((equalp accessor :location)
          (setf (location document-type) value))))
 
-(defmethod cl-naive-store.naive-core:persist
-    ((document-type document-type) &key &allow-other-keys)
+(defmethod cl-naive-store.naive-core:persist-definition
+    ((document-type document-type))
   "Persists a document-type definition. Path to file is of this general format /universe/store-name/document-type-name.type."
 
   (let ((elements (mapcar (lambda (element)
@@ -259,6 +325,10 @@ IMPL NOTES: To deal with customization of document-type.")
                                     :elements elements)
                               :if-exists :supersede)))
 
+(defmethod cl-naive-store.naive-core:persist
+    ((document-type document-type) &key &allow-other-keys)
+  (persist-definition document-type))
+
 (defmethod cl-naive-store.naive-core:get-multiverse-element
     ((element-type (eql :element)) (document-type document-type) name)
   (cl-naive-store.naive-core::get-multiverse-element* document-type elements name))
@@ -274,8 +344,7 @@ IMPL NOTES: To deal with customization of document-type.")
   (cl-naive-store.naive-core::get-multiverse-element* store document-types name))
 
 (defmethod cl-naive-store.naive-core:add-multiverse-element
-    ((document-type document-type) (element element)
-     &key persist-p)
+    ((document-type document-type) (element element))
 
   (if (not (document-type element))
       (setf (document-type element) document-type)
@@ -283,17 +352,12 @@ IMPL NOTES: To deal with customization of document-type.")
         (error "Element already references a different document-type instance!")))
 
   (unless (get-multiverse-element :element document-type (name element))
-    (pushnew element (elements document-type))
-
-    ;;Elements are not peristed in seperate files they are part of the
-    ;;document-type file
-    (when persist-p
-      (persist document-type)))
+    (pushnew element (elements document-type)))
   element)
 
 (defmethod cl-naive-store.naive-core:add-multiverse-element
     ((store document-type-store-mixin)
-     (collection collection) &key persist-p)
+     (collection collection))
   (if (not (store collection))
       (setf (store collection) store)
       (unless (eql (store collection) store)
@@ -316,16 +380,12 @@ IMPL NOTES: To deal with customization of document-type.")
         (ensure-directories-exist location))
 
       (setf (location collection) (pathname location))
-      (pushnew collection (collections store))
-
-      ;;TODO: Change to proper persist.
-      (when persist-p
-        (persist-collection-def collection))))
+      (pushnew collection (collections store))))
   collection)
 
 (defmethod cl-naive-store.naive-core:add-multiverse-element
     ((store document-type-store-mixin)
-     (document-type document-type) &key persist-p)
+     (document-type document-type))
   (if (not (store document-type))
       (setf (store document-type) store)
       (unless (eql (store document-type) store)
@@ -346,20 +406,14 @@ IMPL NOTES: To deal with customization of document-type.")
                               :type "type"))))
 
       (setf (location document-type) (pathname location))
-      (pushnew document-type (document-types store))
-
-      ;;TODO: Change to proper persist.
-      (when persist-p
-        (persist document-type))))
+      (pushnew document-type (document-types store))))
   document-type)
 
 (defmethod cl-naive-store.naive-core:add-multiverse-element :after
     ((store document-type-store-mixin)
-     (collection document-type-collection-mixin)
-     &key persist-p)
+     (collection document-type-collection-mixin))
   "Uses document type to figure out what the keys of the collection are."
 
-  (declare (ignore persist-p))
   (when (or
          (not (keys collection))
          (equalp (keys collection) '(:key)))
@@ -394,7 +448,7 @@ IMPL NOTES: To deal with customization of document-type.")
 
 (defmethod cl-naive-store.naive-core:load-from-definition
     ((document-type document-type) (definition-type (eql :element))
-     definition &key class persist-p with-children-p with-data-p)
+     definition &key class with-children-p with-data-p)
 
   (declare (ignore with-data-p))
 
@@ -410,9 +464,8 @@ IMPL NOTES: To deal with customization of document-type.")
            instance
            :element
            child-definition
-           :class (getx definition-body :element-class)
-           :persist-p persist-p)))
-      (add-multiverse-element document-type instance :persist-p persist-p))
+           :class (getx definition-body :element-class))))
+      (add-multiverse-element document-type instance))
 
     instance))
 
@@ -442,7 +495,7 @@ IMPL NOTES: To deal with customization of document-type.")
 
 (defmethod cl-naive-store.naive-core:load-from-definition
     ((store document-type-store-mixin) (definition-type (eql :document-type))
-     definition &key class persist-p with-children-p with-data-p)
+     definition &key class with-children-p with-data-p)
 
   (declare (ignore with-data-p))
 
@@ -456,12 +509,7 @@ IMPL NOTES: To deal with customization of document-type.")
 
     (when instance
       (setf (store instance) store)
-      (when persist-p
-        (ensure-location instance)
-        (unless (location instance)
-          (error "Cannot persist the document-type, there is no location."))
-
-        (add-multiverse-element store instance :persist-p persist-p))
+      (add-multiverse-element store instance)
 
       (when with-children-p
         (dolist (child-definition (getx definition-body :elements))
@@ -470,7 +518,7 @@ IMPL NOTES: To deal with customization of document-type.")
            :element
            child-definition
            :class (getx definition-body :element-class)
-           :persist-p persist-p
+
            :with-children-p with-children-p))))
 
     instance))
@@ -529,8 +577,7 @@ IMPL NOTES: To deal with customization of document-type.")
           (setf document-type (load-from-definition
                                store
                                :document-type document-type-definition
-                               :class (getx definition-body :collection-class)
-                               :persist-p persist-p)))
+                               :class (getx definition-body :collection-class))))
 
         (unless document-type
           (error "Collection document-type could not be found."))))
@@ -548,7 +595,7 @@ IMPL NOTES: To deal with customization of document-type.")
 
     instance))
 
-(defmethod persist-collection-def ((collection document-type-collection-mixin))
+(defmethod persist-definition ((collection document-type-collection-mixin))
   (naive-impl:write-to-file
    (cl-fad:merge-pathnames-as-file
     (pathname (location (store collection)))
@@ -558,6 +605,8 @@ IMPL NOTES: To deal with customization of document-type.")
     :name (name collection)
     :class (type-of collection)
     :location (location collection)
+    ;;TODO: Should we check if the document type is persisted as well?
+    ;;TODO: Should we check if the document type is registered with the store?
     :document-type (and (document-type collection) (name (document-type collection))))
 
    :if-exists :supersede))

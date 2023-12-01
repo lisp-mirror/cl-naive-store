@@ -71,28 +71,34 @@
 ;;; Universe
 ;;;
 
-(defvar *universe* nil)
+(defvar *multiverse* nil)
 
 (defun test-location ()
   (cl-fad:merge-pathnames-as-directory
    (user-homedir-pathname)
-   (make-pathname :directory (list :relative "test-universe"))))
+   (make-pathname :directory (list :relative "test-multiverse"))))
 
-(defun tear-down-universe ()
+(defun tear-down-multiverse ()
   "Deletes any peristed data from examples."
   (cl-fad:delete-directory-and-files
-   (if *universe*
-       (location *universe*)
+   (if *multiverse*
+       (location *multiverse*)
        (test-location))
    :if-does-not-exist :ignore))
 
+;;Create multiverse
+(defparameter *multiverse*
+  (progn (tear-down-multiverse)
+         (make-instance
+          'multiverse
+          :name "multiverse"
+          :universe-class 'universe)))
+
 (defparameter *universe*
-  (progn
-    (tear-down-universe)
-    (make-instance 'universe
-                   :name "universe"
-                   :location (test-location)
-                   :store-class 'document-store)))
+  (add-multiverse-element *multiverse*
+                          (make-instance 'universe
+                                         :name "universe"
+                                         :store-class 'document-store)))
 
 ;;;
 ;;; Utilities
@@ -199,6 +205,8 @@
                                                  :name "asset-collection"
                                                  :document-type *asset-document-type*
                                                  :keys '(:asset-no))))
+
+(persist *multiverse* :definitions-only-p t)
 
 (let ((results      '())
       (emp-country  0)

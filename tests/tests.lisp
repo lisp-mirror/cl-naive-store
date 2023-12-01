@@ -10,11 +10,24 @@
 (defun test-location ()
   (cl-fad:merge-pathnames-as-directory
    (user-homedir-pathname) ; or (get-temp)
-   (make-pathname :directory (list :relative "test-universe"))))
+   (make-pathname :directory (list :relative "test-multiverse"))))
 
-(defparameter *location* (test-location))
+(defparameter *multiverse* nil)
 
 (defparameter *universe* nil)
+
+(defun tear-down-multiverse ()
+  "Deletes any peristed data from exmaples."
+  ;;  (break "?")
+  (cl-fad:delete-directory-and-files
+   (if *multiverse*
+       (location *multiverse*)
+       (test-location))
+   :if-does-not-exist :ignore)
+  (setf))
+
+(defparameter *multiverse*
+  (progn (tear-down-multiverse)))
 
 (defparameter *store-class* 'store)
 
@@ -113,20 +126,25 @@
               types)))
     (reverse types)))
 
-(defun setup-universe (&optional location)
+(defun setup-multiverse ()
   "Sets up the the simple universe that will contain the data. Use the add-* functions to add
 stores and collections to make sure that they are set up correctly.
 A universe is made up out of stores (databases) which are made up in turn of collections (tables/buckets)
 which contain the actual data. Each collection will have its own directory and file on disk if data is persisted."
 
+  (setf *multiverse* (make-instance
+                      'multiverse
+                      :name "multiverse"
+                      :location (test-location) ;Setting the location on disk.
+                      :universe-class 'universe))
+
   (setf *universe* (make-instance
                     'universe
-                    :location *location*
                     :store-class (if (equalp *document-type* 'document)
                                      'document-store
                                      *store-class*)))
-  (when location
-    (setf (location *universe*) location))
+
+  (add-multiverse-element *multiverse* *universe*)
 
   (let* ((store (add-multiverse-element
                  *universe*
@@ -134,8 +152,7 @@ which contain the actual data. Each collection will have its own directory and f
                                     'document-store
                                     *store-class*)
                                 :name "simple-store"
-                                :collection-class *collection-class*)
-                 :persist-p t))
+                                :collection-class *collection-class*)))
          (document-types (if (equalp *document-type* 'document)
                              (init-document-type store))))
 
@@ -152,8 +169,7 @@ which contain the actual data. Each collection will have its own directory and f
                             :keys '(:asset-no))
              (make-instance *collection-class*
                             :name "asset-collection"
-                            :keys '(:asset-no))))
-     :persist-p t)
+                            :keys '(:asset-no)))))
 
     (add-multiverse-element
      store
@@ -178,17 +194,11 @@ which contain the actual data. Each collection will have its own directory and f
                             :name "simple-collection"
                             :keys '(:emp-no)
                             :shard-elements (if *use-shards*
-                                                (list :race)))))
-     :persist-p t)))
+                                                (list :race))))))
 
-(defun tear-down-universe ()
-  "Deletes any peristed data from exmaples."
-  ;;  (break "?")
-  (cl-fad:delete-directory-and-files (if *universe*
-                                         (location *universe*)
-                                         *location*)
-                                     :if-does-not-exist :ignore)
-  (setf *universe* nil))
+    (unless *multiverse*
+      (break "fuck!!!!"))
+    (persist *multiverse* :definitions-only-p t)))
 
 (defun random-from-list (list)
   (nth (random (length list)) list))
@@ -299,9 +309,9 @@ which contain the actual data. Each collection will have its own directory and f
 (defun simple-example (persist-p)
   "This example sets up a store and populates a collection with a *simple-size* data documents and then queries the collection to retrieve the the 50 documents that have a :emp-no >= 50. Only peristed if persist-p is t."
   ;;Clear any residual
-  (tear-down-universe)
+  (tear-down-multiverse)
   ;;Setup the data universe aka the documents that will contain the data
-  (setup-universe)
+  (setup-multiverse)
   ;;Generate some data and put it in the universe documents
   (populate-simple-data persist-p :size *simple-size*)
   ;;Query the data in the universe
@@ -323,7 +333,8 @@ which contain the actual data. Each collection will have its own directory and f
         (query-results   (simple-example t))
         (universe-store  (cl-fad:merge-pathnames-as-directory
                           (test-location)
-                          (make-pathname :directory '(:relative "simple-store")))))
+                          (make-pathname :directory
+                                         '(:relative "universe" "simple-store")))))
 
     (push (list :universe-directory-exists
                 (probe-file universe-store)
@@ -334,7 +345,9 @@ which contain the actual data. Each collection will have its own directory and f
       (let ((collection-log (cl-fad:merge-pathnames-as-file
                              (test-location)
                              (make-pathname :directory
-                                            '(:relative "simple-store" "simple-collection")
+                                            '(:relative "universe"
+                                              "simple-store"
+                                              "simple-collection")
                                             :name "simple-collection"
                                             :type "log"))))
         (push (list :collection-log-exists
@@ -370,9 +383,9 @@ which contain the actual data. Each collection will have its own directory and f
 (defun simple-example-lazy-loading ()
   "naive-store does lazy loading of data from disk when doing queries."
   ;;Clear any residual
-  (tear-down-universe)
+  (tear-down-multiverse)
   ;;Setup the data universe aka the documents that will contain the data
-  (setup-universe)
+  (setup-multiverse)
   ;;Generate some data and put it in the universe documents
   (populate-simple-data t)
 
@@ -399,9 +412,9 @@ which contain the actual data. Each collection will have its own directory and f
 (defun simple-example-delete ()
   "naive-store does lazy loading of data from disk when doing queries."
   ;;Clear any residual
-  (tear-down-universe)
+  (tear-down-multiverse)
   ;;Setup the data universe aka the documents that will contain the data
-  (setup-universe)
+  (setup-multiverse)
   ;;Generate some data and put it in the universe documents
   (populate-simple-data t)
 
@@ -433,9 +446,10 @@ which contain the actual data. Each collection will have its own directory and f
   (let ((test-results)
         (data))
     ;;Clear any residual
-    (tear-down-universe)
+    (tear-down-multiverse)
+
     ;;Setup the data universe aka the documents that will contain the data
-    (setup-universe)
+    (setup-multiverse)
     ;;Generate some data and put it in the universe documents
     (populate-simple-data t :size *simple-size*)
 
@@ -569,9 +583,9 @@ which contain the actual data. Each collection will have its own directory and f
   "This example sets up a store and populates a collection with a *monster-size* data documents and then queries the collection to retrieve the the 50 documents that have a :emp-no >= 50.
 Only peristed if persist-p is t."
   ;;Clear any residual
-  (tear-down-universe)
+  (tear-down-multiverse)
   ;;Setup the data universe aka the documents that will contain the data
-  (setup-universe)
+  (setup-multiverse)
   ;;Generate some data and put it in the universe documents
   (populate-monster-data persist-p :size *monster-size*)
   (format t "Query monster collection")
@@ -584,7 +598,8 @@ Only peristed if persist-p is t."
          (query-length    (length query-results))
          (universe-store  (cl-fad:merge-pathnames-as-directory
                            (test-location)
-                           (make-pathname :directory '(:relative "simple-store")))))
+                           (make-pathname :directory
+                                          '(:relative "universe" "simple-store")))))
 
     (push (list :universe-directory-exists
                 (probe-file universe-store)
@@ -595,7 +610,9 @@ Only peristed if persist-p is t."
                   (probe-file
                    (cl-fad:merge-pathnames-as-file
                     (test-location)
-                    (make-pathname :directory '(:relative "simple-store" "simple-collection")
+                    (make-pathname :directory
+                                   '(:relative "universe" "simple-store"
+                                     "simple-collection")
                                    :name "simple-collection"
                                    :type "log"))))
             test-results))
@@ -615,7 +632,7 @@ Only peristed if persist-p is t."
     (push (list :query-result-count-202 (= query-length 202) query-length)
           test-results)
 
-    ;;(tear-down-universe)
+    ;;(tear-down-multiverse)
 
     test-results))
 
@@ -623,9 +640,9 @@ Only peristed if persist-p is t."
   "naive-store does lazy loading of data from disk when doing queries."
 
   ;;Clear any residual
-  (tear-down-universe)
+  (tear-down-multiverse)
   ;;Setup the data universe aka the documents that will contain the data
-  (setup-universe)
+  (setup-multiverse)
 
   ;;Generate some data and put it in the universe documents
   (populate-monster-data t :size *monster-size*)
@@ -660,7 +677,7 @@ Only peristed if persist-p is t."
     (let ((results))
       (setf results (append results (test-monster-size)))
       (setf results (append results (test-monster-lazy-loading)))
-      ;; (tear-down-universe)
+      ;; (tear-down-multiverse)
       results)))
 
 (define-test test-all-monster-indexed ()
@@ -668,7 +685,7 @@ Only peristed if persist-p is t."
     (let ((results))
       (setf results (append results (test-monster-size)))
       (setf results (append results (test-monster-lazy-loading)))
-      ;;(tear-down-universe)
+      ;;(tear-down-multiverse)
       results)))
 
 (define-test test-all-monster-documents ()
@@ -676,13 +693,13 @@ Only peristed if persist-p is t."
     (let ((results))
       (setf results (append results (test-monster-size)))
       (setf results (append results (test-monster-lazy-loading)))
-      ;;(tear-down-universe)
+      ;;(tear-down-multiverse)
       results)))
 
 (defun key-values-lookup (values)
   "naive-index use index to get data documents"
   (unless *universe*
-    (setup-universe))
+    (setup-multiverse))
 
   (let ((collection (get-multiverse-element
                      :collection
@@ -697,7 +714,7 @@ Only peristed if persist-p is t."
 (defun indexed-query (index-values query)
   "naive-index use index to get and query values"
   (unless *universe*
-    (setup-universe))
+    (setup-multiverse))
 
   (let ((collection (get-multiverse-element
                      :collection
@@ -713,7 +730,7 @@ Only peristed if persist-p is t."
 (defun indexed-reduce (index-values query function initial-value)
   "naive-index use index to get and query values"
   (unless *universe*
-    (setup-universe))
+    (setup-multiverse))
 
   (let ((collection (get-multiverse-element
                      :collection
@@ -906,7 +923,7 @@ or signal an error."
     passed-p))
 
 (define-test test-all (&optional (*monster-size* 1000))
-  (tear-down-universe)
+  (tear-down-multiverse)
   (reporting-test-results
     (progn
       (cl-naive-store.tests::test-passed-p (cl-naive-store.tests::test-all-examples))
@@ -925,8 +942,8 @@ or signal an error."
 
 #+sbcl
 (defun profile-monster-load-data (&key ((:collection-class *collection-class*) 'collection))
-  (tear-down-universe)
-  (setup-universe)
+  (tear-down-multiverse)
+  (setup-multiverse)
   (populate-monster-data nil :size *monster-size*)
   (let ((collection (get-multiverse-element
                      :collection

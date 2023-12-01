@@ -32,6 +32,7 @@
 (defparameter *multiverse*
   (make-instance
    'multiverse
+   :name "multiverse"
    :location "~/multiverse/" ;Setting the location on disk.
    :universe-class 'universe))
 
@@ -39,6 +40,7 @@
 (defparameter *universe*
   (make-instance
    'universe
+   :name "universe"
    :multiverse *multiverse*
    :location "~/multiverse/universe/" ;Setting the location on disk.
    :store-class 'document-store))
@@ -46,16 +48,20 @@
 ;;Add universe to multiverse.
 (add-multiverse-element *multiverse* *universe*)
 
+;;Persisting the multiverse and universe definitions in one step
+(persist *multiverse* :definitions-only-p t)
+
 (let* (;;Create a store and add it to the universe
        (store (add-multiverse-element *universe*
                                       (make-instance 'document-store
                                                      :name "simple-store"
-                                                     :collection-class 'collection)
-                                      :persist-p t))
+                                                     :collection-class 'collection)))
        (collection)
        (elements)
        (document-type)
        (results))
+
+  (persist store :definitions-only-p t)
 
   ;;initialize the data employee data definition.
   (dolist (element (getf *employee-document-type* :elements))
@@ -78,6 +84,8 @@
                         :elements elements)
                        :persist-p t))
 
+  (persist document-type :definitions-only-p t)
+
   ;;Create a collection and add it to the store
   (setf collection (add-multiverse-element
                     store
@@ -96,6 +104,9 @@
                                    ;;indexes for.
                                    :indexes '((:name :surname)))
                     :persist-p t))
+
+  (persist collection :definitions-only-p t)
+
   ;;Add some documents to the collection
   (persist-document collection
                     (make-document

@@ -12,7 +12,7 @@
    :gethash-safe
    :remhash-safe
 
-   :persist
+   :persist-definition
    :persist-document
 
    ;;####persist.lisp

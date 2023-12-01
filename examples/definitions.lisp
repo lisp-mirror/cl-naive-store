@@ -141,7 +141,7 @@
 
 (defparameter *multiverse* nil)
 
-(defun tear-down-universe ()
+(defun tear-down-multiverse ()
   "Deletes any peristed data from examples."
   (cl-fad:delete-directory-and-files
    "~/temp/multiverse/"

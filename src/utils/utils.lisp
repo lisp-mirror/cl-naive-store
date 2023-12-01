@@ -255,7 +255,9 @@ beyond repair when you possibly hacked the sexp.
             (push element (cl-naive-store.document-types:elements doc-type))))
 
         (cl-naive-store.naive-core:add-multiverse-element
-         store doc-type :persist-p persist-p)))))
+         store doc-type)
+        (when persist-p
+          (persist doc-type :definitions-only-p t :children-p nil))))))
 
 (defun create-collections (store
                            collection-definitions
@@ -279,34 +281,35 @@ beyond repair when you possibly hacked the sexp.
                               :collection
                               collection-name
                               collection-definitions))
-             (collection-definition (getf collection-def :collection)))
+             (collection-definition (getf collection-def :collection))
+             (collection (cl-naive-store.naive-core:add-multiverse-element
+                          store
+                          (make-instance
+                           ;;because there is a high likelyhood that nil was
+                           ;;passed for collection-class which would negate
+                           ;;default value doubling up with or
+                           (or
+                            (getx collection-definition :class)
+                            collection-class
+                            'cl-naive-store.naive-documents:document-collection)
+                           :store store
+                           :name (getf collection-definition :name)
+                           :location (merge-pathnames
+                                      (make-pathname
+                                       :directory
+                                       (list :relative
+                                             (getf collection-definition :name)))
+                                      (namestring
+                                       (pathname (cl-naive-store.naive-core:location
+                                                  store))))
+                           :document-type
+                           (cl-naive-store.naive-core:get-multiverse-element
+                            :document-type
+                            store
+                            (getf collection-definition :data-type))))))
 
-        (cl-naive-store.naive-core:add-multiverse-element
-         store
-         (make-instance
-          ;;because there is a high likelyhood that nil was
-          ;;passed for collection-class which would negate
-          ;;default value doubling up with or
-          (or
-           (getx collection-definition :class)
-           collection-class
-           'cl-naive-store.naive-documents:document-collection)
-          :store store
-          :name (getf collection-definition :name)
-          :location (merge-pathnames
-                     (make-pathname
-                      :directory
-                      (list :relative
-                            (getf collection-definition :name)))
-                     (namestring
-                      (pathname (cl-naive-store.naive-core:location
-                                 store))))
-          :document-type
-          (cl-naive-store.naive-core:get-multiverse-element
-           :document-type
-           store
-           (getf collection-definition :data-type)))
-         :persist-p persist-p)))))
+        (when persist-p
+          (persist collection :definitions-only-p t :children-p nil))))))
 
 (defun traverse-apply (criteria plist-tree func)
   ""
@@ -366,8 +369,7 @@ beyond repair when you possibly hacked the sexp.
                     ;;TODO: Check for trailing / we need it
                     (namestring
                      (cl-naive-store.naive-core:location
-                      universe))))
-    :persist-p t)))
+                      universe)))))))
 
 (defun create-stores (universe universe-definition &key persist-p)
   ;;Using traverse-apply instead of simple dolist so that we can
@@ -405,11 +407,12 @@ beyond repair when you possibly hacked the sexp.
                                 (getx universe-definition :collection-class))
           :persist-p persist-p)
 
-         (cl-naive-store.naive-core:add-multiverse-element universe store :persist-p t)
+         (cl-naive-store.naive-core:add-multiverse-element universe store)
 
          (when persist-p
            (ensure-directories-exist (cl-naive-store.naive-core:location store))
-           (cl-naive-store.naive-core:persist store)))))))
+           (cl-naive-store.naive-core:persist store :definitions-only-p t
+                                                    :children-p nil)))))))
 
 (defun create-multiverse (multiverse-definition &optional persist-p multiverse)
   (unless multiverse
@@ -426,11 +429,14 @@ beyond repair when you possibly hacked the sexp.
      multiverse-definition
      (lambda (universe-definition)
        (let* ((universe (create-universe multiverse universe-definition)))
-         (cl-naive-store.naive-core:add-multiverse-element multiverse universe
-                                                           :persist-p t)
+         (cl-naive-store.naive-core:add-multiverse-element multiverse universe)
          (when persist-p
-           (ensure-directories-exist (cl-naive-store.naive-core:location universe)))
-         (create-stores universe universe-definition :persist-p persist-p)))))
+           (ensure-directories-exist (cl-naive-store.naive-core:location universe))
+           (persist universe :definitions-only-p t :children-p nil))
+         (create-stores universe universe-definition :persist-p persist-p))))
+    (when persist-p
+      (persist multiverse :definitions-only-p t :children-p nil)))
+
   multiverse)
 
 ;;TODO: Most of these (badly named) utility functions has been

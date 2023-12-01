@@ -9,56 +9,7 @@ described here in condjuction with the Implementor's Api.
 
 ** Naive Core
 
-*** [class] universe
-
-Stores are held by a universe to make up a database.
-
-**** [accessor] stores
-
-List of stores contained by this universe.
-
-**** [accessor] store-class
-
-The class that should be used to make stores.
-
-NOTES:
-
-store-class is delcaritively specied here because stores are dynamically
-created when definition files are loaded.
-
-**** [accessor] location
-
-Directory path to stores.
-
-*** [class] store
-
-Document types and their associated collections are organized into
-groups called stores.
-
-**** [accessor] universe
-
-The universe this store belongs to.
-
-**** [accessor] name
-
-Store name.
-
-**** [accessor] collection-class
-
-The class that should be used to make collections.
-
-**** [accessor] collections
-
-List of collections represented by this store.
-
-**** [accessor] Location
-
-The directory path to the document-type files and collection files for
-this store.
-
------
-
-**** [class] shard
+*** [class] shard
 
 Sharding is when you break the physical file that backs the collection
 into smaller files based on data elements of a document. An instance
@@ -85,9 +36,103 @@ Used internally during the loading of the documents in a shard to help with lock
 
 Used internally to do shard specific locking.
 
------
+*** [class] multiverse
 
-**** [class] collection
+A multiverse is the top structural container for data. A multiverse
+contains one or more universes. A multiverse could be viewed as a clustering of clusters of
+databases.
+
+**** [accessor] name
+
+Mulitiverse name.
+
+**** [accessor] universes
+
+List of universes contained by this multiverse.
+
+**** [accessor] universe-class
+
+The class that should be used to make universes.
+
+NOTES:
+
+universe-class is delcaritively specied here because stores are
+dynamicly created when definition files are loaded. (see store notes
+for more about this.)
+
+**** [accessor] Location
+
+The directory path to universes for this multiverse.
+
+*** [class] universe
+
+A universe contains one or more stores. A universe could be viewed as
+a cluster of databases.
+
+**** [accessor] multiverse
+
+The multiverse the universe belongs to.
+
+**** [accessor] name
+
+Universe name.
+
+**** [accessor] stores
+
+List of stores contained by this universe.
+
+**** [accessor] store-class
+
+The class that should be used to make stores.
+
+NOTES:
+
+store-class is delcaritively specied here because stores are dynamicly
+created when definition files are loaded. (see store notes for more
+about this.)
+
+**** [accessor] location
+
+Directory path to stores of this universe.
+
+*** [class] store
+
+Document types and their associated collections are organized into
+groups called stores.
+
+NOTES:
+
+collection-class and document-type-class is delcaritively specied here
+because they are dynamicly created when definition files are
+loaded. The alternative would be defmethod hell where the customizer
+of naive-store would have to implement a whole lot of methods that do
+exactly what the provided methods do just to be able to be type
+specific in other methods where it is actually needed. Alternatively
+meta classes could be used for element-class but that opens another
+can of worms.
+
+**** [accessor] universe
+
+The universe the store belongs to.
+
+**** [accessor] name
+
+Store name.
+
+**** [accessor] collection-class
+
+The class that should be used to make collections.
+
+**** [accessor] collections
+
+List of collections represented by this store.
+
+**** [accessor] Location
+
+The directory path to the document-type files and collection files for
+this store.
+
+*** [class] collection
 
 A collection of documents of a specific document-type.
 
@@ -128,11 +173,33 @@ keys will be set to the keys set in the document-type elements.
 
 shard-elements is a list of document element keywords to use for sharding.
 
------
+*** [method] documents ((collection collection))
+
+It is a convenience function to retrieve all documents without having
+to deal with shards.
+
+Loops over all the shards for a collection to gather all the
+documents.
+
+*** [method] getx and (setf getx)
+
+Implements getx for multiverse, universe, store and collection.
+
+This means instead of ([accessor] object) you can use (getx object :[accessor]).
+
+*** [generic function] status (shard) and (setf status)
+
+Used to monitor shards during loading.
+
+**** (setf status) (new-status (shard shard))
+
+****  status ((shard shard))
 
 *** [generic function] short-mac (shard)
 
 Return a short string containing a prefix of the MAC.
+
+**** short-mac ((shard shard))
 
 *** [function] match-shard (filename shards)
 
@@ -156,22 +223,47 @@ Calculating a mac is expensive so caching shard value macs in a
 hashtable but that hashtable needs to be thread safe so using safe
 functions to get and set.
 
-*** [generic function] get-store (universe store-name)
+*** [generic function] query-multiverse (element fn)
 
-Returns a store if found in the universe.
+Queries the multiverse element passed for an element or elements.
 
-*** [generic function] get-collection (store collection-name)
+**** query-multiverse ((collection collection) fn)
 
-Returns a collection document if found in the store.
+**** query-multiverse ((store store) fn)
+
+**** query-multiverse ((universe universe) fn)
+
+**** query-multiverse ((multiverse multiverse) fn)
+
+*** [generic function] get-multiverse-element (element-type parent name)
+
+Fetches an element of the type with matching name.
+
+**** get-multiverse-element ((element-type (eql :universe)) (multiverse multiverse) name)
+
+**** get-multiverse-element ((element-type (eql :store)) (universe universe) name)
+
+**** get-multiverse-element ((element-type (eql :collection)) (store store) name)
 
 *** [generic function] persist (object &key &allow-other-keys)
 
-persist ((store store) &key &allow-other-keys)
+**** persist ((multiverse multiverse) &key &allow-other-keys)
+
+Persists a multiverse definition and not what it contains! Path to
+file is of this general format /multiverse/multiverse-name.universe.
+
+**** persist ((universe universe) &key &allow-other-keys)
+
+Persists a universe definition and not what it contains! Path to file
+is of this general format
+/multiverse/universe-name/universe-name.universe.
+
+**** persist ((store store) &key &allow-other-keys)
 
 Persists a store definition and not what it contains! Path to file is
 of this general format /universe/store-name/store-name.store.
 
-persist ((collection collection) &key &allow-other-keys)
+**** persist ((collection collection) &key &allow-other-keys)
 
 Persists a collection definition and the documents in a
 collection. Path to file for data is this general format
@@ -182,53 +274,36 @@ collection. Path to file for data is this general format
 Persists the documents in a collection in the order that they where
 added.
 
-*** [generic function] add-store (universe store)
+*** [generic function] add-multiverse-element (parent element &key persist-p)
 
-add-store ((universe universe) (store store))
-
-*** [generic function] add-collection (store collection)
-
-add-collection ((store store) (collection collection))
-
-Adds a collection to a store.
+Adds an instance of a multiverse element to the parent instance.
 
 *** [generic function] clear-collection (collection)
 
 Clears documents indexes etc from collection.
 
-*** [generic function] remove-collection (store collection)
+*** [generic function] remove-multiverse-element (parent element)
 
-Removes a collection to a store.
+Removes an instance of a multiverse element from the parent instance.
 
 *** [generic function] load-data (collection &key force-reload-p &allow-other-keys)
 
 Loads the data documents of a collection from file or files if
-sharding is used. If the data is already loaded it wont reload it, if
-you want the data to be reloaded use force-reload-p.
+sharding is used. If the data is already loaded it wont reload it.
 
 shard-macs is a list of shard macs to indicate which shards should be
 used. If no shards are specified all shards will be loaded.
 
-NOTES:
+*** [generic function] ensure-location (object)
 
-load-data could have been used to load universe or store as well but
-those have a wealth of other key word parameters to control exactly
-what to do that makes the load-data signature a nightmare to
-understand. So separate methods load-stores (for universe) and
-load-collections (for a store) exists for that.
+Tries to find or build path to cl-naive-store files.
 
-load-data :around ((collection collection) &key force-reload-p &allow-other-keys)
-load-data ((collection collection) &key &allow-other-keys)
+**** ensure-location ((object multiverse))
+**** ensure-location ((object universe))
+**** ensure-location ((object store))
+**** ensure-location ((object collection))
 
-Explicitly stops execution of main methods if already loaded, unless forced.
-
-**** [generic function] data-loaded-p (container &key *allow-other-keys)
-
-data-loaded-p ((collection collection) &key &allow-other-keys)
-
-data-loaded-p ((collection collection) &key &allow-other-keys)
-
-data-loaded-p ((universe universe) &key &allow-other-keys)
+*** [generic function] data-loaded-p (container &key *allow-other-keys)
 
 Checks if the data is loaded for the container, be it universe , store or collection.
 
@@ -243,26 +318,13 @@ document count > 0 and not some status set. Be smart about it you are
 not expected to return a count so dont waist time counting just check
 if there is at least one document in the container.
 
------
 
-*** [generic function] load-collections (store  &key with-data-p &allow-other-keys)
+**** data-loaded-p ((collection collection) &key &allow-other-keys)
 
-load-collections ((store store) &key with-data-p &allow-other-keys)
+**** data-loaded-p ((store store) &key &allow-other-keys)
 
-Finds and loads collections of a store, with or without documents.
+**** data-loaded-p ((universe universe) &key &allow-other-keys)
 
-**** [generic function] load-stores (universe  &key with-collections-p with-data-p &allow-other-keys)
-
-Finds and loads collections a store, with or without data documents.
-
-**** [generic function] load-store (store &key &allow-other-keys)
-
-load-store ((store store) &key with-data-p &allow-other-keys)
-
-Loads the document-types and collections, with or without the actual
-data documents.
-
------
 
 *** [generic function] document-values (document)
 
@@ -277,12 +339,23 @@ documents like cl-naive-store.naive-documents document struct.
 This helps keep the amount of specializations needed down
 considerably.
 
+**** document-values (document)
+
+**** document-values ((document document))
+
+**** key-values ((collection document-type-collection-mixin) document &key &allow-other-keys)
+
+**** key-values ((collection document-collection) document &key &allow-other-keys)
+
+
 *** [generic function] key-values (collection values &key &allow-other-keys)
 
 key-values ((collection collection) values &key &allow-other-keys)
 
 Returns a set of key values from the values of a data document. Checks
 the collection keys or uses hash.
+
+**** key-values ((collection collection) values &key &allow-other-keys)
 
 *** [generic function] existing-document (collection document &key shard &allow-other-keys)
 
@@ -380,8 +453,6 @@ written to file. If the document is new it is added to the collection.
 The shard the document should belong to can be passed in to save the
 function from trying to establish which shard on its own.
 
------
-
 *** [generic function] naive-reduce (collection &key query function initial-value &allow-other-keys)
 
 naive-reduce ((hash-table hash-table) &key query function initial-value  &allow-other-keys)
@@ -402,15 +473,15 @@ Lazy loading data.
 
 *** [generic function] query-data (collection &key query &allow-other-keys)
 
-query-data :before ((collection collection) &key shards &allow-other-keys)
+**** query-data :before ((collection collection) &key shards &allow-other-keys)
 
 Does lazy loading
 
-query-data ((collection collection) &key query shards &allow-other-keys)
+**** query-data ((collection collection) &key query shards &allow-other-keys)
 
-query-data ((store store) &key collection-name query shards &allow-other-keys)
+**** query-data ((store store) &key collection-name query shards &allow-other-keys)
 
-query-data ((hash-table hash-table) &key query &allow-other-keys)
+**** query-data ((hash-table hash-table) &key query &allow-other-keys)
 
 Returns the data that satisfies the query.
 
@@ -422,17 +493,17 @@ Will only use shards supplied if supplied.
 
 *** [generic function] query-document (collection &key query &allow-other-keys)
 
-query-document :before ((collection collection) &key shards &allow-other-keys)
+**** query-document :before ((collection collection) &key shards &allow-other-keys)
 
 Does lazy loading.
 
-query-document ((collection collection) &key query shards &allow-other-keys)
+**** query-document ((collection collection) &key query shards &allow-other-keys)
 
-query-document ((store store) &key collection-name query &allow-other-keys)
+**** query-document ((store store) &key collection-name query &allow-other-keys)
 
-query-document ((list list) &key query &allow-other-keys)
+**** query-document ((list list) &key query &allow-other-keys)
 
-query-document ((hash-table hash-table) &key query &allow-other-keys)
+**** query-document ((hash-table hash-table) &key query &allow-other-keys)
 
 Returns the first last document found, and any others that satisfies
 the query
@@ -583,16 +654,22 @@ or a mix.
 Name of the element. This should be a KEYWORD if you want data
 portability and some internals might expect a keyword.
 
-**** [accessor] document-type
+**** [accessor] concrete-type
 
 A user defined "thing" that defines the type specifics of an element.
 
 **** [accessor] key-p
 
-A property list of additional element attributes that are not data
-type specific.
+Indicates that the element is part of the primary key.
 
-**** [class] document-type
+Can be used for indexing and document comparison. For example when a
+new document is persisted naive-store-documents checks for documents
+with the same index value and then updates the existing document.
+
+**** [accessor] attributes
+A property list of additional element attributes.
+
+*** [class] document-type
 
 A class that can be use to represent a complex document.
 
@@ -608,7 +685,7 @@ document-types for validation and file layout specifics.
 GUI's like cl-wfx use these to help with generic rendering of user
 input screens.
 
-See cl-naive-type-defs:*example-type-defs* for examples of type
+See cl-naive-definitions for examples of type
 definitions to get a feel for the intended use.
 
 **** [accessor] store
@@ -634,9 +711,12 @@ Human readable/formated short description.
 
 **** [accessor] elements
 
------
-
 Field definitions that represents a data unit.
+
+*** [generic function] get-attribute (element attribute)
+
+*** [generic function] get-element (document-type element)
+
 
 *** [class] document-type-collection-mixin
 
@@ -646,27 +726,39 @@ Collection extention to make collection of a specific document-type.
 
 The document-type that this collection contains documents of.
 
-**** [generic function] get-document-type (store type-name)
+
+*** [class] document-type-store-mixin
+
+**** [accessor] document-type-class
+
+The class that should be used to make document-type documents.
+IMPL NOTES: To deal with customization of document-type.
+
+**** [accessor] document-types
+
+List of document-types represented by this store's collections.
+
+*** [generic function] get-document-type-from-def
+
+Tries to find the document definition on disk.
+
+**** get-document-type-from-def ((store store) document-type-name)
+
+*** [generic function] get-document-type (store type-name)
 
 get-document-type ((store document-type-store-mixin) type-name)
 
 Returns a document-type document if found in the store.
 
-**** [generic function] add-document-type (store document-type)
+*** [generic function] add-document-type (store document-type)
 
 Adds a document-type to a store.
 
-** Document Type Defs
+** Definitions
 
-*** [generic function] getx (document (element cl-naive-store.document-types:element) &key &allow-other-keys)
+*** [function] create-multiverse (universe-definitions &optional persist-p)
 
-(setf getx) (value document (element cl-naive-store.document-types:element)
-
-*** [generic function] getxe (document element type &key &allow-other-keys))
-
-(setf getxe) (value document element type &key &allow-other-keys)
-
-*** [generic function] validate-xe (document element type value &key &allow-other-keys))
+Creates the multiverse elements from the definitions.
 
 ** Naive Documents
 
