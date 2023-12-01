@@ -258,6 +258,7 @@
     (time (persist *employee-collection*)))
 
   (format *trace-output* "~&Doing a straight up query that touches each record.~%")
+  (break "~S" *employee-collection*)
   (let ((data (time (query-data *employee-collection*
                                 :query (lambda (document)
                                          (or (and ; 51

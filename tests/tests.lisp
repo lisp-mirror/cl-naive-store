@@ -1,5 +1,10 @@
 (in-package :cl-naive-store.tests)
 
+(unless lparallel:*kernel*
+  (setf lparallel:*kernel* (lparallel:make-kernel
+                            ;; In ccl, cl-cpus:get-number-of-processors returns 0.
+                            (max 2 (cl-cpus:get-number-of-processors)))))
+
 (defun get-temp ()
   (handler-case
       (cl-fad::get-default-temporary-directory)
@@ -461,23 +466,30 @@ which contain the actual data. Each collection will have its own directory and f
                        (get-multiverse-element :store *universe* "simple-store")
                        "simple-collection")))
 
+      ;;Try and persist the same data again
       (dolist (document data)
-        (if (equalp *document-type* 'document)
-            (persist-document collection
-                              (make-document
-                               :store (store collection)
-                               :collection collection
-                               :document-type (if (stringp (document-type collection))
-                                                  (document-type collection)
-                                                  (name (document-type collection)))
-                               :elements (document-elements document)))
-            (persist-document collection
-                              (list
-                               :race (getf document :race)
-                               :gender (getf document :gender)
-                               :surname (getf document :surname)
-                               :name (getf document :name)
-                               :emp-no (getf document :emp-no)))))
+
+        (handler-case
+            (if (equalp *document-type* 'document)
+                (persist-document collection
+                                  (make-document
+                                   :store (store collection)
+                                   :collection collection
+                                   :document-type (if (stringp (document-type collection))
+                                                      (document-type collection)
+                                                      (name (document-type collection)))
+                                   :elements (document-elements document)))
+                (persist-document collection
+                                  (list
+                                   :race (getf document :race)
+                                   :gender (getf document :gender)
+                                   :surname (getf document :surname)
+                                   :name (getf document :name)
+                                   :emp-no (getf document :emp-no))))
+
+          (error (c)
+
+            (values nil c))))
 
       ;;Unload the collection (contains the data) if it is already loaded.
       (when (data-loaded-p collection)

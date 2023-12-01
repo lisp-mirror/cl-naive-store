@@ -8,7 +8,6 @@
   document)
 
 (defun check-keys-and-synq (old new allow-key-change-p)
-
   (if (equalp (key-values (document-collection new) new)
               (key-values (document-collection old) old))
       (progn
