@@ -5,14 +5,14 @@ stages:
 
 before_script:
   - cd ~/src  
-  - git clone https://gitlab-ci-token:$CI_JOB_TOKEN@gitlab.com/Harag/cl-getx.git
-  - git clone https://gitlab-ci-token:$CI_JOB_TOKEN@gitlab.com/Harag/cl-naive-ptrees.git
-  - git clone https://gitlab-ci-token:$CI_JOB_TOKEN@gitlab.com/Harag/cl-naive-deprecation.git
-  - git clone https://gitlab-ci-token:$CI_JOB_TOKEN@gitlab.com/Harag/cl-naive-tests.git
+  - git clone https://gitlab-ci-token:$CI_JOB_TOKEN@gitlab.com/naive-x/cl-getx.git
+  - git clone https://gitlab-ci-token:$CI_JOB_TOKEN@gitlab.com/naive-x/cl-naive-ptrees.git
+  - git clone https://gitlab-ci-token:$CI_JOB_TOKEN@gitlab.com/naive-x/cl-naive-deprecation.git
+  - git clone https://gitlab-ci-token:$CI_JOB_TOKEN@gitlab.com/naive-x/cl-naive-tests.git
   - cd ~/src/cl-naive-tests/
   - git checkout dynamic-tests
   - cd ../
-  
+
 test:
   stage: test
   script:
