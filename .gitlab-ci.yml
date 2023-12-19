@@ -4,9 +4,7 @@ stages:
   - test
 
 before_script:
-  - cd ~/src
-
-  git@gitlab.com:naive-x/cl-naive-tests.git
+  - cd ~/src  
   - git clone https://gitlab-ci-token:$CI_JOB_TOKEN@gitlab.com/Harag/cl-getx.git
   - git clone https://gitlab-ci-token:$CI_JOB_TOKEN@gitlab.com/Harag/cl-naive-ptrees.git
   - git clone https://gitlab-ci-token:$CI_JOB_TOKEN@gitlab.com/Harag/cl-naive-deprecation.git
