@@ -1,69 +1,71 @@
-(require 'cl-naive-store)
+(ignore-errors (delete-package :test-basic))
 
-;; SBCL is idiotic again, it signals an error when compiling a file
-;; containing this delete-package form.  You'll have to delete the
-;; package yourself between the various examples or tests loads.
-#-sbcl (ignore-errors (delete-package :naive-examples))
+(defpackage :test-basic
+  (:use :cl :cl-getx :cl-naive-store.tests :cl-naive-store.naive-core))
 
-(defpackage :naive-examples
-  (:use :cl :cl-getx :cl-naive-store.naive-core))
-(in-package :naive-examples)
+(in-package :test-basic)
 
-(defvar *multiverse* nil)
+(defparameter *store* nil)
 
-(defun test-location ()
-  (cl-fad:merge-pathnames-as-directory
-   (user-homedir-pathname)
-   (make-pathname :directory (list :relative "test-multiverse"))))
+(defparameter *collection* nil)
 
-(defun tear-down-multiverse ()
-  "Deletes any peristed data from examples."
-  (cl-fad:delete-directory-and-files
-   (if *multiverse*
-       (location *multiverse*)
-       (test-location))
-   :if-does-not-exist :ignore))
+(defmethod cl-naive-tests:setup-suite ((test-name (eql :test-basic)))
+  (setf *store*
+        (add-multiverse-element
+         *universe*
+         (make-instance (store-class *universe*)
+                        :name "simple-store"
+                        :collection-class 'collection)))
 
-;;Create multiverse
-(defparameter *multiverse*
-  (progn (tear-down-multiverse)
-         (make-instance
-          'multiverse
-          :name "multiverse"
-          :location (test-location) ;Setting the location on disk.
-          :universe-class 'universe)))
+  (setf *collection*
+        (add-multiverse-element
+         *store*
+         (make-instance (collection-class *store*)
+                        :name "simple-collection"
+                        ;; Specifying the key element, else its :key
+                        :keys '(:id))))
 
-(defparameter *universe*
-  (make-instance 'universe
-                 :name "universe"
-                 :store-class 'store))
+  ;; Add some documents to the collection
+  (add-document *collection* (list :name "Piet" :surname "Gieter" :id 123))
+  (add-document *collection* (list :name "Sannie" :surname "Gieter" :id 321))
+  (add-document *collection* (list :name "Koos" :surname "Van" :id 999))
 
-(add-multiverse-element *multiverse* *universe*)
+  ;; Update Van
+  (add-document *collection* (list :name "Koos Snr" :surname "Van" :id 999))
 
-(defparameter *store*
-  (add-multiverse-element *universe* (make-instance (store-class *universe*)
-                                                    :name "simple-store"
-                                                    :collection-class 'collection)))
+  ;; Duplicates are handled by default, so this will not cause a duplicate document
+  (add-document *collection* (list :name "Piet" :surname "Gieter" :id 123)))
 
-(defparameter *collection*
-  (add-multiverse-element *store* (make-instance (collection-class *store*)
-                                                 :name "simple-collection"
-                                                 :keys '(:id)))) ; Specifying the key element, else its :key
+(cl-naive-tests:define-suite (:test-basic)
+  (cl-naive-tests:testcase :test-query-and-duplicates
+                           :expected 2
+                           :actual (let ((results (query-data
+                                                   *collection*
+                                                   :query (lambda (document)
+                                                            (<= (getx document :id)
+                                                                900)))))
+                                     (length results)))
+  (cl-naive-tests:testcase :test-all-elements
+                           :expected '(:name "Piet" :surname "Gieter" :id 123)
+                           :actual (let ((document (query-document
+                                                    *collection*
+                                                    :query (lambda (document)
+                                                             (= (getx document :id)
+                                                                123)))))
 
-(persist *multiverse* :definitions-only-p t)
+                                     document))
+  (cl-naive-tests:testcase :test-update-and-query-document
+                           :expected "Koos Snr"
+                           :actual (let ((document (query-document
+                                                    *collection*
+                                                    :query (lambda (document)
+                                                             (= (getx document :id)
+                                                                999)))))
+                                     (getx document :name))))
 
-;; Add some documents to the collection
-(add-document *collection* (list :name "Piet"   :surname "Gieter" :id 123))
-(add-document *collection* (list :name "Sannie" :surname "Gieter" :id 321))
-(add-document *collection* (list :name "Koos"   :surname "Van"    :id 999))
+(defmethod cl-naive-tests:tear-down-suite ((test-name (eql :test-basic)))
+  (setf *collection* nil)
+  (setf *store* nil))
 
-;; Duplicates are handled by default, so this will not cause a duplicate document
-(add-document *collection* (list :name "Piet"   :surname "Gieter" :id 123))
+;;(cl-naive-tests:run :suites :test-basic)
 
-;; Query the collection
-(let ((results  (query-data *collection* :query (lambda (document) (<= (getx document :id) 900)))))
-  (assert (= 2 (length results)))
-  (print :success)
-  (pprint results))
-
-;;(cl-naive-store.tests:test-all)

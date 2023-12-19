@@ -609,14 +609,32 @@ file is of this general format /multiverse/multiverse-name.universe."
            (if (hash-table-p (documents shard))
                (maphash (lambda (key doc)
                           (declare (ignore key))
-                          (persist-document collection doc :shard shard :file-stream stream))
+                          (persist-document
+                           collection
+                           doc
+                           :shard shard
+                           ;;Documents come from a loaded collection
+                           ;;so duplicate checks where already done
+                           :dont-add-to-collection-p t
+                           :file-stream stream))
                         (documents shard))
+
                (do-sequence (doc (documents shard))
-                 (persist-document collection doc :shard shard :file-stream stream)))))))
+
+                 (persist-document collection
+                                   doc
+                                   :shard shard
+                                   ;;Documents come from a loaded collection
+                                   ;;so duplicate checks where already done
+                                   :dont-add-to-collection-p t
+                                   :file-stream stream)))))))
     (dotimes (i (length (shards collection)))
       i
       (lparallel:receive-result channel))))
 
+#|
+
+|#
 (defmethod persist ((collection collection) &key definition-only-p
                     (children-p t) &allow-other-keys)
   "Persists a collection definition and the documents in a collection.
@@ -718,14 +736,25 @@ Path to file for data is this general format /multiverse/universe/store-name/col
                    (name collection)
                    (or (mac shard) (name collection)))
              (shards-cache% (universe (store collection))))
+    (setf (documents shard) nil)
     (setf shard nil))
-  (setf (shards collection) (make-array 1 :fill-pointer 0 :adjustable t :initial-element nil)))
+
+  (setf (shards collection) (make-array 1 :fill-pointer 0 :adjustable t
+                                          :initial-element nil)))
 
 (defgeneric remove-multiverse-element (parent element &key)
   (:documentation "Removes an instance of a multiverse element from the parent instance."))
 
-(defmethod remove-multiverse-element ((store store) (collection collection) &key)
+(defmethod remove-multiverse-element ((store store) (collection collection)
+                                      &key remove-data-from-disk-p)
+  "By default this just removes the collection from the multiverse leaving data untouched. If you want data on disk to be deleted as well set remove-data-from-disk-p to t."
   (clear-collection collection)
+  (when remove-data-from-disk-p
+    (cl-fad:delete-directory-and-files
+     (cl-fad:merge-pathnames-as-directory
+      (location (store collection)) ;;(user-homedir-pathname)
+      (make-pathname :directory (list :relative (name collection))))
+     :if-does-not-exist :ignore))
   (setf (collections store) (remove collection (collections store))))
 
 (defmethod remove-multiverse-element ((multiverse multiverse) (universe universe) &key)

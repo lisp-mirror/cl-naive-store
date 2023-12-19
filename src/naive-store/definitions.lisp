@@ -91,52 +91,41 @@ and parent definition."))
                 ,(first path-element)))
             name-path))
 
-(defmacro add-defintion-element* (element-type list-key definition element name-path
-                                  replace-p)
-  (let ((element-type% (gensym))
-        (list-key% (gensym))
-        (definition% (gensym))
-        (element% (gensym))
-        (name-path% (gensym))
-        (replace-p% (gensym)))
+(defun add-defintion-element* (element-type list-key definition element name-path
+                               replace-p)
+  (let* ((query-result (if name-path
+                           (second
+                            (car
+                             (query-chain
+                              definition
+                              (cl-naive-store.naive-core::build-name-path-chain
+                               name-path))))
+                           definition))
+         (elements
+           (or (and name-path
+                    (getx
+                     query-result
+                     list-key))
+               (getx definition list-key)))
+         (existing-element (find-named-element
+                            element-type
+                            (digx element element-type :name)
+                            elements)))
 
-    `(let ((,element-type% ,element-type)
-           (,list-key% ,list-key)
-           (,definition% ,definition)
-           (,element% ,element)
-           (,name-path% ,name-path)
-           (,replace-p% ,replace-p))
+    (unless elements
+      (error (format nil "~A not found in definition."
+                     (string-capitalize list-key))))
 
-       (let* ((elements (or (and ,name-path%
-                                 (getx
-                                  (if ,name-path%
-                                      (second
-                                       (car
-                                        (query-chain
-                                         ,definition%
-                                         (cl-naive-store.naive-core::build-name-path-chain
-                                          ,name-path%))))
-                                      ,definition%)
-                                  ,list-key%))
-                            (getx ,definition% ,list-key%)))
-              (existing-element (find-named-element ,element-type%
-                                                    (digx ,element% ,element-type% :name)
-                                                    elements)))
+    (if existing-element
+        (if (not replace-p)
+            (progn
+              (error "~A definition already exsists: ~A"
+                     element-type
+                     (digx element element-type :name))
 
-         (unless elements
-           (error (format nil "~A not found in definition."
-                          (string-capitalize ,list-key%))))
-
-         (if existing-element
-             (if (not ,replace-p%)
-                 (progn
-                   (error "~A definition already exsists: ~A"
-                          ,element-type%
-                          (digx ,element% ,element-type% :name))
-
-                   (setf elements (nsubstitute ,element% existing-element elements))))
-             (nconc elements (list ,element)))
-         ,definition%))))
+              (setf elements (nsubstitute element existing-element elements))))
+        (nconc elements (list element)))
+    definition))
 
 (defmethod add-definition-element ((element-type (eql :collection))
                                    definition

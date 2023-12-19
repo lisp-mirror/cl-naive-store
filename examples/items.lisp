@@ -87,23 +87,24 @@
   (persist document-type :definitions-only-p t)
 
   ;;Create a collection and add it to the store
-  (setf collection (add-multiverse-element
-                    store
-                    (make-instance 'document-collection ;;using documents collection.
-                                   :name "simple-collection"
-                                   :document-type document-type
-                                   ;;Not specifying the
-                                   ;;keys to show that
-                                   ;;they are retrieved
-                                   ;;from the
-                                   ;;document-type if
-                                   ;;no key is set.
-                                   ;;:keys ...
-                                   ;;Specifying the
-                                   ;;elements to set up
-                                   ;;indexes for.
-                                   :indexes '((:name :surname)))
-                    :persist-p t))
+  (setf collection
+        (add-multiverse-element
+         store
+         (make-instance 'cl-naive-store.naive-documents:document-collection ;;using documents collection.
+                        :name "simple-collection"
+                        :document-type document-type
+                        ;;Not specifying the
+                        ;;keys to show that
+                        ;;they are retrieved
+                        ;;from the
+                        ;;document-type if
+                        ;;no key is set.
+                        ;;:keys ...
+                        ;;Specifying the
+                        ;;elements to set up
+                        ;;indexes for.
+                        :indexes '((:name :surname)))
+         :persist-p t))
 
   (persist collection :definitions-only-p t)
 

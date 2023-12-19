@@ -1,9 +1,10 @@
-(ignore-errors (delete-package :test-sharding-simple))
+(ignore-errors (delete-package :test-sharding-indexed))
 
-(defpackage :test-sharding-simple
-  (:use :cl :cl-getx :cl-naive-store.tests :cl-naive-store.naive-core))
+(defpackage :test-sharding-indexed
+  (:use :cl :cl-getx :cl-naive-store.tests :cl-naive-store.naive-core
+        :cl-naive-store.document-types :cl-naive-store.naive-documents))
 
-(in-package :test-sharding-simple)
+(in-package :test-sharding-indexed)
 
 ;; To be able to have reproducible and checkable tests, we'll use a
 ;; deterministic way to generate employee attributes.  For this, we
@@ -17,6 +18,43 @@
   #("Smith" "Johnson" "Williams" "Jones" "Brown" "Davis" "Miller")
   "A vector of surnames.")
 
+(defparameter *employee-document-type*
+  '(:document-type (:name "employee"
+                    :label "Employee"
+                    :elements
+                    ((:element
+                      (:name :emp-no
+                       :label "Employee No"
+                       :key-p t
+                       :concrete-type :string
+                       :attributes ((:attribute
+                                     (:name :display
+                                      :value t))
+                                    (:attribute
+                                     (:name :editable
+                                      :value t)))))
+                     (:element
+                      (:name :name
+                       :label "Name"
+                       :concrete-type :string
+                       :attributes ((:attribute
+                                     (:name :display
+                                      :value t))
+                                    (:attribute
+                                     (:name :editable
+                                      :value t)))))
+                     (:element
+                      (:name :surname
+                       :label "Surname"
+                       :concrete-type :string
+                       :attributes ((:attribute
+                                     (:name :display
+                                      :value t))
+                                    (:attribute
+                                     (:name :editable
+                                      :value t))))))
+                    :documentation "This type represents a simple employee master.")))
+
 (defparameter *store* nil)
 
 (defparameter *collection* nil)
@@ -26,30 +64,57 @@
 
 (defparameter *expected-shard-count* 0)
 
-(defmethod cl-naive-tests:setup-suite ((test-name (eql :test-sharding-simple)))
+(defmethod get-store-class ((test-name (eql :test-sharding-indexed)))
+  'document-store)
 
-  (setf *expected-shard-count* 0)
-  (setf *store*
-        (add-multiverse-element
-         *universe*
-         (make-instance (store-class *universe*)
-                        :name "simple-store"
-                        :collection-class
-                        'collection)))
+(defmethod cl-naive-tests:setup-suite ((test-name (eql :test-sharding-indexed)))
 
-  (setf *collection*
-        (add-multiverse-element
-         *store*
-         (make-instance (collection-class *store*)
-                        :name "simple-collection"
-                        :keys '(:emp-no)
+  (let ((document-type
+          (make-instance
+           'document-type
+           :name (getf
+                  (getf *employee-document-type* :document-type)
+                  :name)
+           :label (getf
+                   (getf *employee-document-type* :document-type)
+                   :label)
+           :elements (mapcar
+                      (lambda (element)
+                        (make-instance
+                         'element
+                         :name(getf (getf element :element) :name)
+                         :key-p (getf (getf element :element) :key-p)
+                         :concrete-type (getf (getf element :element) :concrete-type)
+                         :attributes (getf (getf element :element) :attributes)))
+                      (getf
+                       (getf *employee-document-type* :document-type)
+                       :elements)))))
 
-                        ;; Creating shards based on the country that the employee
-                        ;; belongs to.  It is a bad example you should not shard on
-                        ;; any value that could change in the future!
-                        :shard-elements '(:country))))
+    (setf *expected-shard-count* 0)
 
-  (persist *multiverse* :definitions-only-p t)
+    (setf *store*
+          (add-multiverse-element
+           *universe*
+           (make-instance (store-class *universe*)
+                          :name "simple-store"
+                          :collection-class
+                          'cl-naive-store.naive-documents:document-collection)))
+
+    (cl-naive-store.naive-core:add-multiverse-element *store* document-type)
+
+    (setf *collection*
+          (add-multiverse-element
+           *store*
+           (make-instance (collection-class *store*)
+                          :name "simple-collection"
+                          :keys '(:emp-no)
+                          :document-type document-type
+                          ;; Creating shards based on the country that the employee
+                          ;; belongs to.  It is a bad example you should not shard on
+                          ;; any value that could change in the future!
+                          :shard-elements '(:country))))
+
+    (persist *multiverse* :definitions-only-p t))
 
   (let ((emp-country  0)
         (emp-surname  0)
@@ -90,7 +155,7 @@
     (time
      (persist-collection *collection*))))
 
-(cl-naive-tests:define-suite (:test-sharding-simple)
+(cl-naive-tests:define-suite (:test-sharding-indexed)
   (cl-naive-tests:testcase :test-gcd
                            :expected 1
                            :actual (gcd (length *countries*) (length  *surnames*)))
@@ -146,8 +211,8 @@
                    :query (lambda (document)
                             (equalp (getx document :surname) "Davis")))))))
 
-(defmethod cl-naive-tests:tear-down-suite ((test-name (eql :test-sharding-simple)))
+(defmethod cl-naive-tests:tear-down-suite ((test-name (eql :test-sharding-indexed)))
   (setf *collection* nil)
   (setf *store* nil))
 
-;;(cl-naive-tests:run :suites :test-sharding-simple)
+;;(cl-naive-tests:run :suites :test-sharding-indexed)

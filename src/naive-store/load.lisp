@@ -16,14 +16,15 @@
 
     (unless files
       (naive-impl::debug-log (frmt "no files on path") :file-p t :args path))
-
     files))
 
-(defgeneric load-shard (collection shard filename &key &allow-other-keys)
+(defgeneric load-shard (collection shard filename &key handle-duplicates-p
+                        &allow-other-keys)
   (:documentation "Loads documents from file."))
 
-(defmethod load-shard :around ((collection collection) shard filename &key &allow-other-keys)
-  (declare (ignorable filename))
+(defmethod load-shard :around ((collection collection) shard filename
+                               &key handle-duplicates-p &allow-other-keys)
+  (declare (ignorable filename) (ignorable handle-duplicates-p))
   (let ((naive-impl:%loading-shard% shard))
     (call-next-method)))
 
@@ -33,15 +34,18 @@
 ;;Dont try to do compose-document asyncronously because the order in
 ;;which the documents are loaded in the underlying container matter,
 ;;for deleted documents and document history (aka versions) both!!!!
-(defmethod load-shard ((collection collection) shard filename &key &allow-other-keys)
-  ;;(break "file ~S~%~S~%~S" filename (location shard) (status shard))
+(defmethod load-shard ((collection collection) shard filename &key
+                       (handle-duplicates-p t) &allow-other-keys)
 
   ;;TODO: Added a check for :loaded as well else it reloads the shard
   ;;when reference collections are found and that causes crap versions.
   ;;Now need to see if lazy loading still works with this change.
   (unless (or (equalp (status shard) :loading)
               (equalp (status shard) :loaded))
+
     (unless (probe-file (format nil "~a.lock" (location shard)))
+      ;;(break "file ~S~%~S~%~S" filename (location shard) (status shard))
+
       (let ((sexps))
 
         (setf (status shard) :loading)
@@ -65,9 +69,9 @@
             (loop :for document-form in sexps
                   :do
                   (progn
-                    ;;(break "load ~S" document-form)
                     (naive-impl::compose-document
-                     collection (or shard naive-impl:%loading-shard%) document-form))))))
+                     collection (or shard naive-impl:%loading-shard%) document-form
+                     :handle-duplicates-p handle-duplicates-p))))))
 
       (naive-impl::debug-log (frmt "load-shard end ") :file-p t :args (list shard filename))
       (setf (status shard) :loaded))))
@@ -135,6 +139,7 @@
       (error "The collection has no parent store.")))
 
 (defmethod load-data ((collection collection) &key shard-macs (parallel-p t)
+                      (handle-duplicates-p t)
                       &allow-other-keys)
 
   (ensure-structure collection t)
@@ -165,9 +170,10 @@
                                            :args (list shard filename))
 
                     (setf shard (make-shard collection mac))
-                    (load-shard collection shard filename)
                     (set-shard-cache-safe% collection mac shard)
-                    (vector-push-extend shard (shards collection))))))))))
+                    (vector-push-extend shard (shards collection))
+                    (load-shard collection shard filename
+                                :handle-duplicates-p handle-duplicates-p)))))))))
 
     (when parallel-p
       (unless (> (length (shards collection)) 0)
@@ -198,10 +204,10 @@
                         (push (lparallel:submit-task
                                channel
                                (lambda ()
-                                 (load-shard collection shard filename)
-
                                  (set-shard-cache-safe% collection mac shard)
-                                 (vector-push-extend shard (shards collection))))
+                                 (vector-push-extend shard (shards collection))
+                                 (load-shard collection shard filename
+                                             :handle-duplicates-p handle-duplicates-p)))
                               tasks))))))
 
               (naive-impl::debug-log "load-data checking tasks"

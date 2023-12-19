@@ -1,106 +1,83 @@
-;; Setup to use cl-naive-store
-(require 'cl-naive-store)
+(ignore-errors (delete-package :test-indexed))
 
-;; SBCL is idiotic again, it signals an error when compiling a file
-;; containing this delete-package form.  You'll have to delete the
-;; package yourself between the various examples or tests loads.
-#-sbcl (ignore-errors (delete-package :naive-examples))
+(defpackage :test-indexed
+  (:use :cl :cl-getx :cl-naive-store.tests :cl-naive-store.naive-core
+        :cl-naive-store.naive-indexed))
 
-(defpackage :naive-examples
-  (:use :cl :cl-getx :cl-naive-store.naive-core :cl-naive-store.naive-indexed))
-(in-package :naive-examples)
+(in-package :test-indexed)
 
-(defclass indexed-collection (indexed-collection-mixin collection)
-  ())
+(defparameter *store* nil)
 
-(defvar *multiverse* nil)
+(defparameter *collection* nil)
 
-(defun test-location ()
-  (cl-fad:merge-pathnames-as-directory
-   (user-homedir-pathname)
-   (make-pathname :directory (list :relative "test-multiverse"))))
+(defmethod cl-naive-tests:setup-suite ((test-name (eql :test-indexed)))
+  (setf *store*
+        (add-multiverse-element
+         *universe*
+         (make-instance (store-class *universe*)
+                        :name "simple-store"
+                        :collection-class 'indexed-collection)))
 
-(defun tear-down-multiverse ()
-  "Deletes any peristed data from examples."
-  (cl-fad:delete-directory-and-files
-   (if *multiverse*
-       (location *multiverse*)
-       (test-location))
-   :if-does-not-exist :ignore))
+  (setf *collection*
+        (add-multiverse-element
+         *store*
+         (make-instance (collection-class *store*)
+                        :name "simple-collection"
+                        ;; Specifying the key element, else its :key
+                        :keys '(:id)
+                        ;; Specifying the elements to set up indexes for.
+                        :indexes '((:name :surname)))))
 
-;;Create multiverse
-(defparameter *multiverse*
-  (progn (tear-down-multiverse)
-         (make-instance
-          'multiverse
-          :name "multiverse"
-          :universe-class 'universe)))
+  (persist *multiverse* :definitions-only-p t)
 
-(defparameter *universe*
-  (add-multiverse-element *multiverse*
-                          (make-instance 'universe
-                                         :name "universe"
-                                         :store-class 'store)))
+  ;; Add some documents to the collection
+  (persist-document *collection* (list :name "Piet" :surname "Gieter" :id 123))
+  (persist-document *collection* (list :name "Koos" :surname "Van" :id 999))
+  (persist-document *collection* (list :name "Frikkie" :surname "Frikkedel" :id 1001))
+  (persist-document *collection* (list :name "Tannie" :surname "Frikkedel" :id 1002))
+  ;; Update Van (making sure index stays in sync)
+  (persist-document *collection* (list :name "Koos Snr" :surname "Van" :id 999)))
 
-;;Add universe to multiverse.
+(cl-naive-tests:define-suite (:test-indexed)
+  (cl-naive-tests:testcase :test-update-and-query-document
+                           :expected "Koos Snr"
+                           :actual (let ((document (query-document
+                                                    *collection*
+                                                    :query (lambda (document)
+                                                             (= (getx document :id)
+                                                                999)))))
+                                     (getx document :name)))
+  (cl-naive-tests:testcase :test-query
+                           :expected 3
+                           :actual (length
+                                    (query-data
+                                     *collection*
+                                     :query (lambda (document)
+                                              (<= (getx document :id) 1001)))))
+  (cl-naive-tests:testcase
+   :test-index-lookup-values-1
+   :expected (list 1 999)
+   :actual (let ((results (index-lookup-values
+                           *collection*
+                           '((:name "Koos") (:surname "Van")))))
+             (list (length results)
+                   (getx
+                    (first results)
+                    :id))))
+  (cl-naive-tests:testcase
+   :test-index-lookup-values-2
+   :expected (list 2 1002 1001)
+   :actual (let ((results (index-lookup-values
+                           *collection*
+                           '(:surname "Frikkedel"))))
 
-(defparameter *store*
-  (add-multiverse-element
-   *universe*
-   (make-instance (store-class *universe*)
-                  :name "simple-store"
-                  :collection-class 'indexed-collection)))
+             (list
+              (length results)
+              (getx (first results) :id)
+              (getx (second results) :id)))))
 
-(defparameter *collection*
-  (add-multiverse-element
-   *store*
-   (make-instance (collection-class *store*)
-                  :name "simple-collection"
-                  ;; Specifying the key element, else its :key
-                  :keys '(:id)
-                  ;; Specifying the elements to set up indexes for.
-                  :indexes '((:name :surname)))))
+(defmethod cl-naive-tests:tear-down-suite ((test-name (eql :test-indexed)))
+  (setf *collection* nil)
+  (setf *store* nil))
 
-;;Persisting definitions
-
-(persist *multiverse* :definitions-only-p t)
-
-;; Add some documents to the collection
-
-(persist-document *collection* (list :name "Piet" :surname "Gieter" :id 123))
-(assert (= 1 (length (documents *collection*))))
-(persist-document *collection* (list :name "Sannie" :surname "Gieter" :id 321))
-(assert (= 2 (length (documents *collection*))))
-(persist-document *collection* (list :name "Koos" :surname "Van" :id 999))
-(assert (= 3 (length (documents *collection*))))
-(persist-document *collection* (list :name "Frikkie" :surname "Frikkedel" :id 1001))
-(assert (= 4 (length (documents *collection*))))
-(persist-document *collection* (list :name "Tannie" :surname "Frikkedel" :id 1001))
-(assert (= 4 (length (documents *collection*)))) ; updated 1001
-
-(let ((results '()))
-
-  ;; Lookup koos using index values and add it to results
-  (push (index-lookup-values *collection* '((:name "Koos") (:surname "Van")))
-        results)
-  (assert (first results))
-  (assert (= 1 (length results)))
-
-  ;; Lookup Frikkedel using index values and add it to results
-  (push (index-lookup-values *collection* '(:surname "Frikkedel"))
-        results)
-  (assert (first results))
-  (assert (= 2 (length results)))
-
-  ;; Query the collection, query-data will load the data from file if the *collection* is empty,
-  ;; and add it to the results
-
-  (push (query-data *collection* :query (lambda (document)
-                                          (<= (getx document :id) 900)))
-        results)
-  (assert (first results))
-  (assert (= 3 (length results)))
-
-  (print :success)
-  (pprint (reverse results)))
-
+;;(cl-naive-tests:run :suites :test-indexed)

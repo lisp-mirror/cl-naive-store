@@ -329,6 +329,19 @@ IMPL NOTES: To deal with customization of document-type.")
     ((document-type document-type) &key &allow-other-keys)
   (persist-definition document-type))
 
+(defmethod cl-naive-store.naive-core:persist ((store document-type-store-mixin)
+                                              &key definitions-only-p
+                                              (children-p t) &allow-other-keys)
+  (persist-definition store)
+
+  (when children-p
+    (dolist (collection (getx store :collections))
+      (persist collection :definitions-only-p definitions-only-p
+                          :children-p children-p))
+    (dolist (document-type (getx store :document-types))
+      (persist document-type :definitions-only-p  definitions-only-p
+                             :children-p children-p))))
+
 (defmethod cl-naive-store.naive-core:get-multiverse-element
     ((element-type (eql :element)) (document-type document-type) name)
   (cl-naive-store.naive-core::get-multiverse-element* document-type elements name))
@@ -548,9 +561,7 @@ IMPL NOTES: To deal with customization of document-type.")
 (defmethod cl-naive-store.naive-core:load-from-definition
     ((store document-type-store-mixin)
      (definition-type (eql :collection))
-     definition &key class persist-p
-     with-children-p
-     with-data-p)
+     definition &key class with-children-p with-data-p)
 
   (declare (ignore with-children-p))
 
@@ -581,11 +592,6 @@ IMPL NOTES: To deal with customization of document-type.")
 
         (unless document-type
           (error "Collection document-type could not be found."))))
-
-    (when persist-p
-      (unless (location instance)
-        (error "Cannot persist the colleciton, there is no location."))
-      (persist instance))
 
     (when with-data-p
       (load-data instance))

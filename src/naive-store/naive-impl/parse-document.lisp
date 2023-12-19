@@ -124,27 +124,35 @@ When documents are read from a file the references need to be converted to docum
 
         (t nil)))
 
-(defgeneric compose-special (collection shard sexp type)
+(defgeneric compose-special (collection shard sexp type
+                             &key handle-duplicates-p &allow-other-keys)
   (:documentation "Does special processing to compose a specific type of document or element."))
 
-(defmethod compose-special (collection shard sexp (type (eql :document)))
+(defmethod compose-special (collection shard sexp (type (eql :document))
+                            &key (handle-duplicates-p t) &allow-other-keys)
   (naive-impl::debug-log "core:Compose-special :document ~A" (name collection))
   (if (getx sexp :deleted-p)
       (remove-document collection sexp :shard shard)
       ;;TODO: Where to get handle-duplicates-p ???
-      (add-document collection sexp :shard shard)))
+      (add-document collection sexp :shard shard
+                                    :handle-duplicates-p handle-duplicates-p)))
 
-(defmethod compose-special (collection shard sexp (type (eql :blob)))
-  (declare (ignorable collection) (ignorable shard) (ignorable type))
+(defmethod compose-special (collection shard sexp (type (eql :blob))
+                            &key handle-duplicates-p &allow-other-keys)
+  (declare (ignorable collection) (ignorable shard) (ignorable type)
+           (ignore handle-duplicates-p))
 
   (read-blob (cdr sexp)))
 
-(defmethod compose-special (collection shard sexp (type (eql :hash-table)))
-  (declare (ignorable collection) (ignorable shard) (ignorable sexp) (ignorable type))
+(defmethod compose-special (collection shard sexp (type (eql :hash-table))
+                            &key handle-duplicates-p &allow-other-keys)
+  (declare (ignorable collection) (ignorable shard) (ignorable sexp) (ignorable type)
+           (ignorable handle-duplicates-p))
   (error "Reading of hash-tables not implmented yet."))
 
-(defmethod compose-special (collection shard sexp (type (eql :reference)))
-  (declare (ignorable shard))
+(defmethod compose-special (collection shard sexp (type (eql :reference))
+                            &key handle-duplicates-p &allow-other-keys)
+  (declare (ignorable shard) (ignore handle-duplicates-p))
 
   (naive-impl::debug-log "core:Compose-special :reference ~A" (name collection))
 
@@ -179,7 +187,8 @@ When documents are read from a file the references need to be converted to docum
 
     ref-document))
 
-(defgeneric compose-document (collection shard document-form &key &allow-other-keys)
+(defgeneric compose-document (collection shard document-form &key
+                              handle-duplicates-p &allow-other-keys)
   (:documentation "The loading of documents happens in a two step process. First documents are read with (*read-eval* nil). Then the sexp representing a raw document is processed to compose the required in memory representation."))
 
 ;;Made this a seperate method so simple units tests can test basic parsing.
@@ -201,12 +210,14 @@ When documents are read from a file the references need to be converted to docum
          (compose-parse collection shard (cdr sexp)
                         (cons (car sexp) doc)))))
 
-(defmethod compose-document (collection shard document-form &key &allow-other-keys)
+(defmethod compose-document (collection shard document-form &key
+                             (handle-duplicates-p t) &allow-other-keys)
   (naive-impl::debug-log "core:Compose-document ~A" (name collection))
   (let ((doc
           (compose-special collection
                            shard
                            (compose-parse collection shard document-form nil)
-                           :document)))
+                           :document
+                           :handle-duplicates-p handle-duplicates-p)))
     (naive-impl::debug-log "END core:Compose-document ~A" (name collection))
     doc))

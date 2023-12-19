@@ -1,41 +1,27 @@
-all: test
+all: test documentation
+.PHONY:: test tests documentation
 
-.PHONY: test tests test-load-systems test-run-tests run-tests-ccl run-tests-sbcl
+# default values:
+ARTDIR = tests/artifacts/
+DEPENDENCYDIR = $(abspath $(CURDIR)/..)/
+THISDIR = $(abspath $(CURDIR))/
 
-CCL_LISP = ccl  --batch --quiet --no-init
-CCL_QUIT = --eval '(ccl:quit)'
+test tests:
+	sbcl --noinform --no-userinit --non-interactive \
+		--eval '(load #P"~/quicklisp/setup.lisp")' \
+		--eval '(push "$(DEPENDENCYDIR)" ql:*local-project-directories*)' \
+		--eval '(push #P"$(THISDIR)" asdf:*central-registry*)' \
+		--eval '(ql:quickload :cl-naive-store.tests)' \
+		--eval '(cl-naive-tests:run)' \
+		--eval '(cl-naive-tests:write-results cl-naive-tests:*suites-results* :format :text)' \
+		--eval '(cl-naive-tests:save-results cl-naive-tests:*suites-results* :file "$(ARTDIR)junit-results.xml" :format :junit)' \
+		--eval '(sb-ext:exit :code (if (cl-naive-tests:report) 0 200))'
+documentation:
+	@case "$(DEPENDENCYDIR)" in (/*) dd="$(DEPENDENCYDIR)" ;; (*) dd="../$(DEPENDENCYDIR)" ;; esac ; \
+	make -C docs "DEPENDENCYDIR=$$dd" check-documentation all
 
-SBCL_LISP = sbcl --non-interactive --no-userinit
-SBCL_QUIT = --quit
-
-# NAME=ccl
-# LISP=$(CCL_LISP)
-# QUIT=$(CCL_QUIT)
-
-NAME ?= sbcl
-LISP ?= $(SBCL_LISP)
-QUIT ?= $(SBCL_QUIT)
-
-test tests: test-run-tests test-load-systems
-
-test-load-systems:
-	load_system=load_system_in_$(NAME) tests/test-load-systems
-
-run-tests-ccl:  NAME=ccl
-run-tests-ccl:  LISP=$(CCL_LISP)
-run-tests-ccl:  QUIT=$(CCL_QUIT)
-run-tests-ccl:  test-run-tests
-
-run-tests-sbcl: NAME=sbcl
-run-tests-sbcl: LISP=$(SBCL_LISP)
-run-tests-sbcl: QUIT=$(SBCL_QUIT)
-run-tests-sbcl: test-run-tests
-
-test-run-tests:
-	$(LISP) \
-		--eval '(load "~/quicklisp/setup.lisp")' \
-		--eval '(push #P"'"$$(pwd)"'/" asdf:*central-registry*)' \
-		--eval '(setf *default-pathname-defaults* #P"'"$$(pwd)"'/tests/")' \
-		--eval '(ql:quickload :cl-naive-store)' \
-		--eval '(asdf:oos (quote asdf:test-op) :cl-naive-store.test)' \
-		$(QUIT)
+help:
+	@printf 'make tests DEPENDENCYDIR=…  # run the tests.\n'
+	@printf 'make documentation          # builds the pdf documentation.\n'
+	@printf 'make help                   # builds this help.\n'
+	@printf 'make all   DEPENDENCYDIR=…  # runs the tests and builds the pdf.\n'

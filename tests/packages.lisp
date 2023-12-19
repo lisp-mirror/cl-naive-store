@@ -4,12 +4,20 @@
   (:use
    :cl
    :cl-getx
-   :cl-naive-store.naive-core
-   :cl-naive-store.naive-indexed
-   :cl-naive-store.document-types
-   :cl-naive-store.naive-documents)
+   :cl-naive-tests
+   :cl-naive-store.naive-core)
   (:export
+   :get-universe-class
+   :get-store-class
+   :*multiverse*
    :*universe*
+   :*countries*
+
+   :test-location
+   :tear-down-test
+   :setup-test
+   :define-testsuite
+   :run-test
 
    :test-all
    :test-all-examples

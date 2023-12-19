@@ -136,9 +136,12 @@ Does lazy loading."))
   (if query
       (reduce (lambda (results document)
                 (cond
-                  ((deleted-p document)     results)
-                  ((funcall query document) (cons document results))
-                  (t                        results)))
+                  ((deleted-p document)
+                   results)
+                  ((funcall query document)
+                   (cons document results))
+                  (t
+                   results)))
               sequence :initial-value '())
       (coerce sequence 'list)))
 

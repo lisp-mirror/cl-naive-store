@@ -17,7 +17,6 @@ The convention is to append %% to these accessors, for two reasons. First to sho
 :changes~ = document-changes
 :versions~ = document-versions
 :deleted-p~ = document-deleted-p"
-
   (case accessor
     (:hash
 
@@ -50,6 +49,8 @@ The convention is to append %% to these accessors, for two reasons. First to sho
      (document-elements document))
     (:changes~
      (document-changes document))
+    (:versions~
+     (document-versions document))
     (:deleted-p~
      (document-deleted-p document))
     (otherwise

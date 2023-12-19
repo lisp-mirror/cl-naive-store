@@ -42,7 +42,8 @@
          nil)))
 
 (defmethod naive-impl:compose-special ((collection document-collection) shard sexp
-                                       (type (eql :document)))
+                                       (type (eql :document))
+                                       &key (handle-duplicates-p t) &allow-other-keys)
 
   (naive-impl::debug-log "docs:Compose-special :document ~A" (name collection))
   (let* ((resolved-values  (naive-impl:compose-parse
@@ -103,14 +104,17 @@
 
                      :hash (frmt "~A" (getx sexp :hash))
                      :elements resolved-values))
-              (add-document collection final-document))))
+              (add-document collection final-document
+                            :handle-duplicates-p handle-duplicates-p))))
 
     (naive-impl::debug-log "END docs:Compose-special :document ~A" (name collection))
 
     final-document))
 
 (defmethod naive-impl:compose-special ((collection document-collection) shard
-                                       sexp (type (eql :child-document)))
+                                       sexp (type (eql :child-document))
+                                       &key handle-duplicates-p &allow-other-keys)
+  (declare (ignore handle-duplicates-p))
 
   (let* ((ref-universe (ensure-universe
                         (multiverse (universe (store collection)))
@@ -149,8 +153,9 @@
                                          nil))))
 
 (defmethod naive-impl:compose-special ((collection document-collection) shard
-                                       sexp (type (eql :blob)))
-  (declare (ignorable collection) (ignorable shard))
+                                       sexp (type (eql :blob))
+                                       &key handle-duplicates-p &allow-other-keys)
+  (declare (ignorable collection) (ignorable shard) (ignore handle-duplicates-p))
   ;;TODO: dealing with historical data should remove the check some time
   ;;was most likely to ensure balanced plists, should maybe implement that again
   ;;would make checking for types simpler
@@ -161,9 +166,10 @@
 
 (defmethod naive-impl:compose-document ((collection document-collection)
                                         shard document-form
-                                        &key &allow-other-keys)
+                                        &key (handle-duplicates-p t) &allow-other-keys)
   ;;(break "compose-doc ~S" document-form)
   (naive-impl:compose-special collection
                               shard
                               document-form
-                              :document))
+                              :document
+                              :handle-duplicates-p handle-duplicates-p))

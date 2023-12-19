@@ -4,9 +4,8 @@
   (:use :cl :cl-naive-store.naive-core :cl-getx)
   (:export
    :*do-partial-indexing*
-   :indexed-values-hashtables-mixin
-
    :indexed-collection-mixin
+   :indexed-collection
    :uuid-index
    :key-value-index
 

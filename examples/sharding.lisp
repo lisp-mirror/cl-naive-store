@@ -140,28 +140,31 @@
   ;;Create a collection and add it to the store
   (setf employee-collection
         (add-multiverse-element store
-                                (make-instance 'document-collection ;;using documents collection.
-                                               :name "simple-collection"
-                                               :document-type employee-document-type
-                                               :keys '(:emp-no)
-                                               :indexes '((:surname))
-                                               ;;Creating shards based on the
-                                               ;;country that the employee
-                                               ;;belongs to. It is a bad
-                                               ;;example you should not shard
-                                               ;;on any value that could
-                                               ;;change!!!!!
-                                               :shard-elements (list :country))))
+                                (make-instance
+                                 ;;using documents collection.
+                                 'cl-naive-store.naive-documents:document-collection
+                                 :name "simple-collection"
+                                 :document-type employee-document-type
+                                 :keys '(:emp-no)
+                                 :indexes '((:surname))
+                                 ;;Creating shards based on the
+                                 ;;country that the employee
+                                 ;;belongs to. It is a bad
+                                 ;;example you should not shard
+                                 ;;on any value that could
+                                 ;;change!!!!!
+                                 :shard-elements (list :country))))
 
   (persist employee-collection :definitions-only-p t)
 
   ;;Create a collection and add it to the store
   (setf asset-collection
-        (add-multiverse-element store
-                                (make-instance 'document-collection
-                                               :name "asset-collection"
-                                               :document-type asset-document-type
-                                               :keys '(:asset-no))))
+        (add-multiverse-element
+         store
+         (make-instance 'cl-naive-store.naive-documents:document-collection
+                        :name "asset-collection"
+                        :document-type asset-document-type
+                        :keys '(:asset-no))))
 
   (persist asset-collection :definitions-only-p t)
 

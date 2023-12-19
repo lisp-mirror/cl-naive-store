@@ -1,100 +1,121 @@
-(require 'cl-naive-store)
+(ignore-errors (delete-package :test-basic-persisted))
 
-;; SBCL is idiotic again, it signals an error when compiling a file
-;; containing this delete-package form.  You'll have to delete the
-;; package yourself between the various examples or tests loads.
-#-sbcl (ignore-errors (delete-package :naive-examples))
+(defpackage :test-basic-persisted
+  (:use :cl :cl-getx :cl-naive-store.tests :cl-naive-store.naive-core))
 
-(defpackage :naive-examples
-  (:use :cl :cl-getx :cl-naive-store.naive-core))
-(in-package :naive-examples)
-
-(defvar *multiverse* nil)
-
-(defun test-location ()
-  (cl-fad:merge-pathnames-as-directory
-   (user-homedir-pathname)
-   (make-pathname :directory (list :relative "test-multiverse"))))
-
-(defun tear-down-multiverse ()
-  "Deletes any peristed data from examples."
-  (cl-fad:delete-directory-and-files
-   (if *multiverse*
-       (location *multiverse*)
-       (test-location))
-   :if-does-not-exist :ignore))
-
-;;Create multiverse
-(defparameter *multiverse*
-  (progn (tear-down-multiverse)
-         (make-instance
-          'multiverse
-          :name "multiverse"
-          :universe-class 'universe)))
-
-(add-multiverse-element *multiverse* *universe*)
+(in-package :test-basic-persisted)
 
 (defun count-lines-in-file (path)
   (with-input-from-string (file-content (naive-impl::file-to-string path))
     (loop for line = (read-line file-content nil)
           while line count line)))
 
-(defparameter *universe*
-  (make-instance 'universe
-                 :name "universe"
-                 :store-class 'store))
+(defparameter *store* nil)
 
-(defparameter *store*
-  (add-multiverse-element *universe* (make-instance (store-class *universe*)
-                                                    :name "simple-store"
-                                                    :collection-class 'collection)))
+(defparameter *collection* nil)
 
-(defparameter *collection*
-  (add-multiverse-element *store* (make-instance (collection-class *store*)
-                                                 :name "simple-collection"
-                                                 :keys '(:id)))) ; Specifying the key element, else its :key
+(defmethod cl-naive-tests:setup-suite ((test-name (eql :test-basic-persisted)))
+  (persist *multiverse* :definitions-only-p t)
 
-(persist *multiverse* :definitions-only-p t)
+  (setf *store*
+        (add-multiverse-element
+         *universe*
+         (make-instance (store-class *universe*)
+                        :name "simple-store"
+                        :collection-class 'collection)))
 
-;; Add some documents to the *collection*
-(persist-document *collection* (list :name "Piet"   :surname "Gieter" :id 123))
-(assert (= 1 (length (documents *collection*))))
-(persist-document *collection* (list :name "Sannie" :surname "Gieter" :id 321))
-(assert (= 2 (length (documents *collection*))))
-(persist-document *collection* (list :name "Koos"   :surname "Van"    :id 999))
-(assert (= 3 (length (documents *collection*))))
+  (setf *collection*
+        (add-multiverse-element
+         *store*
+         (make-instance (collection-class *store*)
+                        :name "simple-collection"
+                        ;; Specifying the key element, else its :key
+                        :keys '(:id)))))
 
-;; Clear the *collection*, ie unload documents from memory so we can show that it has been persisted.
-(clear-collection *collection*)
-(assert (= 0 (length (documents *collection*))))
+(cl-naive-tests:define-suite (:test-basic-persisted)
+  (cl-naive-tests:testcase
+   :count-1
+   :expected 1
+   :actual (progn
+             (persist-document *collection*
+                               (list :name "Piet"
+                                     :surname "Gieter"
+                                     :id 123))
+             (length (documents *collection*))))
+  (cl-naive-tests:testcase
+   :count-2
+   :expected 2
+   :actual (progn
+             (persist-document *collection*
+                               (list :name "Sannie"
+                                     :surname "Gieter"
+                                     :id 321))
+             (length (documents *collection*))))
+  (cl-naive-tests:testcase
+   :count-3
+   :expected 3
+   :actual (progn
+             (persist-document *collection*
+                               (list :name "Koos"
+                                     :surname "Van"
+                                     :id 999))
+             (length (documents *collection*))))
+  (cl-naive-tests:testcase
+   :test-update
+   :expected '(3 "Koos Snr")
+   :actual (let ((document (persist-document *collection*
+                                             (list :name "Koos Snr"
+                                                   :surname "Van"
+                                                   :id 999))))
+             (list
+              (length (documents *collection*))
+              (getx document :name))))
+  (cl-naive-tests:testcase
+   :clear-collection
+   :expected 0
+   :actual (progn
+             (clear-collection *collection*)
+             (length (documents *collection*))))
+  (cl-naive-tests:testcase
+   :test-lazy-loading
+   :expected 2
+   :actual (length (query-data
+                    *collection*
+                    :query (lambda (document)
+                             (<= (getx document :id) 900)))))
+  (cl-naive-tests:testcase
+   :count-lines-in-file
+   :expected 4
+   :actual (count-lines-in-file (location *collection*)))
+  (cl-naive-tests:testcase
+   :delete
+   :expected (list 1 6)
+   :actual (let ((results (query-data *collection*
+                                      :query (lambda (document)
+                                               (<= (getx document :id) 900)))))
+             (mapcar #'(lambda (doc)
+                         (delete-document *collection* doc))
+                     results)
 
-;; Query the *collection*, query-data will load the data from file if the *collection* is empty
-(let ((results (query-data *collection* :query (lambda (document) (<= (getx document :id) 900)))))
-  (assert (= 3 (length (documents *collection*)))
-          ()
-          "(length (documents *collection*)) = ~S" (length (documents *collection*)))
-  (assert (= 2 (length results))
-          ()
-          "(length results) = ~S"  (length results))
-  ;; (pprint results)
-  ;; test maintenance functionality - sanitize collection
-  (mapcar #'(lambda (doc) (delete-document *collection* doc)) results)
-  (assert (= 1 (length (documents *collection*)))
-          ()
-          "(length (documents *collection*)) = ~S"  (length (documents *collection*)))
-  ;; now main log file contain information about deleted documents
-  (assert (= 5 (count-lines-in-file (location *collection*)))
-          ()
-          "(count-lines-in-file (location *collection*)) = ~S" (count-lines-in-file (location *collection*)))
-  (sanitize-data-file *collection* :if-does-not-exist :create)
-  ;; now collection log file contains just one document as *collection* do
-  (assert (= 1 (count-lines-in-file (location *collection*)))
-          ()
-          "(count-lines-in-file (location *collection*)) = ~S" (count-lines-in-file (location *collection*)))
-  (assert (= 1 (length (documents *collection*)))
-          ()
-          "(length (documents *collection*)) = ~S"  (length (documents *collection*)))
-  ;; (pprint (documents *collection*))
-  (print :success)
-  (print '()))
-;;;; THE END ;;;;
+             ;;Delete should remove 2 of the 3 documents from the
+             ;;collection and write the deleted documents to file.
+             (list
+              (length (documents *collection*))
+              (count-lines-in-file (location *collection*)))))
+
+  (cl-naive-tests:testcase
+   :sanitize-data-file
+   :expected 1
+   :actual (progn
+             (sanitize-data-file *collection*
+                                 :if-does-not-exist :create)
+             ;;Should only contain 1 document now as sanitize
+             ;;persists only what is live in the *collection* in a
+             ;;new file that replaces the old.
+             (count-lines-in-file (location *collection*)))))
+
+(defmethod cl-naive-tests:tear-down-suite ((test-name (eql :test-basic-persisted)))
+  (setf *collection* nil)
+  (setf *store* nil))
+
+;;(cl-naive-tests:run :suites :test-basic-persisted)
