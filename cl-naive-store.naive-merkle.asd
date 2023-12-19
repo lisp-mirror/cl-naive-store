@@ -1,5 +1,5 @@
 (defsystem "cl-naive-store.naive-merkle"
-  :description "This is a naive, persisted, in memory (lazy loading) data store for Common Lisp."
+  :description "This needs to be striped out and moved to a branch."
   :version "2021.5.18"
   :author "Phil Marneweck"
   :licence "MIT"

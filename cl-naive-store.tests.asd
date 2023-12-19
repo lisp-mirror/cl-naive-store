@@ -1,7 +1,7 @@
-(defsystem "cl-naive-store.test"
+(defsystem "cl-naive-store.tests"
   ;; System attributes:
   :description "Tests the cl-naive-store system."
-  :author      "Pascal J. Bourguignon <pjb@informatimago.com>"
+  :author      "Phil Marneweck"
   :licence     "MIT"
   ;; Component attributes:
   :version "2021.5.18"

@@ -1,6 +1,6 @@
 (defsystem "cl-naive-store.naive-documents"
-  :description "This is a naive, persisted, in memory (lazy loading) data store for Common Lisp."
-  :version "2021.5.18"
+  :description "Adds complex document functionality to cl-naive-store.core."
+  :version "2023.12.19"
   :author "Phil Marneweck"
   :licence "MIT"
   :depends-on ("cl-naive-store.naive-core"

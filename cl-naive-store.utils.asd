@@ -1,6 +1,6 @@
 (defsystem "cl-naive-store.utils"
-  :description "Utilities to make working with cl-naive-store easier."
-  :version "2022.3.6"
+  :description "Utilities to make working with cl-naive-store easier. Still very experimental and needs clean up."
+  :version "2023.12.19"
   :author "Phil Marneweck"
   :licence "MIT"
   :depends-on ("cl-naive-store.naive-core"
