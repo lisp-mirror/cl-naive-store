@@ -5,7 +5,7 @@ stages:
 
 before_script:
   - cd ~/src  
-  - git clone https://gitlab-ci-token:$CI_JOB_TOKEN@gitlab.com/naive-x/cl-getx.git
+  - git clone https://gitlab-ci-token:$CI_JOB_TOKEN@gitlab.com/Harag/cl-getx.git
   - git clone https://gitlab-ci-token:$CI_JOB_TOKEN@gitlab.com/naive-x/cl-naive-ptrees.git
   - git clone https://gitlab-ci-token:$CI_JOB_TOKEN@gitlab.com/naive-x/cl-naive-deprecation.git
   - git clone https://gitlab-ci-token:$CI_JOB_TOKEN@gitlab.com/naive-x/cl-naive-tests.git
