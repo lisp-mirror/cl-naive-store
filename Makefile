@@ -1,5 +1,5 @@
 all: test documentation
-.PHONY:: test tests documentation
+.PHONY:: test tests documentation docs
 
 # default values:
 ARTDIR = tests/artifacts/
@@ -16,9 +16,11 @@ test tests:
 		--eval '(cl-naive-tests:write-results cl-naive-tests:*suites-results* :format :text)' \
 		--eval '(cl-naive-tests:save-results cl-naive-tests:*suites-results* :file "$(ARTDIR)junit-results.xml" :format :junit)' \
 		--eval '(sb-ext:exit :code (if (cl-naive-tests:report) 0 200))'
+
+docs:documentation
 documentation:
 	@case "$(DEPENDENCYDIR)" in (/*) dd="$(DEPENDENCYDIR)" ;; (*) dd="../$(DEPENDENCYDIR)" ;; esac ; \
-	make -C docs "DEPENDENCYDIR=$$dd" check-documentation all
+	make -C docs "DEPENDENCYDIR=$$dd" 
 
 help:
 	@printf 'make tests DEPENDENCYDIR=…  # run the tests.\n'
