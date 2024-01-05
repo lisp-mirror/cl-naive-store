@@ -40,9 +40,12 @@ TODO: Implement index-lookup-value that strips out duplicates??"))
   (unless (key-value-index shard)
     (setf (key-value-index shard) (make-hash-table :test 'equalp)))
 
-  (push document (gethash-safe (cl-murmurhash:murmurhash index-values)
-                               (key-value-index shard)
-                               :lock (getx (lock shard) :values-index))))
+  (pushnew document (gethash-safe (cl-murmurhash:murmurhash index-values)
+                                  (key-value-index shard)
+                                  :lock (getx (lock shard) :values-index))
+           :test 'equal
+           :key (lambda (doc)
+                  (getx doc :hash))))
 
 (defun populate-partial-value-index (collection index-values document
                                      &key (shard naive-impl:%loading-shard%))
