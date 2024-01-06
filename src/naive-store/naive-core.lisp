@@ -661,42 +661,51 @@ Path to file for data is this general format /multiverse/universe/store-name/col
         (ensure-directories-exist location)
         (setf (location child) (pathname location)))))
 
-(defmacro add-multiverse-element* (parent child parent-type child-type child-list-name)
-  (let ((parent% (gensym))
-        (child% (gensym)))
-    `(let ((,parent% ,parent)
-           (,child% ,child))
-       (if (not (,parent-type ,child-type))
-           (setf (,parent-type ,child-type) ,parent-type)
-           (unless (eql (,parent-type ,child-type) ,parent-type)
-             (error
-              ,(format nil
-                       "~A already references a different ~A instance!"
-                       (string-capitalize child-type)
-                       parent-type))))
-       (unless (get-multiverse-element
-                ,(intern (format nil "~:@(~A~)" child-type)
-                         :keyword)
-                ,parent% (name ,child%))
-
-         (setf (,parent-type ,child%) ,parent%)
-
-         (set-and-ensure-locations ,parent-type ,child-type)
-
-         (pushnew ,child% (,child-list-name ,parent%)))
-       ,child%)))
-
 (defmethod add-multiverse-element ((multiverse multiverse) (universe universe))
-  (add-multiverse-element* multiverse universe
-                           multiverse universe
-                           universes))
+  (if (not (multiverse universe))
+      (setf (multiverse universe) multiverse)
+      (unless (eql (multiverse universe) multiverse)
+        (error
+         (format nil
+                 "~A already references a different ~A instance!"
+                 (string-capitalize universe)
+                 multiverse))))
+
+  (let ((existing (get-multiverse-element
+                   :universe
+                   multiverse (name universe))))
+
+    (if (not existing)
+        (progn
+          (setf (multiverse universe) multiverse)
+          (set-and-ensure-locations multiverse universe)
+          (pushnew universe (universes multiverse)))
+        (error "Universe ~A already exists." (name existing)))
+
+    universe))
 
 (defmethod add-multiverse-element ((universe universe) (store store))
-  (add-multiverse-element* universe store
-                           universe store
-                           stores))
+  (if (not (universe store))
+      (setf (universe store) universe)
+      (unless (eql (universe store) universe)
+        (error
+         (format nil
+                 "~A already references a different ~A instance!"
+                 (string-capitalize store)
+                 universe))))
 
-;;Cant use add-multiverse-element* because the path merge is different
+  (let ((existing (get-multiverse-element
+                   :store
+                   universe (name store))))
+
+    (if (not existing)
+        (progn
+          (setf (universe store) universe)
+          (set-and-ensure-locations universe store)
+          (pushnew store (stores universe)))
+        (error "Store ~A already exists." (name existing)))
+
+    store))
 
 (defmethod add-multiverse-element ((store store) (collection collection))
   (if (not (store collection))
@@ -704,27 +713,30 @@ Path to file for data is this general format /multiverse/universe/store-name/col
       (unless (eql (store collection) store)
         (error "Collection already references a different store instance!")))
 
-  (unless (get-multiverse-element :collection store (name collection))
-    (let ((location (location collection)))
-      (when location
-        (ensure-directories-exist (pathname location)))
-      (unless location
-        (setf location
-              (cl-fad:merge-pathnames-as-file
-               (pathname (location store))
-               (make-pathname
-                :defaults (pathname (location store))
-                :directory (list :relative (name collection))
-                :name (name collection)
-                :type "log"
-                :version nil)))
+  (let ((existing (get-multiverse-element :collection store (name collection))))
+    (if (not existing)
 
-        (ensure-directories-exist location))
+        (let ((location (location collection)))
+          (when location
+            (ensure-directories-exist (pathname location)))
+          (unless location
+            (setf location
+                  (cl-fad:merge-pathnames-as-file
+                   (pathname (location store))
+                   (make-pathname
+                    :defaults (pathname (location store))
+                    :directory (list :relative (name collection))
+                    :name (name collection)
+                    :type "log"
+                    :version nil)))
 
-      (setf (location collection) (pathname location))
-      (pushnew collection (collections store))
-      (setf (store collection) store)))
-  collection)
+            (ensure-directories-exist location))
+
+          (setf (location collection) (pathname location))
+          (pushnew collection (collections store))
+          (setf (store collection) store))
+        (error "Collection ~A already exists." (name existing)))
+    collection))
 
 (defgeneric clear-collection (collection)
   (:documentation "Clears documents indexes etc from collection."))

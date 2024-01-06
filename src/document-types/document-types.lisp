@@ -364,9 +364,11 @@ IMPL NOTES: To deal with customization of document-type.")
       (unless (eql (document-type element) document-type)
         (error "Element already references a different document-type instance!")))
 
-  (unless (get-multiverse-element :element document-type (name element))
-    (pushnew element (elements document-type)))
-  element)
+  (let ((existing (get-multiverse-element :element document-type (name element))))
+    (if (not existing)
+        (pushnew element (elements document-type))
+        (error "Element ~A already exists." (name existing)))
+    element))
 
 (defmethod cl-naive-store.naive-core:add-multiverse-element
     ((store document-type-store-mixin)
@@ -376,25 +378,27 @@ IMPL NOTES: To deal with customization of document-type.")
       (unless (eql (store collection) store)
         (error "Collection already references a different store instance!")))
 
-  (unless (get-multiverse-element :collection store (name collection))
-    (let ((location (location collection)))
+  (let ((existing (get-multiverse-element :collection store (name collection))))
+    (if (not existing)
+        (let ((location (location collection)))
 
-      (when location
-        (ensure-directories-exist (pathname location)))
+          (when location
+            (ensure-directories-exist (pathname location)))
 
-      (unless location
-        (setf location
-              (cl-fad:merge-pathnames-as-file
-               (pathname (location store))
-               (make-pathname :directory (list :relative (name collection))
-                              :name (name collection)
-                              :type "log")))
+          (unless location
+            (setf location
+                  (cl-fad:merge-pathnames-as-file
+                   (pathname (location store))
+                   (make-pathname :directory (list :relative (name collection))
+                                  :name (name collection)
+                                  :type "log")))
 
-        (ensure-directories-exist location))
+            (ensure-directories-exist location))
 
-      (setf (location collection) (pathname location))
-      (pushnew collection (collections store))))
-  collection)
+          (setf (location collection) (pathname location))
+          (pushnew collection (collections store)))
+        (error "Collection ~A already exists." (name existing)))
+    collection))
 
 (defmethod cl-naive-store.naive-core:add-multiverse-element
     ((store document-type-store-mixin)
@@ -402,25 +406,27 @@ IMPL NOTES: To deal with customization of document-type.")
   (if (not (store document-type))
       (setf (store document-type) store)
       (unless (eql (store document-type) store)
-        (error "Document-type already references a different store instance!")))
+        (error "Document Type already references a different store instance!")))
 
-  (unless (get-multiverse-element :collection store (name document-type))
-    (let ((location (location document-type)))
+  (let ((existing (get-multiverse-element :collection store (name document-type))))
+    (if (not existing)
+        (let ((location (location document-type)))
 
-      (when location
-        (ensure-directories-exist (location store)))
+          (when location
+            (ensure-directories-exist (location store)))
 
-      (unless location
-        (setf location
-              (cl-fad:merge-pathnames-as-file
-               (pathname (location store))
-               (make-pathname :directory (list :relative (name document-type))
-                              :name (name document-type)
-                              :type "type"))))
+          (unless location
+            (setf location
+                  (cl-fad:merge-pathnames-as-file
+                   (pathname (location store))
+                   (make-pathname :directory (list :relative (name document-type))
+                                  :name (name document-type)
+                                  :type "type"))))
 
-      (setf (location document-type) (pathname location))
-      (pushnew document-type (document-types store))))
-  document-type)
+          (setf (location document-type) (pathname location))
+          (pushnew document-type (document-types store)))
+        (error "Document Type ~A already exists." (name existing)))
+    document-type))
 
 (defmethod cl-naive-store.naive-core:add-multiverse-element :after
     ((store document-type-store-mixin)
