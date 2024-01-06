@@ -9,6 +9,93 @@ described here in condjuction with the Implementor's Api.
 
 ** Naive Core
 
+*** [generic function] query-definitions (definition &key fn element)
+
+Queries the definition passed for an element or elements.
+
+If an element is supplied limits calling the function to those elements or if no function is supplied just fetches elements of keyword element.
+
+If you need more control use cl-naive-ptrees directly.
+
+*** [generic function] get-definition-element (element-type parent name)
+
+Fetches a definition of the type element-type by name from the parent definition.
+
+*** [generic function] add-definition-element (element-type definition element &key name-path)
+
+Adds a definition element to the parent definition.
+
+**** add-definition-element ((element-type (eql :collection)) definition collection &key name-path replace-p)
+**** add-definition-element ((element-type (eql :document-type)) definition collection &key name-path replace-p)
+**** add-definition-element ((element-type (eql :store)) definition collection &key name-path replace-p)
+**** add-definition-element ((element-type (eql :universe)) definition collection &key name-path replace-p)
+
+*** [generic function] remove-definition-element (element-type definition element-name &key name-path)
+
+Removes a definition element from the definition.
+
+**** remove-definition-element ((element-type (eql :universe)) definition element-name &key name-path)
+**** remove-definition-element ((element-type (eql :store)) definition element-name &key name-path)
+**** remove-definition-element ((element-type (eql :collection)) definition element-name &key name-path)
+**** remove-definition-element ((element-type (eql :document-type)) definition element-name &key name-path)
+
+*** [function] get-definitions (location definition-type)
+
+Returns persisted definitions for the type (multiverse, universe,
+store, collection) using the passed object that can be a multiverse,
+universe, store, collection.  If no definition-type is not supplied
+the definition of the object is returned.
+
+*** [function] get-definition (location definition-type name &key (error-p t))
+
+Returns a persisted definition for the type (multiverse, universe,
+store, collection) using the passed object that can be a multiverse,
+universe, store, collection.
+
+*** [generic function] instance-from-definition (definition-type definition)
+
+Instanciates an element from the definition for the likes of
+multiverse, universe, store, collection or document-type.
+
+This method has no knowledge of or ignores the existance of parents
+and children elements.
+
+**** instance-from-definition ((class (eql 'multiverse)) definition)
+**** instance-from-definition ((class (eql 'universe)) definition)
+**** instance-from-definition ((class (eql 'store)) definition)
+**** instance-from-definition ((class (eql 'collection)) definition)
+**** instance-from-definition ((class (eql 'document-type)) definition)
+
+*** [generic function] load-from-definition (parent definition-type definition &key class with-children-p with-data-p)
+
+Instanciates an element from the definition for the likes of
+multiverse, universe, store, collection or document-type and loads it
+into the multiverse using the parent.
+
+Multiverse elements usually have a reference to the parent that needs
+to be set. For instance a collection will have a reference to its
+store.
+
+Multiverse elements usually also have child elements that could be
+instanciated for the relevent element. The choice is left up to the
+user. If the user does want children to also be instanciated they can
+supply a complete definition or rely on naive-store persisted
+definition files to be found and used. Set with-children-p for the
+required behaviour.
+
+Whether documents (the actual data) is loaded after instanciation is a
+choice of the user. Use with-data-p to affect the behaviour. Just note
+that if you load data this way you are forgoing lazy loading.
+
+**** load-from-definition ((multiverse multiverse) (definition-type (eql :universe)) definition &key class with-children-p with-data-p)
+**** load-from-definition ((universe universe) (definition-type (eql :store)) definition &key class with-children-p with-data-p)
+**** load-from-definition ((store store) (definition-type (eql :collection)) definition &key class with-children-p with-data-p)
+**** load-from-definition ((store store) (definition-type (eql :document-type)) definition &key class with-children-p with-data-p)
+
+*** [generic function] load-from-definition-file (parent definition-type name &key class with-children-p with-data-p)
+
+Loads a definition from a file.
+
 *** [class] shard
 
 Sharding is when you break the physical file that backs the collection
@@ -278,6 +365,10 @@ added.
 
 Adds an instance of a multiverse element to the parent instance.
 
+**** add-multiverse-element ((multiverse multiverse) (universe universe))
+**** add-multiverse-element ((universe universe) (store store))
+**** add-multiverse-element ((store store) (collection collection))
+
 *** [generic function] clear-collection (collection)
 
 Clears documents indexes etc from collection.
@@ -285,6 +376,11 @@ Clears documents indexes etc from collection.
 *** [generic function] remove-multiverse-element (parent element)
 
 Removes an instance of a multiverse element from the parent instance.
+
+**** remove-multiverse-element ((store store) (collection collection) &key remove-data-from-disk-p)
+**** remove-multiverse-element ((multiverse multiverse) (universe universe) &key)
+**** remove-multiverse-element ((universe universe) (store store) &key)
+
 
 *** [generic function] load-data (collection &key force-reload-p &allow-other-keys)
 
@@ -343,11 +439,6 @@ considerably.
 
 **** document-values ((document document))
 
-**** key-values ((collection document-type-collection-mixin) document &key &allow-other-keys)
-
-**** key-values ((collection document-collection) document &key &allow-other-keys)
-
-
 *** [generic function] key-values (collection values &key &allow-other-keys)
 
 key-values ((collection collection) values &key &allow-other-keys)
@@ -388,6 +479,8 @@ Removes an document from the collection and its indexes. See add-document.
 Supplying a shard saves the function from trying to figure out which
 shard to remove the document from.
 
+**** remove-document ((collection collection) document &key shard &allow-other-keys)
+
 *** [generic function] delete-document (collection document &key shard &allow-other-keys))
 
 delete-document ((collection collection) document &key shard &allow-other-keys)
@@ -398,9 +491,9 @@ and persists the deleted document to disk.
 Supplying a shard saves the function from trying to figure out which
 shard to remove the document from.
 
-*** [generic function] add-document (collection document &key shard &allow-other-keys)
+**** delete-document ((collection collection) document &key shard &allow-other-keys)
 
-add-document ((collection collection) document &key (shard naive-impl:%loading-shard%) (handle-duplicates-p t) (replace-existing-p t) &allow-other-keys)
+*** [generic function] add-document (collection document &key shard &allow-other-keys)
 
 Adds a document to the collection, it DOES NOT PERSIST the change, if
 you want adding with persistance use persist-document or persist the
@@ -429,7 +522,7 @@ Supplying a shard saves the function from trying to figure out which
 shard to add the document to. During loading of a shard
 naive-impl:%loading-shard% must be used as the default.
 
-add-document ((collection collection) document &key (shard naive-impl:%loading-shard%) (handle-duplicates-p t) (replace-existing-p t) &allow-other-keys)
+**** add-document ((collection collection) document &key (shard naive-impl:%loading-shard%) (handle-duplicates-p t) (replace-existing-p t) &allow-other-keys)
 
 None of the following will have an effect if handle-duplicates = nil.
 
@@ -452,6 +545,8 @@ written to file. If the document is new it is added to the collection.
 
 The shard the document should belong to can be passed in to save the
 function from trying to establish which shard on its own.
+
+**** persist-document ((collection collection) document &key shard (handle-duplicates-p t) delete-p (file-name nil new-file-p) file-stream dont-add-to-collection-p &allow-other-keys)
 
 *** [generic function] naive-reduce (collection &key query function initial-value &allow-other-keys)
 
@@ -512,6 +607,19 @@ NOTES:
 
 Does lazy loading.
 
+*** [generic function] sanitize-data-file (collection &key &allow-other-keys)
+
+This removes all the deleted data documents and history from a
+collection. When a collection is loaded only the active documents are
+loaded. Does this by simply writing those active documents out to a
+new file and then replacing the old file.
+
+**** sanitize-data-file ((collection collection) &key &allow-other-keys)
+
+*** [generic function] sanitize-universe (universe &key &allow-other-keys)
+
+Sanitize all collections of a universe. See sanitize-data-file for details.
+
 ** Naive Indexed
 
 *** [global parameter] *do-partial-indexing*
@@ -541,11 +649,15 @@ List of index combinations. Also indexes members partially if
 is indexed as (:emp-no :surname :gender), (:emp-no :surname), :emp-no,
 :surname and :gender
 
-*** [generic function] make-shard ((collection indexed-collection-mixin) shard-mac)
+*** [class] indexed-collection
+
+There for convenience. Specialisations are done on the mixin.
+
+*** [method] make-shard ((collection indexed-collection-mixin) shard-mac)
 
 Extends make-shard to deal with indexed collections.
 
-*** [generic function] get-shard ((collection indexed-collection-mixin) shard-mac &key &allow-other-keys)
+*** [method] get-shard ((collection indexed-collection-mixin) shard-mac &key &allow-other-keys)
 
 Extends get-shard to deal with indexed collections.
 
@@ -578,9 +690,9 @@ index-lookup-hash ((collection indexed-collection-mixin) hash
 
 Looks up document in UUID hash index.
 
-*** [generic function] add-index (collection shard document &key &allow-other-keys)
+****  index-lookup-hash ((collection indexed-collection-mixin) hash &key (shards (and naive-impl:%loading-shard% (list naive-impl:%loading-shard%))) &allow-other-keys)
 
-add-index ((collection indexed-collection-mixin) shard document &key key-values &allow-other-keys)
+*** [generic function] add-index (collection shard document position &key &allow-other-keys)
 
 Adds a document to two indexes. The first uses a UUID that will stay
 with the document for its life time. The UUID is used when persisting
@@ -597,6 +709,13 @@ is set.
 
 A shard must be supplied.
 
+Position saved to use with future add-document to replace actual
+documents in the document vector if needed. It is done to speed up
+add-document.
+
+**** add-index ((collection indexed-collection-mixin) shard document position &key key-values &allow-other-keys)
+
+
 *** [generic function] remove-index (collection shard document &key &allow-other-keys)
 
 remove-index ((collection indexed-collection-mixin) shard document &key &allow-other-keys)
@@ -605,9 +724,9 @@ Removes a data document from the UUID and key value indexes.
 
 A shard must be supplied.
 
-*** [generic function] existing-document ((collection indexed-collection-mixin) document &key(shard naive-impl:%loading-shard%)  key-values &allow-other-keys)
+*** [method] existing-document ((collection indexed-collection-mixin) document &key(shard naive-impl:%loading-shard%)  key-values &allow-other-keys)
 
-*** [generic function] add-document ((collection indexed-collection-mixin) document &key (shard naive-impl:%loading-shard%) (replace-existing-p t) (update-index-p t) &allow-other-keys)
+*** [method] add-document ((collection indexed-collection-mixin) document &key (shard naive-impl:%loading-shard%) (handle-duplicates-p t) (replace-existing-p t) (update-index-p t) &allow-other-keys)
 
 Duplicates are not allowed for indexed collections!
 
@@ -625,12 +744,12 @@ set update-index-p to nil. Just remember that if the document is
 really \"new\" to the collection the indexes will be updated in any
 case.
 
-*** [generic function] naive-reduce ((collection indexed-collection-mixin) &key index-values query function initial-value)
+*** [method] naive-reduce ((collection indexed-collection-mixin) &key index-values query function initial-value)
 
 Extends naive-reduce to be able to take advantage of indexing. Reduce
 is done on values retrieved by the supplier index.
 
-*** [generic function] query-data ((collection indexed-collection-mixin) &key index-values query &allow-other-keys)
+*** [method] query-data ((collection indexed-collection-mixin) &key index-values query &allow-other-keys)
 
 Extends query-data to be able to take advantage of indexing. Query is
 done on values retrieved by the supplier index.
@@ -653,6 +772,10 @@ or a mix.
 
 Name of the element. This should be a KEYWORD if you want data
 portability and some internals might expect a keyword.
+
+**** [accessor] document-type
+
+The document-type that this element belongs to.
 
 **** [accessor] concrete-type
 
@@ -696,6 +819,10 @@ The store that this document-type belongs to.
 
 String representing a document-type name.
 
+**** [accessor] location
+
+The directory path to where files for this collection are stored.
+
 **** [accessor] element-class
 
 The class that should be used to make element documents.
@@ -738,27 +865,63 @@ IMPL NOTES: To deal with customization of document-type.
 
 List of document-types represented by this store's collections.
 
-*** [generic function] get-document-type-from-def
+*** [method] cl-naive-store.naive-core:query-multiverse ((element element) fn)
 
-Tries to find the document definition on disk.
+*** [method] cl-naive-store.naive-core:query-multiverse ((collection document-type-collection-mixin) fn)
 
-**** get-document-type-from-def ((store store) document-type-name)
+*** [method] cl-naive-store.naive-core:query-multiverse ((document-type document-type) fn)
 
-*** [generic function] get-document-type (store type-name)
+*** [method] cl-naive-store.naive-core:query-multiverse ((store document-type-store-mixin) fn)
 
-get-document-type ((store document-type-store-mixin) type-name)
+*** [generic function] get-attribute (element attribute))
 
-Returns a document-type document if found in the store.
+Gets an attribute of an element.
 
-*** [generic function] add-document-type (store document-type)
+**** get-attribute ((element element) attribute)
 
-Adds a document-type to a store.
+*** [generic function] get-element (document-type element)
 
-** Definitions
+Gets an element from a document type.
 
-*** [function] create-multiverse (universe-definitions &optional persist-p)
+*** [method] cl-naive-store.naive-core:persist-definition ((document-type document-type))
 
-Creates the multiverse elements from the definitions.
+*** [method] cl-naive-store.naive-core:persist ((document-type document-type) &key &allow-other-keys)
+
+*** [method] cl-naive-store.naive-core:persist ((store document-type-store-mixin) &key definitions-only-p (children-p t) &allow-other-keys)
+
+*** [method] cl-naive-store.naive-core:get-multiverse-element ((element-type (eql :element)) (document-type document-type) name)
+
+*** [method] cl-naive-store.naive-core:get-multiverse-element ((element-type (eql :document-type)) (store document-type-store-mixin) name)
+
+*** [method] cl-naive-store.naive-core:get-multiverse-element ((element-type (eql :document-type)) (store store) name)
+
+*** [method] cl-naive-store.naive-core:add-multiverse-element ((document-type document-type) (element element))
+
+*** [method] cl-naive-store.naive-core:add-multiverse-element((store document-type-store-mixin) (collection collection))
+
+*** [method] cl-naive-store.naive-core:add-multiverse-element ((store document-type-store-mixin) (document-type document-type))
+
+*** [method] cl-naive-store.naive-core:add-multiverse-element :after ((store document-type-store-mixin) (collection document-type-collection-mixin))
+
+*** [method] cl-naive-store.naive-core:instance-from-definition ((class (eql 'element)) definition)
+
+*** [method] cl-naive-store.naive-core:instance-from-definition ((class (eql 'document-type)) definition)
+
+*** [method] cl-naive-store.naive-core:load-from-definition ((document-type document-type) (definition-type (eql :element)) definition &key class with-children-p with-data-p)
+
+*** [method] cl-naive-store.naive-core:load-from-definition ((store document-type-store-mixin) (definition-type (eql :document-type)) definition &key class with-children-p with-data-p)
+
+*** [method] cl-naive-store.naive-core:instance-from-definition ((class (eql 'document-type-store-mixin)) definition)
+
+*** [method] cl-naive-store.naive-core:ensure-location ((object document-type))
+
+*** [method] cl-naive-store.naive-core:load-from-definition-file (parent (definition-type (eql :element)) name &key class with-children-p with-data-p)
+
+*** [method] cl-naive-store.naive-core:load-from-definition ((store document-type-store-mixin) (definition-type (eql :collection)) definition &key class with-children-p with-data-p)
+
+*** [method] persist-definition ((collection document-type-collection-mixin))
+
+*** [method] key-values ((collection document-type-collection-mixin) document &key &allow-other-keys)
 
 ** Naive Documents
 
@@ -768,8 +931,14 @@ Document collection class used to specialize on for cl-naive-store.naive-documen
 
 *** [class] document-store (document-type-store-mixin store)
 
-document-store (document-type-store-mixin store)
+cl-naive-store.naive-documents specialization of store.
 
+*** [method] cl-naive-store.naive-core:instance-from-definition ((class (eql 'document-collection)) definition)
+
+*** [method] cl-naive-store.naive-core:load-from-definition ((store cl-naive-store.naive-documents:document-store) (definition-type (eql :collection)) definition &key class with-children-p with-data-p)
+
+*** [method] cl-naive-store.naive-core:instance-from-definition ((class (eql 'document-store)) definition)
+    
 *** [struct] document
 A basic struct that represents a document object. A struct is used
 because there is meta data that we want to add to the actual document
@@ -818,14 +987,14 @@ reasons. First to show that they are special, accessing meta data not
 actual values of document. Second to avoid any name classes with
 actual data members.
 
-- :collection%% = document-collection
-- :store%% = document-store or (store collection)
-- :universe%% = (universe store)
-- :type%% = type
-- :elements%% = document-elements
-- :changes%% = document-changes
-- :versions%% = document-versions
-- :deleted-p%% = document-deleted-p
+- :collection~ = document-collection
+- :store~ = document-store or (store collection)
+- :universe~ = (universe store)
+- :type~ = type
+- :elements~ = document-elements
+- :changes~ = document-changes
+- :versions~ = document-versions
+- :deleted-p~ = document-deleted-p
 
 store and universe using getx.
 

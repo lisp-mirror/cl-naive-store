@@ -2,6 +2,8 @@
 
 Examples below become more and more complex as you go down the list.
 
+[[file:definitions-example.org][Definitions Example]]
+
 [[file:basic-example.org][Basic Example]]
 
 [[file:basic-example-with-persistence.org][Basic Example with Persistence]]
@@ -14,12 +16,3 @@ Examples below become more and more complex as you go down the list.
 
 [[file:home.org][Home]] [[file:overview.org][Previous]] [[file:basic-example.org][Next​]]
 
-
-* Examples
-
-#+include: ./naive-store-definitions.org :minlevel 2
-#+include: ./documents-example.org :minlevel 2
-#+include: ./basic-example.org  :minlevel 2
-#+include: ./basic-example-with-persistence.org  :minlevel 2
-#+include: ./indexed-example.org  :minlevel 2
-#+include: ./sharding-example.org  :minlevel 2

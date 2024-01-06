@@ -1,7 +1,17 @@
-;;Setup to use cl-naive-store
+(ignore-errors (delete-package :naive-examples))
+
+;;Load to use cl-naive-store
 (require 'cl-naive-store)
 (defpackage :naive-examples (:use :cl :cl-getx :cl-naive-store.naive-core))
 (in-package :naive-examples)
+
+;;Required to correctly initialize lparallel:*kernel*.
+(initialize)
+
+;;Deleting existing example database
+(cl-fad:delete-directory-and-files
+ "~/multiverse/universe/simple-store"
+ :if-does-not-exist :ignore)
 
 (let* (;;Create a multiverse.
        (multiverse (make-instance

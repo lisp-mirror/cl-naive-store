@@ -1,0 +1,9 @@
+* Sharding Example
+
+Shows how to create a multiverse from a definition.
+
+#+BEGIN_SRC lisp
+
+
+[[file:home.org][Home]] [[file:exmamples.org][Previous]] [[file:basic-example.org][Next​]]
+

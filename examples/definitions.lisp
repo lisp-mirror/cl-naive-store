@@ -1,151 +1,238 @@
+(ignore-errors (delete-package :naive-examples))
 
-(ql:quickload 'cl-naive-store.naive-documents)
 (require 'cl-naive-store.naive-documents)
 
 ;; SBCL is idiotic again, it signals an error when compiling a file
 ;; containing this delete-package form.  You'll have to delete the
 ;; package yourself between the various examples or tests loads.
-#-sbcl (ignore-errors (delete-package :naive-examples))
+(ignore-errors (delete-package :naive-examples))
 
 (defpackage :naive-examples
   (:use :cl :cl-naive-store.naive-documents))
+
 (in-package :naive-examples)
 
-(defun test-location ()
+(defun example-location ()
   (cl-fad:merge-pathnames-as-directory
    (user-homedir-pathname)
    (make-pathname :directory (list :relative "multiverse"))))
 
+;;Deleting existing example database
+(cl-fad:delete-directory-and-files
+ "~/multiverse/universe/simple-store"
+ :if-does-not-exist :ignore)
+
 (defvar *multiverse-definition*
   `(:multiverse
     (:name "multiverse"
-     :location ,(test-location)
+     :universe-class cl-naive-store.naive-core:universe
+     :location ,(example-location)
+     :universes
+
      ((:universe
        (:name "universe"
         :location ,(cl-fad:merge-pathnames-as-directory
-                    (test-location)
+                    (example-location)
                     (make-pathname :directory (list :relative "universe")))
+        ;;Universe classes can be specific to a universe.
         :universe-class cl-naive-store.naive-core:universe
         :store-class cl-naive-store.naive-documents:document-store
         :collection-class cl-naive-store.naive-documents:document-collection
-        :stores ((:name "human-resources"
-                  :collections ((:name "laptop"
-                                 :label "Laptop"
-                                 :document-type "laptop")
-                                (:name "employees"
-                                 :label "Employees"
-                                 :document-type "employee"))
-                  :document-types
-                        ((:document-type
-                          (:name "laptop"
-                           :label "Laptop"
-                           :elements ((:name :id
-                                       :label "Serial No"
-                                       :key-p t
-                                       :concrete-type (:type :string)
-                                       :attributes (:display t :editable t)
-                                       :documentation "Unique no that identifies the laptop.")
-                                      (:name :make
-                                       :label "Manufaturer"
-                                       :concrete-type (:type :string)
-                                       :attributes (:display t :editable t)
-                                       :documentation "Then manufaturer of the laptop.")
-                                      (:name :model
-                                       :label "Model"
-                                       :concrete-type (:type :string)
-                                       :attributes (:display t :editable t)
-                                       :documentation "Model of the laptop."))
-                           :attributes ()
-                           :documentation "List of laptops the company owns."))
+        :document-type-class cl-naive-store.document-types:document-type
+        :stores ((:store
+                  (:name "human-resources"
+                   :collections ((:collection
+                                  (:name "laptops"
+                                   :label "Laptops"
+                                   :document-type "laptop"))
+                                 (:collection
+                                  (:name "employees"
+                                   :label "Employees"
+                                   :document-type "employee")))
+                   :document-types
+                         ((:document-type
+                           (:name "laptop"
+                            :label "Laptop"
+                            :elements ((:element
+                                        (:name :id
+                                         :label "Serial No"
+                                         :key-p t
+                                         :concrete-type (:type :string)
+                                         :attributes ((:attribute
+                                                       (:name :display
+                                                        :value t))
+                                                      (:attribute
+                                                       (:name :editable
+                                                        :value t)))
+                                         :documentation "Unique no that identifies the laptop."))
+                                       (:element
+                                        (:name :make
+                                         :label "Manufaturer"
+                                         :concrete-type (:type :string)
+                                         :attributes ((:attribute
+                                                       (:name :display
+                                                        :value t))
+                                                      (:attribute
+                                                       (:name :editable
+                                                        :value t)))
+                                         :documentation "Then manufaturer of the laptop."))
+                                       (:element (:name :model
+                                                  :label "Model"
+                                                  :concrete-type (:type :string)
+                                                  :attributes ((:attribute
+                                                                (:name :display
+                                                                 :value t))
+                                                               (:attribute
+                                                                (:name :editable
+                                                                 :value t)))
+                                                  :documentation "Model of the laptop.")))
+                            :attributes ()
+                            :documentation "List of laptops the company owns."))
 
-                         (:document-type
-                          (:name "child"
-                           :label "Child"
-                           :elements ((:name :name
-                                       :label "Name"
-                                       :key-p t
-                                       :concrete-type (:type :string)
-                                       :attributes (:display t :editable t)
-                                       :documentation "Name of child")
-                                      (:name :sex
-                                       :label "Gender"
-                                       :concrete-type (:type :keyword)
-                                       :attributes (:display t
-                                                    :editable t
-                                                    :value-list (:male :female))
-                                       :documentation "Gender of the child, can only be male or female.")
-                                      (:name :age
-                                       :label "Age"
-                                       :concrete-type (:type :number)
-                                       :attributes (:display t :editable t
-                                                             ;;setf-validate-is called for (setf getxe)
-                                                    :setf-validate
-                                                             (lambda (age)
-                                                               (if (<= age 21)
-                                                                   (values t nil)
-                                                                   (values nil "Child is to old"))))
-                                       :documentation "How old the child is"))
-                           :attributes ()
-                           :documentation "List of laptops the company owns."))
+                          (:document-type
+                           (:name "child"
+                            :label "Child"
+                            :elements ((:element
+                                        (:name :name
+                                         :label "Name"
+                                         :key-p t
+                                         :concrete-type (:type :string)
+                                         :attributes ((:attribute
+                                                       (:name :display
+                                                        :value t))
+                                                      (:attribute
+                                                       (:name :editable
+                                                        :value t)))
+                                         :documentation "Name of child"))
+                                       (:element
+                                        (:name :sex
+                                         :label "Gender"
+                                         :concrete-type (:type :keyword)
+                                         :attributes ((:attribute
+                                                       (:name :display
+                                                        :value t))
+                                                      (:attribute
+                                                       (:name :editable
+                                                        :value t))
+                                                      (:attribute
+                                                       (:name :value-list
+                                                        :value (:male :female))))
+                                         :documentation "Gender of the child, can only be male or female."))
+                                       (:element
+                                        (:name :age
+                                         :label "Age"
+                                         :concrete-type (:type :number)
+                                         :attributes
+                                               ((:attribute
+                                                 (:name :display
+                                                  :value t))
+                                                (:attribute
+                                                 (:name :editable
+                                                  :value t))
+                                                (:attribute
+                                                 (:name :setf-validate
+                                                  :value
+                                                        (lambda (age)
+                                                          (if (<= age 21)
+                                                              (values t nil)
+                                                              (values nil "Child is to old"))))))
+                                         :documentation "How old the child is")))
+                            :attributes ()
+                            :documentation "List of laptops the company owns."))
 
-                         (:document-type
-                          (:name "employee"
-                           :label "Employee"
-                           :elements ((:name :emp-
-                                       :label "Employee Number"
-                                       :key-p t
-                                       :concrete-type (:type :number)
-                                       :attributes (:display t :editable t)
-                                       :documentation "Unique identifier of employee.")
-                                      (:name :name
-                                       :label "Name"
-                                       :concrete-type (:type :string)
-                                       :attributes (:display t :editable t)
-                                       :documentation "Name of employee")
-                                      (:name :sex
-                                       :label "Gender"
-                                       :concrete-type (:type :keyword)
-                                       :attributes (:display t
-                                                    :editable t
-                                                    :value-list (:male :female))
-                                       :documentation "Gender of the child, can only be male or female.")
-                                      (:name :dependents
-                                       :label "Children"
-                                       :concrete-type (:type :list
-                                                       :spec (:type :document
-                                                              :spec (:type "child"
-                                                                     :accessor (:name))))
+                          (:document-type
+                           (:name "employee"
+                            :label "Employee"
+                            :elements ((:element
+                                        (:name :emp-
+                                         :label "Employee Number"
+                                         :key-p t
+                                         :concrete-type (:type :number)
+                                         :attributes ((:attribute
+                                                       (:name :display
+                                                        :value t))
+                                                      (:attribute
+                                                       (:name :editable
+                                                        :value t)))
+                                         :documentation "Unique identifier of employee."))
+                                       (:element (:name :name
+                                                  :label "Name"
+                                                  :concrete-type (:type :string)
+                                                  :attributes ((:attribute
+                                                                (:name :display
+                                                                 :value t))
+                                                               (:attribute
+                                                                (:name :editable
+                                                                 :value t)))
+                                                  :documentation "Name of employee"))
+                                       (:element
+                                        (:name :sex
+                                         :label "Gender"
+                                         :concrete-type (:type :keyword)
+                                         :attributes
+                                               ((:attribute
+                                                 (:name :display
+                                                  :value t))
+                                                (:attribute
+                                                 (:name :editable
+                                                  :value t))
+                                                (:attribute
+                                                 (:name :value-list
+                                                  :value (:male :female))))
 
-                                       :attributes (:display t :editable t)
-                                       :documentation "List of the employees children")
-                                      (:name :laptop
-                                       :label "Laptop"
-                                       :concrete-type (:type :document
-                                                       :spec (:type "laptop"
-                                                              :collection "laptop-collection"
-                                                              :accessor (:id)))
+                                         :documentation "Gender of the child, can only be male or female."))
+                                       (:element
+                                        (:name :dependents
+                                         :label "Children"
+                                         :concrete-type (:type :list
+                                                         :spec (:type :document
+                                                                :spec (:type "child"
+                                                                       :accessor (:name))))
 
-                                       :attributes (:display t :editable t)
-                                       :documentation "Laptop allocated to employee")
-                                      (:name :first-born
-                                       :label "First Born Child"
-                                       :concrete-type (:type :document
-                                                       :spec (:type "child"
-                                                              :collection "employees"
-                                                              :accessor (:emp-no :dependents :name)))
+                                         :attributes ((:attribute
+                                                       (:name :display
+                                                        :value t))
+                                                      (:attribute
+                                                       (:name :editable
+                                                        :value t)))
+                                         :documentation "List of the employees children"))
+                                       (:element
+                                        (:name :laptop
+                                         :label "Laptop"
+                                         :concrete-type (:type :document
+                                                         :spec (:type "laptop"
+                                                                :collection "laptop-collection"
+                                                                :accessor (:id)))
 
-                                       :attributes (:display t :editable t)
-                                       :documentation "List of the employees children"))
-                           :attributes ()
-                           :documentation "List of laptops the company owns.")))))))))))
+                                         :attributes ((:attribute
+                                                       (:name :display
+                                                        :value t))
+                                                      (:attribute
+                                                       (:name :editable
+                                                        :value t)))
+                                         :documentation "Laptop allocated to employee"))
+                                       (:element
+                                        (:name :first-born
+                                         :label "First Born Child"
+                                         :concrete-type (:type :document
+                                                         :spec (:type "child"
+                                                                :collection "employees"
+                                                                :accessor (:emp-no :dependents :name)))
+
+                                         :attributes ((:attribute
+                                                       (:name :display
+                                                        :value t))
+                                                      (:attribute
+                                                       (:name :editable
+                                                        :value t)))
+                                         :documentation "List of the employees children")))
+                            :attributes ()
+                            :documentation "List of laptops the company owns."))))))))))))
 
 (defparameter *multiverse* nil)
 
-(defun tear-down-multiverse ()
-  "Deletes any peristed data from examples."
-  (cl-fad:delete-directory-and-files
-   "~/temp/multiverse/"
-   :if-does-not-exist :ignore))
-
 (setf *multiverse* (cl-naive-store.naive-core:load-from-definition
                     nil :multiverse *multiverse-definition* :with-children-p t))
+
+;;Interogate multiverse
+(break "~S" *multiverse*)

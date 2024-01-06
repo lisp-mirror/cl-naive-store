@@ -1,15 +1,27 @@
 * Basic Example
 
 In this example uses =naive-core= only, ie. the bare minimum
-functionality. Documents **not persisted** in this example. There are
-use case where the store can be used as kind of temporary database.
+functionality. Documents **are not persisted** in this example. There are
+use cases where the store can be used as kind of temporary database.
 
 #+BEGIN_SRC lisp
-  ;;Setup to use cl-naive-store
-  (require 'cl-naive-store)
-  (defpackage :naive-examples (:use :cl :cl-getx :cl-naive-store.naive-core))
-  (in-package :naive-examples)
+(ignore-errors (delete-package :naive-examples))
 
+;;Load to use cl-naive-store
+(require 'cl-naive-store)
+
+(defpackage :naive-examples (:use :cl :cl-getx :cl-naive-store.naive-core))
+(in-package :naive-examples)
+
+;;Required to correctly initialize lparallel:*kernel*.
+(initialize)
+
+
+;;Deleting existing example database
+(cl-fad:delete-directory-and-files
+ "~/multiverse/universe/simple-store"
+ :if-does-not-exist :ignore)
+ 
 (let* (;;Create a multiverse.
        (multiverse (make-instance
                     'multiverse
@@ -62,7 +74,7 @@ You can see that Piet Gieter appears only once, because duplicates are handled.
    (:NAME "Sannie" :SURNAME "Gieter" :ID 321))
 #+END_SRC
 
-To allow duplicates set handle-duplicates on the collection or store
-or universe level to :no.
+To allow duplicates you need to set handle-duplicates-p to nil when
+adding, persisting and loading the data.
 
 [[file:home.org][Home]] [[file:examples.org][Previous]] [[file:basic-example-with-persistence.org][Next]]

@@ -4,6 +4,9 @@ Using =cl-naive-store.naive-documents= gives you a lot of functionality out of t
 box, but you need to do more work to set it up right.
 
 #+BEGIN_SRC lisp
+(ignore-errors (delete-package :naive-examples))
+
+;;Setup to use cl-naive-store
 (require 'cl-naive-store)
 (defpackage :naive-examples (:use
                              :cl
@@ -13,101 +16,108 @@ box, but you need to do more work to set it up right.
                              :cl-naive-store.naive-documents))
 (in-package :naive-examples)
 
+;;Required to correctly initialize lparallel:*kernel*.
+(initialize)
+
+;;Deleting existing example database
+(cl-fad:delete-directory-and-files
+ "~/multiverse/universe/simple-store"
+ :if-does-not-exist :ignore)
+
 ;;Create a data definition for an employee
 ;;It looks like a lot but dont panic its simple.
 (defparameter *employee-document-type*
-  '(:name "employee"
-    :label "Employee"
-    :elements ((:name :emp-no
-                :label "Employee No"
-                :concrete-type :string
-                :key-p t
-                :attributes (:display t :editable t))
-               (:name :name
-                :label "Name"
-                :concrete-type :string
-                :attributes (:display t :editable t))
-               (:name :surname
-                :label "Surname"
-                :concrete-type :string
-                :attributes (:display t :editable t)))
-    :documentation "This type represents a simple employee master."))
+  '(:document-type (:name "employee"
+                    :label "Employee"
+                    :elements
+                    ((:element
+                      (:name :emp-no
+                       :label "Employee No"
+                       :key-p t
+                       :concrete-type :string
+                       :attributes ((:attribute
+                                     (:name :display
+                                      :value t))
+                                    (:attribute
+                                     (:name :editable
+                                      :value t)))))
+                     (:element
+                      (:name :name
+                       :label "Name"
+                       :concrete-type :string
+                       :attributes ((:attribute
+                                     (:name :display
+                                      :value t))
+                                    (:attribute
+                                     (:name :editable
+                                      :value t)))))
+                     (:element
+                      (:name :surname
+                       :label "Surname"
+                       :concrete-type :string
+                       :attributes ((:attribute
+                                     (:name :display
+                                      :value t))
+                                    (:attribute
+                                     (:name :editable
+                                      :value t))))))
+                    :documentation "This type represents a simple employee master.")))
 
-;;Create multiverse
-(defparameter *multiverse*
-  (make-instance
-   'multiverse
-   :location "~/multiverse/" ;Setting the location on disk.
-   :universe-class 'universe))
-
-;;Create a universe
-(defparameter *universe*
-  (make-instance
-   'universe
-   :multiverse *multiverse*
-   :location "~/multiverse/universe/" ;Setting the location on disk.
-   :store-class 'document-store))
-
-;;Add universe to multiverse.
-(add-multiverse-element *multiverse* *universe*)
-
-(let* (;;Create a store and add it to the universe
-       (store (add-multiverse-element *universe*
-                                      (make-instance 'document-store
-                                                     :name "simple-store"
-                                                     :collection-class 'collection)
-                                      :persist-p t))
-       (collection)
-       (elements)
-       (document-type)
-       (results))
-
-  ;;initialize the data employee data definition.
-  (dolist (element (getf *employee-document-type* :elements))
-    (setf
-     elements
-     (append elements
-             (list (make-instance
-                    'element
-                    :name (getf element :name)
-                    :key-p (getf element :key-p)
-                    :concrete-type (getf element :concrete-type)
-                    :attributes (getf element :attributes))))))
-
-  (setf document-type (add-multiverse-element
-                       store
-                       (make-instance
-                        'document-type
-                        :name (getf *employee-document-type* :name)
-                        :label (getf *employee-document-type* :label)
-                        :elements elements)
-                       :persist-p t))
-
-  ;;Create a collection and add it to the store
-  (setf collection (add-multiverse-element
+(let* (;;Create Multiverse
+       (multiverse
+         (make-instance
+          'multiverse
+          :name "multiverse"
+          :location "~/multiverse/" ;Setting the location on disk.
+          :universe-class 'universe))
+       ;;Add universe to multiverse
+       (universe
+         (add-multiverse-element
+          multiverse
+          (make-instance
+           'universe
+           :name "universe"
+           :multiverse multiverse
+           :location "~/multiverse/universe/" ;Setting the location on disk.
+           :store-class 'document-store)))
+       (store
+         (add-multiverse-element
+          universe
+          (make-instance (store-class universe)
+                         :name "simple-store"
+                         :collection-class
+                         'cl-naive-store.naive-documents:document-collection)))
+       (document-type
+         (load-from-definition
+            store
+            :document-type
+            *employee-document-type*
+            :with-children-p t))
+       (collection (add-multiverse-element
                     store
-                    (make-instance 'document-collection ;;using documents collection.
+                    (make-instance (collection-class store)
                                    :name "simple-collection"
                                    :document-type document-type
-                                   ;;Not specifying the
-                                   ;;keys to show that
-                                   ;;they are retrieved
-                                   ;;from the
-                                   ;;document-type if
-                                   ;;no key is set.
-                                   ;;:keys ...
-                                   ;;Specifying the
-                                   ;;elements to set up
-                                   ;;indexes for.
-                                   :indexes '((:name :surname)))
-                    :persist-p t))
+                                   ;; Not specifying the keys to show
+                                   ;; that they are retrieved from the document-type
+                                   ;; if if no key is set.
+                                   ;; :keys ...
+                                   ;; Specifying the elements to set up indexes for.
+                                   :indexes '((:name :surname)))))
+       ;;Add doc to collection
+       (doc (persist-document collection
+                              (make-document
+                               :store (store collection)
+                               :collection collection
+                               :document-type "employee"
+                               :elements (list :name "Piet" :surname "Gieter"
+                                               :emp-no 123))))
+       (results))
+
+  ;;Persist store definition with its document type and collection.
+  (persist multiverse :definitions-only-p t)
+
   ;;Add some documents to the collection
-  (persist-document collection
-                    (make-document
-                     :store (store collection)
-                     :collection collection
-                     :document-type "employee"
-                     :elements (list :name "Piet" :surname "Gieter" :emp-no 123)))
 
   (persist-document collection
                     (make-document
@@ -135,24 +145,36 @@ box, but you need to do more work to set it up right.
                      :store (store collection)
                      :collection collection
                      :document-type "employee"
-                     :elements (list :name "Tannie" :surname "Frikkedel" :emp-no 1001)))
+                     :elements (list :name "Tannie" :surname "Frikkedel" :emp-no 1002)))
+
+  ;;Look up piet by hash
+  (push (list :desc "Looked up Piet using index-lookup-hash."
+              :value (index-lookup-hash collection (getx doc :hash)))
+        results)
 
   ;;Lookup koos using index values and add it to results
   (push
-   (index-lookup-values collection (list (list :name "Koos")
-                                         (list :surname "Van")))
+   (list :desc "Koos that we looked up using index-lookup-values and the index values of Koos and Van."
+         :value
+         (index-lookup-values collection (list (list :name "Koos")
+                                               (list :surname "Van"))))
    results)
 
   ;;Lookup Frikkedel using index values and add it to results
   (push
-   (index-lookup-values collection (list :surname "Frikkedel"))
+   (list :desc "A list of both Frikie and Tannie that we looked up using index-lookup-values and the surname. This is called a partial index lookup. You can enable or disable partial indexes."
+         :value
+         (index-lookup-values collection (list :surname "Frikkedel")))
    results)
 
-  ;;Query the collection, query-data will load the data from file if the collection is empty,
-  ;;and add it to the results
-  (push (query-data collection :query (lambda (document)
-                                        (<= (getx document :emp-no) 900)))
-        results)
+  ;;Query the collection, query-data will load the data from file if
+  ;;the collection is empty, and add it to the results
+  (push
+   (list :desc "Queried all id's <= 900 using query-data. The query will use indexes internally when possible."
+         :value
+         (query-data collection :query (lambda (document)
+                                         (<= (getx document :emp-no) 900))))
+   results)
 
   (reverse results))
 #+END_SRC
@@ -160,87 +182,150 @@ box, but you need to do more work to set it up right.
 Output:
 
 #+BEGIN_SRC lisp
-  ((#S(document
-       :STORE #<document-STORE {10172A8A73}>
-       :COLLECTION #<document-COLLECTION {1017369EA3}>
-       :DATA-TYPE "employee"
-       :HASH "8290C189-175D-4327-A471-E52A42555AAB"
-       :VALUES (:NAME "Koos" :SURNAME "Van" :EMP-NO 999)
-       :CHANGES NIL
-       :VERSIONS NIL
-       :DELETED-P NIL
-       :PERSISTED-P T))
-   (#S(document
-       :STORE #<document-STORE {10172A8A73}>
-       :COLLECTION #<document-COLLECTION {1017369EA3}>
-       :DATA-TYPE "employee"
-       :HASH "94CD51F9-9346-473D-B8F9-DE17B8E050E1"
-       :VALUES (:NAME "Tannie" :SURNAME "Frikkedel" :EMP-NO 1001)
-       :CHANGES NIL
-       :VERSIONS NIL
-       :DELETED-P NIL
-       :PERSISTED-P T)
-      #S(document
-	 :STORE #<document-STORE {10172A8A73}>
-	 :COLLECTION #<document-COLLECTION {1017369EA3}>
-	 :DATA-TYPE "employee"
-	 :HASH "94CD51F9-9346-473D-B8F9-DE17B8E050E1"
-	 :VALUES (:NAME "Frikkie" :SURNAME "Frikkedel" :EMP-NO 1001)
-	 :CHANGES NIL
-	 :VERSIONS NIL
-	 :DELETED-P NIL
-	 :PERSISTED-P T))
-   (#S(document
-       :STORE #<document-STORE {10172A8A73}>
-       :COLLECTION #<document-COLLECTION {1017369EA3}>
-       :DATA-TYPE "employee"
-       :HASH "68434DF1-A04D-4D33-96F1-89D217A193FD"
-       :VALUES (:NAME "Sannie" :SURNAME "Gieter" :EMP-NO 321)
-       :CHANGES NIL
-       :VERSIONS NIL
-       :DELETED-P NIL
-       :PERSISTED-P T)
-      #S(document
-	 :STORE #<document-STORE {10172A8A73}>
-	 :COLLECTION #<document-COLLECTION {1017369EA3}>
-	 :DATA-TYPE "employee"
-	 :HASH "8C4733F2-5309-41A7-BB21-D5625A9A30FE"
-	 :VALUES (:NAME "Piet" :SURNAME "Gieter" :EMP-NO 123)
-	 :CHANGES NIL
-	 :VERSIONS NIL
-	 :DELETED-P NIL
-	 :PERSISTED-P T)))
+((:DESC "Looked up Piet using index-lookup-hash." :VALUE
+  #S(DOCUMENT
+     :UNIVERSE #<UNIVERSE (:NAME "universe" :MULTIVERSE "multiverse" :LOCATION
+                           "~/multiverse/universe/" :STORES
+                           ("simple-store")) {104C234E83}>
+     :STORE #<DOCUMENT-STORE (:NAME "simple-store" :UNIVERSE "universe"
+                              :LOCATION #P"~/multiverse/universe/simple-store/"
+                              :COLLECTIONS ("simple-collection")) {104C2B6C03}>
+     :COLLECTION #<DOCUMENT-COLLECTION (:NAME "simple-collection" :STORE
+                                        "simple-store" :LOCATION
+                                        #P"~/multiverse/universe/simple-store/simple-collection/simple-collection.log"
+                                        :DOCUMENT-TYPE "employee" :SHARDS
+                                        ("simple-c")) {104C411AC3}>
+     :DOCUMENT-TYPE "employee"
+     :HASH "B58F9362-BDE0-465C-9013-04BF6541C8F7"
+     :ELEMENTS (:NAME "Piet" :SURNAME "Gieter" :EMP-NO 123)
+     :CHANGES NIL
+     :VERSIONS NIL
+     :DELETED-P NIL
+     :PERSISTED-P T))
+ (:DESC
+  "Koos that we looked up using index-lookup-values and the index values of Koos and Van."
+  :VALUE
+  (#S(DOCUMENT
+      :UNIVERSE #<UNIVERSE (:NAME "universe" :MULTIVERSE "multiverse" :LOCATION
+                            "~/multiverse/universe/" :STORES
+                            ("simple-store")) {104C234E83}>
+      :STORE #<DOCUMENT-STORE (:NAME "simple-store" :UNIVERSE "universe"
+                               :LOCATION
+                               #P"~/multiverse/universe/simple-store/"
+                               :COLLECTIONS
+                               ("simple-collection")) {104C2B6C03}>
+      :COLLECTION #<DOCUMENT-COLLECTION (:NAME "simple-collection" :STORE
+                                         "simple-store" :LOCATION
+                                         #P"~/multiverse/universe/simple-store/simple-collection/simple-collection.log"
+                                         :DOCUMENT-TYPE "employee" :SHARDS
+                                         ("simple-c")) {104C411AC3}>
+      :DOCUMENT-TYPE #<DOCUMENT-TYPE (:NAME "employee" :STORE "simple-store"
+                                      :ELEMENTS
+                                      (:SURNAME :NAME :EMP-NO)) {104C2B6CA3}>
+      :HASH "B0E59C8E-2241-490A-B904-1ABA62FD5C9B"
+      :ELEMENTS (:NAME "Koos" :SURNAME "Van" :EMP-NO 999)
+      :CHANGES NIL
+      :VERSIONS NIL
+      :DELETED-P NIL
+      :PERSISTED-P T)))
+ (:DESC
+  "A list of both Frikie and Tannie that we looked up using index-lookup-values and the surname. This is called a partial index lookup. You can enable or disable partial indexes."
+  :VALUE
+  (#S(DOCUMENT
+      :UNIVERSE #<UNIVERSE (:NAME "universe" :MULTIVERSE "multiverse" :LOCATION
+                            "~/multiverse/universe/" :STORES
+                            ("simple-store")) {104C234E83}>
+      :STORE #<DOCUMENT-STORE (:NAME "simple-store" :UNIVERSE "universe"
+                               :LOCATION
+                               #P"~/multiverse/universe/simple-store/"
+                               :COLLECTIONS
+                               ("simple-collection")) {104C2B6C03}>
+      :COLLECTION #<DOCUMENT-COLLECTION (:NAME "simple-collection" :STORE
+                                         "simple-store" :LOCATION
+                                         #P"~/multiverse/universe/simple-store/simple-collection/simple-collection.log"
+                                         :DOCUMENT-TYPE "employee" :SHARDS
+                                         ("simple-c")) {104C411AC3}>
+      :DOCUMENT-TYPE #<DOCUMENT-TYPE (:NAME "employee" :STORE "simple-store"
+                                      :ELEMENTS
+                                      (:SURNAME :NAME :EMP-NO)) {104C2B6CA3}>
+      :HASH "6BF9DC95-5158-4B60-A7E0-929BC2D7684F"
+      :ELEMENTS (:NAME "Tannie" :SURNAME "Frikkedel" :EMP-NO 1002)
+      :CHANGES NIL
+      :VERSIONS NIL
+      :DELETED-P NIL
+      :PERSISTED-P T)
+   #S(DOCUMENT
+      :UNIVERSE #<UNIVERSE (:NAME "universe" :MULTIVERSE "multiverse" :LOCATION
+                            "~/multiverse/universe/" :STORES
+                            ("simple-store")) {104C234E83}>
+      :STORE #<DOCUMENT-STORE (:NAME "simple-store" :UNIVERSE "universe"
+                               :LOCATION
+                               #P"~/multiverse/universe/simple-store/"
+                               :COLLECTIONS
+                               ("simple-collection")) {104C2B6C03}>
+      :COLLECTION #<DOCUMENT-COLLECTION (:NAME "simple-collection" :STORE
+                                         "simple-store" :LOCATION
+                                         #P"~/multiverse/universe/simple-store/simple-collection/simple-collection.log"
+                                         :DOCUMENT-TYPE "employee" :SHARDS
+                                         ("simple-c")) {104C411AC3}>
+      :DOCUMENT-TYPE #<DOCUMENT-TYPE (:NAME "employee" :STORE "simple-store"
+                                      :ELEMENTS
+                                      (:SURNAME :NAME :EMP-NO)) {104C2B6CA3}>
+      :HASH "97DC3D26-97A9-4B75-A8A3-36B849CAE347"
+      :ELEMENTS (:NAME "Frikkie" :SURNAME "Frikkedel" :EMP-NO 1001)
+      :CHANGES NIL
+      :VERSIONS NIL
+      :DELETED-P NIL
+      :PERSISTED-P T)))
+ (:DESC
+  "Queried all id's <= 900 using query-data. The query will use indexes internally when possible."
+  :VALUE
+  (#S(DOCUMENT
+      :UNIVERSE #<UNIVERSE (:NAME "universe" :MULTIVERSE "multiverse" :LOCATION
+                            "~/multiverse/universe/" :STORES
+                            ("simple-store")) {104C234E83}>
+      :STORE #<DOCUMENT-STORE (:NAME "simple-store" :UNIVERSE "universe"
+                               :LOCATION
+                               #P"~/multiverse/universe/simple-store/"
+                               :COLLECTIONS
+                               ("simple-collection")) {104C2B6C03}>
+      :COLLECTION #<DOCUMENT-COLLECTION (:NAME "simple-collection" :STORE
+                                         "simple-store" :LOCATION
+                                         #P"~/multiverse/universe/simple-store/simple-collection/simple-collection.log"
+                                         :DOCUMENT-TYPE "employee" :SHARDS
+                                         ("simple-c")) {104C411AC3}>
+      :DOCUMENT-TYPE "employee"
+      :HASH "B94547F2-DEE5-4408-A6DB-459E193E0B22"
+      :ELEMENTS (:NAME "Sannie" :SURNAME "Gieter" :EMP-NO 321)
+      :CHANGES NIL
+      :VERSIONS NIL
+      :DELETED-P NIL
+      :PERSISTED-P T)
+   #S(DOCUMENT
+      :UNIVERSE #<UNIVERSE (:NAME "universe" :MULTIVERSE "multiverse" :LOCATION
+                            "~/multiverse/universe/" :STORES
+                            ("simple-store")) {104C234E83}>
+      :STORE #<DOCUMENT-STORE (:NAME "simple-store" :UNIVERSE "universe"
+                               :LOCATION
+                               #P"~/multiverse/universe/simple-store/"
+                               :COLLECTIONS
+                               ("simple-collection")) {104C2B6C03}>
+      :COLLECTION #<DOCUMENT-COLLECTION (:NAME "simple-collection" :STORE
+                                         "simple-store" :LOCATION
+                                         #P"~/multiverse/universe/simple-store/simple-collection/simple-collection.log"
+                                         :DOCUMENT-TYPE "employee" :SHARDS
+                                         ("simple-c")) {104C411AC3}>
+      :DOCUMENT-TYPE "employee"
+      :HASH "B58F9362-BDE0-465C-9013-04BF6541C8F7"
+      :ELEMENTS (:NAME "Piet" :SURNAME "Gieter" :EMP-NO 123)
+      :CHANGES NIL
+      :VERSIONS NIL
+      :DELETED-P NIL
+      :PERSISTED-P T))))
 #+END_SRC
 
-In the returned list the first document is Koos that we looked up using the index. We used a full index lookup ie we used all the index values.
-
-The second document is a list of both Frikie and Tannie that we looked up using the surname index. We used partial index lookup ie just the surname was used in the lookup.
-
-The third document is a list of all the :key values <= 900
-
-You will notice that the employees are now represented by a complex struct. All the meta data for the employee document is now captured by the struct elements. The value element contains the actual employee element values.
-
-To see the file created for the data go to \~/data-universe/simple-store/simple-collection/ there you should find a simple-collection.log file and you should see the following in the file:
-
-#+BEGIN_SRC lisp
-  (:STORE "simple-store" :COLLECTION "simple-collection" :DATA-TYPE "employee"
-   :HASH "12866A48-A0E3-4237-BB15-9036550B63E6" :DELETED-P NIL :VALUES
-	  (:NAME "Piet" :SURNAME "Gieter" :EMP-NO 123))
-  (:STORE "simple-store" :COLLECTION "simple-collection" :DATA-TYPE "employee"
-   :HASH "18126ED4-7A89-4303-9709-C055DFC93AE6" :DELETED-P NIL :VALUES
-	  (:NAME "Sannie" :SURNAME "Gieter" :EMP-NO 321))
-  (:STORE "simple-store" :COLLECTION "simple-collection" :DATA-TYPE "employee"
-   :HASH "70A97B01-0E36-4B8C-9983-A017465A59D5" :DELETED-P NIL :VALUES
-	  (:NAME "Koos" :SURNAME "Van" :EMP-NO 999))
-  (:STORE "simple-store" :COLLECTION "simple-collection" :DATA-TYPE "employee"
-   :HASH "9C581722-D1C4-4E76-8D20-E2702D19C230" :DELETED-P NIL :VALUES
-	  (:NAME "Frikkie" :SURNAME "Frikkedel" :EMP-NO 1001))
-  (:STORE "simple-store" :COLLECTION "simple-collection" :DATA-TYPE "employee"
-   :HASH "9C581722-D1C4-4E76-8D20-E2702D19C230" :DELETED-P NIL :VALUES
-	  (:NAME "Tannie" :SURNAME "Frikkedel" :EMP-NO 1001))
-#+END_SRC
-
-To change a value for an employee you just set the value using getx. For example lets change Sannie's surname.
+To change a value for an employee you just set the value using
+getx. For example lets change Sannie's surname.
 
 #+BEGIN_SRC lisp
 (let ((sannie (first (index-lookup-values

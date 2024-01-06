@@ -133,7 +133,9 @@ Returns document and position as values. Position is used in add-document to do 
 
 The second is a key value hash index to be used when looking for duplicate documents during persist. If you are not using document-types the order of the keys in the plist matter. To make sure that you dont muck with the order of values/keys in your plists initialize all the possible value pairs with nil so that way the order is set.
 
-A shard must be supplied."))
+A shard must be supplied.
+
+Position saved to use with future add-document to replace actual documents in the document vector if needed. It is done to speed up add-document."))
 
 (defmethod add-index ((collection indexed-collection-mixin) shard document
                       position &key key-values &allow-other-keys)
@@ -247,13 +249,25 @@ A shard must be supplied."))
                          &allow-other-keys)
   "Duplicates are not allowed for indexed collections!
 
-If the document has no hash and a document with the same keys exists in the collection the supplied document's hash will be set to that of the existing document. The existing document will then be replaced with the supplied document. This is done to maintain hash consistancy of the store.
+If the document has no hash and a document with the same keys exists
+in the collection the supplied document's hash will be set to that of
+the existing document. The existing document will then be replaced
+with the supplied document. This is done to maintain hash consistancy
+of the store.
 
-If you set replace-existing-p to nil then an existing document wont be replaced by the supplied document. Basically nothing will be done.
+If you set replace-existing-p to nil then an existing document wont be
+replaced by the supplied document. Basically nothing will be done.
 
-Indexes will be updated by default, if you want to stop index updates set update-index-p to nil. Just remember that if the document is really \"new\" to the collection the indexes will be updated in any case.
+Indexes will be updated by default, if you want to stop index updates
+set update-index-p to nil. Just remember that if the document is
+really \"new\" to the collection the indexes will be updated in any
+case.
 
-Note that if the document have child documents that come from another collection and you             m changed them add-document will not try to sync those with existing documents! That also means that add wont assign uuid's to any child documents that don't have them set, you have to set them yourself.
+Note that if the document have child documents that come from another
+collection and you m changed them add-document will not try to sync
+those with existing documents! That also means that add wont assign
+uuid's to any child documents that don't have them set, you have to
+set them yourself.
 "
   (let ((mac (document-shard-mac collection document)))
     (setf shard (cl-naive-store.naive-core::ensure-shard

@@ -1,12 +1,18 @@
-;;Setup to use cl-naive-store
+(ignore-errors (delete-package :naive-examples))
+
+;;Load to use cl-naive-store
 (require 'cl-naive-store)
 (defpackage :naive-examples (:use :cl :cl-getx :cl-naive-store.naive-core
                              :cl-naive-store.naive-indexed))
 (in-package :naive-examples)
 
-;;Create a class that inherits form indexed-collection-mixin and collection.
-(defclass indexded-collection (indexed-collection-mixin collection)
-  ())
+;;Required to correctly initialize lparallel:*kernel*.
+(initialize)
+
+;;Deleting existing example database
+(cl-fad:delete-directory-and-files
+ "~/multiverse/universe/simple-store"
+ :if-does-not-exist :ignore)
 
 (let* (;;Create a multiverse.
        (multiverse (make-instance
@@ -33,35 +39,57 @@
        ;;Create a collection and add it to the store
        (collection (add-multiverse-element
                     store
-                    (make-instance 'collection
+                    (make-instance 'indexed-collection
                                    :name "simple-collection"
                                    ;;Specifying the key element, else its :key
-                                   :keys '(:id))))
-       (results))
+                                   :keys '(:id)
+                                   ;; Specifying the elements to set up indexes for.
+                                   :indexes '((:name :surname)))))
+       (results)
+       ;;Add doc to collection
+       (doc (persist-document collection (list :name "Piet" :surname "Gieter" :id 123))))
+
+  ;;Load Collection if it was created before.
+  ;; (load-data collection)
 
   ;;Add some documents to the collection
 
-  (persist-document collection (list :name "Piet" :surname "Gieter" :id 123))
   (persist-document collection (list :name "Sannie" :surname "Gieter" :id 321))
   (persist-document collection (list :name "Koos" :surname "Van" :id 999))
   (persist-document collection (list :name "Frikkie" :surname "Frikkedel" :id 1001))
-  (persist-document collection (list :name "Tannie" :surname "Frikkedel" :id 1001))
+  (persist-document collection (list :name "Tannie" :surname "Frikkedel" :id 1002))
+
+  ;;Look up piet by hash
+  (push (list :desc "Looked up Piet using index-lookup-hash."
+              :value (index-lookup-hash collection (getx doc :hash)))
+        results)
 
   ;;Lookup koos using index values and add it to results
-  (push
-   (index-lookup-values collection (list (list :name "Koos")
-                                         (list :surname "Van")))
-   results)
+  (push (list :desc "Koos that we looked up using index-lookup-values and the index values of Koos and Van."
+              :value
+              (index-lookup-values collection (list (list :name "Koos")
+                                                    (list :surname "Van"))))
+        results)
 
   ;;Lookup Frikkedel using index values and add it to results
   (push
-   (index-lookup-values collection (list :surname "Frikkedel"))
+   (list
+    :desc "A list of both Frikie and Tannie that we looked up using index-lookup-values and the surname. This is called a partial index lookup. You can enable or disable partial indexes."
+    :value
+    (index-lookup-values collection (list :surname "Frikkedel")))
+
    results)
 
-  ;;Query the collection, query-data will load the data from file if the collection is empty,
-  ;;and add it to the results
-  (push (query-data collection :query (lambda (document)
-                                        (<= (getx document :id) 900)))
-        results)
+  ;;Query the collection, query-data
+  ;;will load the data from file if
+  ;;the collection is empty, and add
+  ;;it to the results
+  (push
+   (list
+    :desc "Queried all id's <= 900 using query-data. The query will use indexes internally when possible."
+    :value
+    (query-data collection :query (lambda (document)
+                                    (<= (getx document :id) 900))))
+   results)
 
   (reverse results))

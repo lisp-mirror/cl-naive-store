@@ -560,7 +560,8 @@ class)
 (defgeneric load-from-definition-file (parent definition-type name
                                        &key class
                                        with-children-p
-                                       with-data-p))
+                                       with-data-p)
+  (:documentation "Loads a definition from a file."))
 
 (defmethod load-from-definition-file (parent
                                       definition-type

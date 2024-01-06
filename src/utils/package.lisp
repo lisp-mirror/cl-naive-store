@@ -7,8 +7,4 @@
    ;;Used for sending docs over http.
    :naive-document-to-sexp
    :naive-documents-to-sexps
-   :sexp-to-naive-document
-   :make-elements
-   :definition-keys
-   :implement-document-definition
-   :implement-definitions-colllection))
+   :sexp-to-naive-document))

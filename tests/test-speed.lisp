@@ -82,7 +82,7 @@
                                                     emp
                                                     :handle-duplicates-p nil)))
        (declare (ignore result))
-       (format *trace-output* "Time after add.~%~A~%" (get-universal-time))
+       (format *trace-output* "Time after add.~%~A~%~%" (get-universal-time))
        time-taken)))
 
   (cl-naive-tests:testcase
@@ -98,7 +98,7 @@
          (time-in-secs
           (persist-collection *collection*))
        (declare (ignore result))
-       (format *trace-output* "Time after perist.~%~A~%" (get-universal-time))
+       (format *trace-output* "Time after perist.~%~A~%~%" (get-universal-time))
        time-taken)))
   (cl-naive-tests:testcase
    :load-documents-from-disk
@@ -120,7 +120,7 @@
           ;; would work because there is no fear of duplicates.
           (load-data *collection* :handle-duplicates-p nil :parallel-p nil))
        (declare (ignore result time-taken))
-       (format *trace-output* "Time after load.~%~A~%" (get-universal-time))
+       (format *trace-output* "Time after load.~%~A~%~%" (get-universal-time))
        (length (documents *collection*)))))
   (cl-naive-tests:testcase
    :adding-documents-monster
@@ -164,7 +164,7 @@
                           emp
                           :handle-duplicates-p nil)))
        (declare (ignore result))
-       (format *trace-output* "Time after add.~%~A~%" (get-universal-time))
+       (format *trace-output* "Time after add.~%~A~%~%" (get-universal-time))
        time-taken)))
   (cl-naive-tests:testcase
    :perist-documents-monster
@@ -178,7 +178,7 @@
          (time-in-secs
           (persist-collection *collection*))
        (declare (ignore result))
-       (format *trace-output* "Time after add.~%~A~%" (get-universal-time))
+       (format *trace-output* "Time after add.~%~A~%~%" (get-universal-time))
        time-taken)))
   (cl-naive-tests:testcase
    :load-documents-from-disk-monster
@@ -194,7 +194,7 @@
          (time-in-secs
           (load-data *collection* :handle-duplicates-p nil))
        (declare (ignore result time-taken))
-       (format *trace-output* "Time after load.~%~A~%" (get-universal-time))
+       (format *trace-output* "Time after load.~%~A~%~%" (get-universal-time))
        (length (documents *collection*))))))
 
 (defmethod cl-naive-tests:tear-down-suite ((test-name (eql :test-speed-simple)))

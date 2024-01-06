@@ -3,7 +3,7 @@
   (:export
 
    :initialize
-   
+
    ;;COMMON
 
    :frmt
@@ -23,6 +23,7 @@
    :do-sequence
    :set-query-cache
    :get-query-cache
+
    ;;LOGGING
 
    :*break-on-error-log*

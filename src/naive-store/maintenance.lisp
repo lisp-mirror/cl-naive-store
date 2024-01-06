@@ -3,7 +3,10 @@
 ;;TODO: add functionality to do sanitize when loading data for the first time.
 
 (defgeneric sanitize-data-file (collection &key &allow-other-keys)
-  (:documentation "This removes all the deleted data documents from a collection. When a collection is loaded only the active documents are loaded. Does this by simply writing those active documents out to a new file and then replacing the old file."))
+  (:documentation "This removes all the deleted data documents and history from a
+collection. When a collection is loaded only the active documents are
+loaded. Does this by simply writing those active documents out to a
+new file and then replacing the old file."))
 
 (defmethod sanitize-data-file ((collection collection) &key &allow-other-keys)
   (let ((documents (query-data

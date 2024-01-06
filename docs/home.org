@@ -26,8 +26,7 @@ Functionality was broken down into these packages:
 - =cl-naive-store.definitions=
 - =cl-naive-store.naive-documents=
 - =cl-naive-store.naive-indexed=
-- =cl-naive-store.naive-merkle=
-- =cl-naive-store.test=
+- =cl-naive-store.tests=
 
 The following .asd files can be used to load different functionality:
 
@@ -51,8 +50,6 @@ The following .asd files can be used to load different functionality:
 
 - =cl-naive-store.asd= loads the whole shebang.
 
-- =cl-naive-store.test.asd= loads tests
-
 ** Overview
 
 [[file:overview.org][Overview]]
@@ -73,8 +70,44 @@ The following .asd files can be used to load different functionality:
 
 [[file:implementor-api.org][Implementor API Documentation]]
 
+** Utils
+
+Some [[utilities.org][utilities]]. More to come in the future.
+
+** Tests
+
+=cl-naive-store.tests.asd= loads tests
+
+To run all the tests.
+
+#+BEGIN_SRC lisp
+(cl-naive-tests:run)
+#+END_SRC
+
+To run a specific test, specify the test suite.
+
+#+BEGIN_SRC lisp
+(cl-naive-tests:run :suites :test-definitions)
+;;or
+(cl-naive-tests:run :suites :test-basic)
+;;or
+(cl-naive-tests:run :suites :test-basic-persisted)
+;;or
+(cl-naive-tests:run :suites :test-indexed)
+;;or
+(cl-naive-tests:run :suites :test-naive-documents)
+;;or
+(cl-naive-tests:run :suites :test-sharding-simple)
+;;or
+(cl-naive-tests:run :suites :test-sharding-indexed)
+#+END_SRC
+
 ** Rough Bench Marks
 
-[[file:rough-bench-marks.org][Rough Bench Marks]]
+There are also performance tests that you can run if you are curious
+about performance of the different layers. 
+
+[[file:rough-bench-marks.org][See Rough Bench Marks]]
+
 
 Home Previous [[file:overview.org][Next]]

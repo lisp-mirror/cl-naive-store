@@ -3,6 +3,8 @@
 In this example we will use sharding with document types.
 
 #+BEGIN_SRC lisp
+(ignore-errors (delete-package :naive-examples))
+
 ;;Setup to use cl-naive-store
 (require 'cl-naive-store)
 (defpackage :naive-examples (:use
@@ -13,504 +15,218 @@ In this example we will use sharding with document types.
                              :cl-naive-store.naive-documents))
 (in-package :naive-examples)
 
-;;A helper function
-(defun random-from-list (list)
-  (nth (random (- (length list) 1)) list))
+;;Required to correctly initialize lparallel:*kerel*.
+(initialize)
 
-;;Create a data definition for an asset. Assets are linked to employees
-;;It looks like a lot but dont panic its simple.
-(defparameter *asset-document-type*
-  '(:name "asset-register"
-    :label "Asset Register"
-    :elements ((:name :asset-no
-                :label "Asset No"
-                :concrete-type :string
-                :key-p t
-                :attributes (:display t :editable t))
-               (:name :description
-                :label "Description"
-                :concrete-type :string
-                :attributes (:display t :editable t)))
-    :documentation "This type represents a simple employee master."))
+(defparameter *surnames*
+  #("Smith" "Johnson" "Williams" "Jones" "Brown" "Davis" "Miller")
+  "A vector of surnames.")
 
-;;Create a data definition for an employee
-;;It looks like a lot but dont panic its simple.
+(defparameter *countries*
+  #("Afghanistan" "Albania" "Algeria" "Andorra" "Angola"
+    "Antigua and Barbuda" "Argentina" "Armenia" "Australia" "Austria"
+    "Azerbaijan" "Bahamas" "Bahrain" "Bangladesh" "Barbados" "Belarus"
+    "Belgium" "Belize" "Benin" "Bhutan" "Bolivia" "Bosnia and Herzegovina"
+    "Botswana" "Brazil" "Brunei" "Bulgaria" "Burkina Faso" "Burundi"
+    "Côte d'Ivoire" "Cabo Verde" "Cambodia" "Cameroon" "Canada"
+    "Central African Republic" "Chad" "Chile" "China" "Colombia" "Comoros"
+    "Congo" "Costa Rica" "Croatia" "Cuba" "Cyprus"
+    "Czechia" "Democratic Republic of the Congo"
+    "Denmark" "Djibouti" "Dominica" "Dominican Republic" "Ecuador" "Egypt"
+    "El Salvador" "Equatorial Guinea" "Eritrea" "Estonia"
+    "Eswatini" "Ethiopia" "Fiji" "Finland" "France"
+    "Gabon" "Gambia" "Georgia" "Germany" "Ghana" "Greece" "Grenada"
+    "Guatemala" "Guinea" "Guinea-Bissau" "Guyana" "Haiti" "Holy See"
+    "Honduras" "Hungary" "Iceland" "India" "Indonesia" "Iran" "Iraq"
+    "Ireland" "Israel" "Italy" "Jamaica" "Japan" "Jordan" "Kazakhstan"
+    "Kenya" "Kiribati" "Kuwait" "Kyrgyzstan" "Laos" "Latvia" "Lebanon"
+    "Lesotho" "Liberia" "Libya" "Liechtenstein" "Lithuania" "Luxembourg"
+    "Madagascar" "Malawi" "Malaysia" "Maldives" "Mali" "Malta"
+    "Marshall Islands" "Mauritania" "Mauritius" "Mexico" "Micronesia"
+    "Moldova" "Monaco" "Mongolia" "Montenegro" "Morocco" "Mozambique"
+    "Myanmar" "Namibia" "Nauru" "Nepal" "Netherlands"
+    "New Zealand" "Nicaragua" "Niger" "Nigeria" "North Korea"
+    "North Macedonia" "Norway" "Oman" "Pakistan" "Palau" "Palestine State"
+    "Panama" "Papua New Guinea" "Paraguay" "Peru" "Philippines" "Poland"
+    "Portugal" "Qatar" "Romania" "Russia" "Rwanda" "Saint Kitts and Nevis"
+    "Saint Lucia" "Saint Vincent and the Grenadines" "Samoa" "San Marino"
+    "Sao Tome and Principe" "Saudi Arabia" "Senegal" "Serbia" "Seychelles"
+    "Sierra Leone" "Singapore" "Slovakia" "Slovenia" "Solomon Islands"
+    "Somalia" "South Africa" "South Korea" "South Sudan" "Spain"
+    "Sri Lanka" "Sudan" "Suriname" "Sweden" "Switzerland" "Syria"
+    "Tajikistan" "Tanzania" "Thailand" "Timor-Leste" "Togo" "Tonga"
+    "Trinidad and Tobago" "Tunisia" "Turkey" "Turkmenistan" "Tuvalu"
+    "Uganda" "Ukraine" "United Arab Emirates" "United Kingdom"
+    "United States of America" "Uruguay" "Uzbekistan" "Vanuatu"
+    "Venezuela" "Vietnam" "Yemen" "Zambia" "Zimbabwe")
+  "A vector of country names.")
+
 (defparameter *employee-document-type*
-  '(:name "employee"
-    :label "Employee"
-    :elements ((:name :emp-no
-                :label "Employee No"
-                :concrete-type :string
-                :key-p t
-                :attributes (:display t :editable t))
-               (:name :country
-                :label "Country"
-                :concrete-type :string
-                :attributes (:display t :editable t))
-               (:name :name
-                :label "Name"
-                :concrete-type :string
-                :attributes (:display t :editable t))
-               (:name :surname
-                :label "Surname"
-                :concrete-type :string
-                :attributes (:display t :editable t))
-               (:name :asset
-                :label "Asset"
-                :concrete-type (:type :document
-                                :complex-type :document
-                                :elements)
-                :attributes (:display t :editable t)))
-    :documentation "This type represents a simple employee master."))
+  '(:document-type (:name "employee"
+                    :label "Employee"
+                    :elements
+                    ((:element
+                      (:name :emp-no
+                       :label "Employee No"
+                       :key-p t
+                       :concrete-type :string
+                       :attributes ((:attribute
+                                     (:name :display
+                                      :value t))
+                                    (:attribute
+                                     (:name :editable
+                                      :value t)))))
+                     (:element
+                      (:name :name
+                       :label "Name"
+                       :concrete-type :string
+                       :attributes ((:attribute
+                                     (:name :display
+                                      :value t))
+                                    (:attribute
+                                     (:name :editable
+                                      :value t)))))
+                     (:element
+                      (:name :surname
+                       :label "Surname"
+                       :concrete-type :string
+                       :attributes ((:attribute
+                                     (:name :display
+                                      :value t))
+                                    (:attribute
+                                     (:name :editable
+                                      :value t))))))
+                    :documentation "This type represents a simple employee master.")))
 
-(defparameter *multiverse*
-  (make-instance
-   'multiverse
-   :location "~/multiverse/" ;Setting the location on disk.
-   :universe-class 'universe))
+;;Cannot go below 202! The tests will fail.
+(defparameter *size* 10000)
 
-;;Create a universe
-(defparameter *universe*
-  (make-instance
-   'universe
-   :multiverse *multiverse*
-   :location "~/multiverse/universe/" ;Setting the location on disk.
-   :store-class 'store))
+(defparameter *expected-shard-count* 0)
 
-;;Add universe to multiverse.
-(add-multiverse-element *multiverse* *universe*)
+;;Doing this so you can rerun the code from here onwards.
+(progn
+  ;;Deleting existing example database
+  (cl-fad:delete-directory-and-files
+   "~/multiverse/universe/simple-store"
+   :if-does-not-exist :ignore)
 
-(let* (;;Create a store and add it to the universe
-       (store (add-multiverse-element *universe*
-                                      (make-instance 'document-store
-                                                     :name "simple-store"
-                                                     :collection-class 'collection)
-                                      :persist-p t))
-       (employee-collection)
-       (asset-collection)
-       (employee-elements)
-       (employee-document-type)
-       (asset-elements)
-       (asset-document-type)
-       (results))
+  (let* ((multiverse
+           (make-instance
+            'multiverse
+            :name "multiverse"
+            :location "~/multiverse/" ;Setting the location on disk.
+            :universe-class 'universe))
+         ;;Add universe to multiverse
+         (universe
+           (add-multiverse-element
+            multiverse
+            (make-instance
+             'universe
+             :name "universe"
+             :multiverse multiverse
+             :location "~/multiverse/universe/" ;Setting the location on disk.
+             :store-class 'document-store)))
+         (store
+           (add-multiverse-element
+            universe
+            (make-instance (store-class universe)
+                           :name "simple-store"
+                           :collection-class
+                           'cl-naive-store.naive-documents:document-collection)))
+         (document-type
+           (make-instance
+            'document-type
+            :name (getf
+                   (getf *employee-document-type* :document-type)
+                   :name)
+            :label (getf
+                    (getf *employee-document-type* :document-type)
+                    :label)
+            :elements (mapcar
+                       (lambda (element)
+                         (make-instance
+                          'element
+                          :name(getf (getf element :element) :name)
+                          :key-p (getf (getf element :element) :key-p)
+                          :concrete-type (getf (getf element :element) :concrete-type)
+                          :attributes (getf (getf element :element) :attributes)))
+                       (getf
+                        (getf *employee-document-type* :document-type)
+                        :elements))))
+         (collection
+           (add-multiverse-element
+            store
+            (make-instance (collection-class store)
+                           :name "simple-collection"
+                           :keys '(:emp-no)
+                           :document-type document-type
+                           ;; Creating shards based on the country that the employee
+                           ;; belongs to.  It is a bad example you should not shard on
+                           ;; any value that could change in the future!
+                           :shard-elements '(:country))))
+         (emp-country  0)
+         (emp-surname  0)
+         (unique-countries (make-hash-table :test 'equalp)))
 
-  ;;initialize the data employee data definition.
-  (dolist (element (getf *employee-document-type* :elements))
-    (setf
-     employee-elements
-     (append employee-elements
-             (list (make-instance
-                    'element
-                    :name (getf element :name)
-                    :key-p (getf element :key-p)
-                    :concrete-type (getf element :concrete-type)
-                    :attributes (getf element :attributes))))))
+    (setf *expected-shard-count* 0)
 
-  (setf employee-document-type (add-multiverse-element
-                                store
-                                (make-instance
-                                 'document-type
-                                 :name (getf *employee-document-type* :name)
-                                 :label (getf *employee-document-type* :label)
-                                 :elements employee-elements)
-                                :persist-p t))
+    (cl-naive-store.naive-core:add-multiverse-element store document-type)
 
-  ;;initialize the data asset data definition.
-  (dolist (element (getf *asset-document-type* :elements))
-    (setf
-     asset-elements
-     (append asset-elements
-             (list (make-instance
-                    'element
-                    :name (getf element :name)
-                    :key-p (getf element :key-p)
-                    :concrete-type (getf element :concrete-type)
-                    :attributes (getf element :attributes))))))
+    (persist multiverse :definitions-only-p t)
 
-  (setf asset-document-type (add-multiverse-element
-                             store
-                             (make-instance
-                              'document-type
-                              :name (getf *asset-document-type* :name)
-                              :label (getf *asset-document-type* :label)
-                              :elements asset-elements)
-                             :persist-p t))
+    (unless (data-loaded-p collection)
+      ;;Populate the collection.
+      (dotimes (emp-no *size*)
+        ;; We create employees country per country and loop again if we need more:
+        (let ((country  (aref *countries* emp-country))
+              (surname  (aref *surnames* emp-surname)))
 
-  ;;Create a collection and add it to the store
-  (setf employee-collection
-        (add-multiverse-element store
-                                (make-instance 'document-collection ;;using documents collection.
-                                               :name "simple-collection"
-                                               :document-type employee-document-type
-                                               :keys '(:emp-no)
-                                               :indexes '((:surname))
-                                               ;;Creating shards based on the
-                                               ;;country that the employee
-                                               ;;belongs to. It is a bad
-                                               ;;example you should not shard
-                                               ;;on any value that could
-                                               ;;change!!!!!
-                                               :shard-elements (list :country))
-                                :persist-p t))
+          (unless (gethash country unique-countries)
+            (incf *expected-shard-count*)
+            (setf (gethash country unique-countries) country))
 
-  ;;Create a collection and add it to the store
-  (setf asset-collection
-        (add-multiverse-element store
-                                (make-instance 'document-collection
-                                               :name "asset-collection"
-                                               :document-type asset-document-type
-                                               :keys '(:asset-no))
-                                :persist-p t))
+          (incf emp-surname)
 
-  ;;Add some documents to the collections
-  (let ((emp-country '("Afghanistan"
-                       "Albania"
-                       "Algeria"
-                       "Andorra"
-                       "Angola"
-                       "Antigua and Barbuda"
-                       "Argentina"
-                       "Armenia"
-                       "Australia"
-                       "Austria"
-                       "Azerbaijan"
-                       "Bahamas"
-                       "Bahrain"
-                       "Bangladesh"
-                       "Barbados"
-                       "Belarus"
-                       "Belgium"
-                       "Belize"
-                       "Benin"
-                       "Bhutan"
-                       "Bolivia"
-                       "Bosnia and Herzegovina"
-                       "Botswana"
-                       "Brazil"
-                       "Brunei"
-                       "Bulgaria"
-                       "Burkina Faso"
-                       "Burundi"
-                       "Côte d'Ivoire"
-                       "Cabo Verde"
-                       "Cambodia"
-                       "Cameroon"
-                       "Canada"
-                       "Central African Republic"
-                       "Chad"
-                       "Chile"
-                       "China"
-                       "Colombia"
-                       "Comoros"
-                       "Congo (Congo-Brazzaville)"
-                       "Costa Rica"
-                       "Croatia"
-                       "Cuba"
-                       "Cyprus"
-                       "Czechia (Czech Republic)"
-                       "Democratic Republic of the Congo"
-                       "Denmark"
-                       "Djibouti"
-                       "Dominica"
-                       "Dominican Republic"
-                       "Ecuador"
-                       "Egypt"
-                       "El Salvador"
-                       "Equatorial Guinea"
-                       "Eritrea"
-                       "Estonia"
-                       "Eswatini (fmr. \"Swaziland\")"
-                       "Ethiopia"
-                       "Fiji"
-                       "Finland"
-                       "France"
-                       "Gabon"
-                       "Gambia"
-                       "Georgia"
-                       "Germany"
-                       "Ghana"
-                       "Greece"
-                       "Grenada"
-                       "Guatemala"
-                       "Guinea"
-                       "Guinea-Bissau"
-                       "Guyana"
-                       "Haiti"
-                       "Holy See"
-                       "Honduras"
-                       "Hungary"
-                       "Iceland"
-                       "India"
-                       "Indonesia"
-                       "Iran"
-                       "Iraq"
-                       "Ireland"
-                       "Israel"
-                       "Italy"
-                       "Jamaica"
-                       "Japan"
-                       "Jordan"
-                       "Kazakhstan"
-                       "Kenya"
-                       "Kiribati"
-                       "Kuwait"
-                       "Kyrgyzstan"
-                       "Laos"
-                       "Latvia"
-                       "Lebanon"
-                       "Lesotho"
-                       "Liberia"
-                       "Libya"
-                       "Liechtenstein"
-                       "Lithuania"
-                       "Luxembourg"
-                       "Madagascar"
-                       "Malawi"
-                       "Malaysia"
-                       "Maldives"
-                       "Mali"
-                       "Malta"
-                       "Marshall Islands"
-                       "Mauritania"
-                       "Mauritius"
-                       "Mexico"
-                       "Micronesia"
-                       "Moldova"
-                       "Monaco"
-                       "Mongolia"
-                       "Montenegro"
-                       "Morocco"
-                       "Mozambique"
-                       "Myanmar (formerly Burma)"
-                       "Namibia"
-                       "Nauru"
-                       "Nepal"
-                       "Netherlands"
-                       "New Zealand"
-                       "Nicaragua"
-                       "Niger"
-                       "Nigeria"
-                       "North Korea"
-                       "North Macedonia"
-                       "Norway"
-                       "Oman"
-                       "Pakistan"
-                       "Palau"
-                       "Palestine State"
-                       "Panama"
-                       "Papua New Guinea"
-                       "Paraguay"
-                       "Peru"
-                       "Philippines"
-                       "Poland"
-                       "Portugal"
-                       "Qatar"
-                       "Romania"
-                       "Russia"
-                       "Rwanda"
-                       "Saint Kitts and Nevis"
-                       "Saint Lucia"
-                       "Saint Vincent and the Grenadines"
-                       "Samoa"
-                       "San Marino"
-                       "Sao Tome and Principe"
-                       "Saudi Arabia"
-                       "Senegal"
-                       "Serbia"
-                       "Seychelles"
-                       "Sierra Leone"
-                       "Singapore"
-                       "Slovakia"
-                       "Slovenia"
-                       "Solomon Islands"
-                       "Somalia"
-                       "South Africa"
-                       "South Korea"
-                       "South Sudan"
-                       "Spain"
-                       "Sri Lanka"
-                       "Sudan"
-                       "Suriname"
-                       "Sweden"
-                       "Switzerland"
-                       "Syria"
-                       "Tajikistan"
-                       "Tanzania"
-                       "Thailand"
-                       "Timor-Leste"
-                       "Togo"
-                       "Tonga"
-                       "Trinidad and Tobago"
-                       "Tunisia"
-                       "Turkey"
-                       "Turkmenistan"
-                       "Tuvalu"
-                       "Uganda"
-                       "Ukraine"
-                       "United Arab Emirates"
-                       "United Kingdom"
-                       "United States of America"
-                       "Uruguay"
-                       "Uzbekistan"
-                       "Vanuatu"
-                       "Venezuela"
-                       "Vietnam"
-                       "Yemen"
-                       "Zambia"
-                       "Zimbabwe"))
-        (emp-surnames '("Smith"
-                        "Johnson"
-                        "Williams"
-                        "Jones"
-                        "Brown"
-                        "Davis"
-                        "Miller")))
+          ;;We only have only 7 surnames start again on surnames
+          (when (<= (length *surnames*) emp-surname)
+            (setf emp-surname 0)
+            ;;move on to next country
+            ;;(setf emp-country (mod (1+ emp-country) (length *countries*)))
+            (if (< emp-country (- (length *countries*) 1))
+                (incf emp-country)
+                (setf emp-country 0)))
 
-    ;;Try to load the data first, maybe it has been persisted before.
-    (print "Loading Existing Data.")
-    (time
-     (load-data employee-collection))
+          (add-document collection
+                        (list
+                         :country country
+                         :surname surname
+                         :name (format nil "Slave No ~A" emp-no)
+                         :emp-no emp-no)
+                        :handle-duplicates-p nil)))
 
-    ;;If the data was peristed before and successfully loaded dont add it again.
-    (unless (data-loaded-p employee-collection)
+      ;; Bulk perist documents
+      (persist-collection collection))
 
-      ;;Adding documents without persisting will do a bulk persist later which is much faster.
-      (print "Adding 200000 documents to collections")
-      (time
-       (dotimes (x 100000)
+    ;;We are just going to investigate the shards and not do a lot data
+    ;;lookups like in other examples.
+    (list (list :desc "Count of shards in collection."
+                :value (length (shards collection)))
+          (list :desc "The count of physical shard files for the collection."
+                :value (length (uiop:directory-files
+                                (cl-fad:merge-pathnames-as-directory
+                                 (location store)
+                                 (make-pathname :directory
+                                                (list :relative
+                                                      (name collection))))))))))
 
-         (add-document employee-collection
-                       (make-document
-                        :store (store employee-collection)
-                        :collection employee-collection
-                        :document-type employee-document-type
-                        :elements (list
-                                   :asset (add-document asset-collection
-                                                        (make-document
-                                                         :store (store asset-collection)
-                                                         :collection asset-collection
-                                                         :document-type asset-document-type
-                                                         :elements (list :description x :asset-no x)))
-                                   :country (random-from-list emp-country)
-                                   :surname (random-from-list emp-surnames)
-                                   :name (format nil "Slave No ~A" x)
-                                   :emp-no x)))))
-
-      (print "Persisting 100000 assets to collections")
-      (time
-       ;;Bulk Persist assets
-       (persist asset-collection))
-
-      (print "Persisting 100000 employees to collections")
-      (time
-       ;;Bulk Persist employees
-       (persist employee-collection)))
-
-    (print "Doing a straight up query that touches each record.")
-    (time
-     (push (list :query-all
-                 (length (query-data employee-collection :query
-                                     (let ((size 100000))
-                                       (lambda (document)
-
-                                         (or (and
-                                              (>= (getx document :emp-no) 50)
-                                              (<= (getx document :emp-no) 100))
-                                             (and
-                                              (>= (getx document :emp-no) (/ size 2))
-                                              (<= (getx document :emp-no) (+ (/ size 2) 100)))
-                                             (and
-                                              (>= (getx document :emp-no) (- size 50))
-                                              (<= (getx document :emp-no) size))))))))
-           results))
-
-    (print "Fetching an index set.")
-    (time
-     (push (list
-            :how-many-davises?
-            (length (query-data employee-collection
-                                :index-values (list (list :surname "Davis")))))
-           results))
-
-    (print "Doing a query against an index set.")
-    (time
-     (push (list
-            :how-many-davises-in-chile?
-            (length (query-data employee-collection
-                                :query (lambda (emp)
-                                         (string-equal (getx emp :country) "Chile"))
-                                :index-values (list (list :surname "Davis")))))
-           results)))
-
-  (print results))
 #+END_SRC
 
 Output:
 
 #+BEGIN_SRC lisp
-  "Loading Existing Data."
-  Evaluation took:
-  0.003 seconds of real time
-  0.002304 seconds of total run time (0.002304 user, 0.000000 system)
-  66.67% CPU
-  12 lambdas converted
-  5,745,896 processor cycles
-  1,144,192 bytes consed
-
-  "Adding 200000 documents to collections"
-  Evaluation took:
-  3.348 seconds of real time
-  3.348191 seconds of total run time (3.153011 user, 0.195180 system)
-  100.00% CPU
-  322 lambdas converted
-  8,357,290,672 processor cycles
-  643,119,488 bytes consed
-
-  "Persisting 100000 assets to collections"
-  Evaluation took:
-  3.542 seconds of real time
-  3.540403 seconds of total run time (2.796032 user, 0.744371 system)
-  [ Run times consist of 0.243 seconds GC time, and 3.298 seconds non-GC time. ]
-  99.94% CPU
-  8,840,403,198 processor cycles
-  708,633,488 bytes consed
-
-  "Persisting 100000 employees to collections"
-  Evaluation took:
-  0.734 seconds of real time
-  5.659794 seconds of total run time (5.004146 user, 0.655648 system)
-  [ Run times consist of 0.010 seconds GC time, and 5.650 seconds non-GC time. ]
-  771.12% CPU
-  1,830,877,350 processor cycles
-  1,255,683,424 bytes consed
-
-  "Doing a straight up query that touches each record."
-  Evaluation took:
-  0.012 seconds of real time
-  0.054013 seconds of total run time (0.052237 user, 0.001776 system)
-  450.00% CPU
-  28 lambdas converted
-  30,247,018 processor cycles
-  11,671,520 bytes consed
-
-  "Fetching an index set."
-  Evaluation took:
-  0.007 seconds of real time
-  0.007373 seconds of total run time (0.006943 user, 0.000430 system)
-  100.00% CPU
-  16,802,684 processor cycles
-  26,441,904 bytes consed
-
-  "Doing a query against an index set."
-  Evaluation took:
-  0.009 seconds of real time
-  0.008835 seconds of total run time (0.008835 user, 0.000000 system)
-  100.00% CPU
-  22,044,690 processor cycles
-  26,434,848 bytes consed
-
-  ((:HOW-MANY-DAVISES-IN-CHILE? 89) (:HOW-MANY-DAVISES? 16416) (:QUERY-ALL 202))
-#+END_SRC
+((:DESC "Count of shards in collection." :VALUE 195)
+ (:DESC "The count of physical shard files for the collection." :VALUE 195))
+ #+END_SRC
 
 [[file:home.org][Home]] [[file:documents-example.org][Previous]]
 

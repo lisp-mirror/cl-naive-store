@@ -1,49 +1,37 @@
-* Document Type Definitions
+** Utils
 
+Some utilities. More to come in the future.
 
-** Helper Functions
+*** [function] naive-document-to-sexp (document &key (versions-p t))
 
-To get you stated on your journey using type defs there are a couple
-of helper functions to use type defs to bootstrap a store.
+Converts a naive-documents:document to a sexp.
 
-*** Individual type defs.
+versions-p includes or excludes old versions of the document.
 
-The folowing functions deals with individual type defs.
+*** [function] naive-documents-to-sexps (documents)
 
-**** [generic function] make-elements (document-type document-type-def)
+Used to prepare docs to be sent over HTTP or shared with some other
+system that does not have access to cl-naive-store.
 
-Convert the elements of the document-type-def into a list of element
-instances.
+*** [function] sexp-to-naive-document (multiverse sexp)
 
-*** [generic function] definition-keys (document-type document-type-def)
+This function converts a sexp to a naive-documents:document. What it does not do is
+sync the info with any existing documents in the collection. You will
+have to do a perstist-document (or add-document if not a persisted
+collection) on this document to sync with any existing documents in
+the collection.
 
-Get keys from document-type-def.
+If you intend to use add-document just note that it does not sync any
+child documents only persist-document does that as well. So if you are
+not carefull you can end up with more than one document with the same
+UUID and different values for child documents.
 
-**** [generic function] implement-document-definition (store document-type-def &key collection-name indexes)
+The function does check for existing-documents to at least make sure
+that the same UUID is used and any child documents that do not have UUID's
+already are supplied with UUIDs. Child documents that are reference
+documents are also checked for consitent UUID.
 
-Adds a document-type based on the definition to the store. Not all
-document-types are stored in their own collections so the user needs
-to explicitly indicate if a collection is required.
+The conversion is done on the assumption you have not trashed the document
+beyond repair when you possibly hacked the sexp.
 
-Then indexes for a collection can also be specified, the keys are
-calculated from the type def.
-
-Returns (values document-type [collection])
-
-*** Collection of type defs.
-
-The following helper functions deals with a definitions collection
-like in the full example in the [[file:document-type-definitions.org::#full-example][document-type-defs documentation.]]
-
-**** [generic function] implement-definitions-colllection (store definitions-collection)
-
-Takes a definitions collection and bootstraps the definitions and
-collections for a store.
-
-Boostrap means collection and data types are loaded for the store.
-
-Any peristed data is not loaded for the collections automatically! If data should be
-load use laod-data-p."
-
-
-[[file:home.org][Home]] [[file:overview.org][Previous]]
+[[file:home.org][Home]]

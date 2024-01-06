@@ -273,7 +273,8 @@ IMPL NOTES: To deal with customization of document-type.")
         ((equalp accessor :location)
          (location document-type))))
 
-(defgeneric get-attribute (element attribute))
+(defgeneric get-attribute (element attribute)
+  (:documentation "Gets an attribute of an element."))
 
 (defmethod get-attribute ((element element) attribute)
   (dolist (attribute (attributes element))
@@ -281,7 +282,8 @@ IMPL NOTES: To deal with customization of document-type.")
     (when (string-equal (getx attribute :name) (format nil "~A" attribute))
       (return-from get-attribute attribute))))
 
-(defgeneric get-element (document-type element))
+(defgeneric get-element (document-type element)
+  (:documentation "Gets an element from a document type."))
 
 (defmethod get-element (document-type element)
   (dolist (element (elements document-type))

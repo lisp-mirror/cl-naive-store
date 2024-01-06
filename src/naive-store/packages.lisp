@@ -5,6 +5,7 @@
   (:export
 
    ;;####common.lisp
+   :initialize ;;Exposing naive-impl:initialize
    :frmt ;;Exposing naive-impl:frmt
    :empty-p ;;Exposing naive-impl:empty-p
    :*disable-parallel-p* ;;Exposing naive-impl:*disable-parallel-p*

@@ -1,110 +1,37 @@
-[[previous](Home)]
 
-* Version 2021.5.18
+* Version 2023.12.19
 
-What was supposed to take weeks ended up taking months, but we are
-finally there. This version adds sharding to cl-naive-store and as a
-consequence of that the use of threads internally and thread safety over all.
+** Multiverse
 
-We went through a couple of designs to get the threading to work
-properly without having to pay a hefty a price in terms of speed and
-complexity.
+Added the concept of a multiverse to the store. The main reason was so
+you can set up more complex data schemas with references across
+stores.
 
-Unfortunately in the process the release change log suffered serious
-neglect and that amount of detail would have been senseless as
-well. Instead I will ask forgiveness and just discuss the changes
-introduced in broader terms.
+** Code Refactor
 
-** Packages
+There use to be a lot of different methods to add, remove and persist
+stuff in naive store. This has been cleaned up to have just a couple
+of methods like add-multiverse-element. Have a look at the
+deprecation.lisp files for each layer for the details of what has been
+deprecated. We use cl-naive-deprecation to ease the transition, your
+code should run without you having to change anything
+immediately. Eventually you will have to update your code.
 
-I was not happy with having individual .asd files for extensions of
-functionality because I felt that it polluted the quicklisp name space
-and in 2020.8.12 I removed the individual .asd files in favour of
-using *features* to toggle additional functionality. I have since
-taken the advise to not use *features* to switch functionality on and
-off and thus we now have individual .asd functions for the additional
-functionality in cl-naive-store again. The compromise was to change the
-package naming to cl-naive-store.[additional-functionality] which at least
-makes it clear that the packages are related to cl-naive-store.
+In general the code is cleaner and the interface simpler to learn.
 
-We now have the following packages:
+** Speed
 
-- cl-naive-store.naive-core
-- cl-naive-store.document-types
-- cl-naive-store.document-type-defs
-- cl-naive-store.naive-documents
-- cl-naive-store.naive-indexed
-- cl-naive-store.naive-merkle
-- cl-naive-store.test
+Did work on cleaning up speed bottle necks.
 
-** ASDF
+** Bugs
 
-The following .asd files now exist:
+Many bugs where fixed during the conversion of the tests to cl-naive-tests.
 
-- cl-naive-store.naive-core.asd loads the most basic functionality for
-  cl-naive-store. Use this if you don't any of the other extensions.
+** Tests
 
-- cl-naive-store.naive-merkle.asd loads naive-documents and the
-  /experimental/ merkle functionality.
+cl-naive-store now uses cl-naive-tests and the tests where rewritten
+for better coverage and to be cleaner.
 
-- cl-naive-store.naive-indexed.asd loads naive-core and index
-  functionality.
-
-- cl-naive-store.document-types.asd loads naive-core and document-type
-  functionality.
-
-- cl-naive-store.document-defs.asd loads naive-core, document-types
-  and type definition functionality.
-
-- cl-naive-store.documents.asd loads naive-core, naive-indexed,
-  documents-types, document-type-defs and document functionality.
-
-- cl-naive-store.asd loads the whole shebang.
-
-- cl-naive-store.test loads tests
-
-** Shards
-
-A shard class was added and indexes and documents where moved to the shard class.
-
-All the functions that need to use shards now has a shard or shards parameter.
-
-* Version 2020.8.12
-
-Lots of bug fixes and internalized modules.
-
-* Version 2020.07.16
-
-A majour code refactoring exercise was under taken and backward
-compatibility was mostly abandoned. Sorry if that hurts you, it hurts
-me more I have a lot of projects to update now, but the changes where
-desperately needed.
-
-When updating the examples 2 to 3 text replaces fixed the
-combatibility issues so it should not be to bad since 99% of the old
-expose api was for implementors and not users their should be very
-little pain.
-
-Implmentors api's where moved to seperate packages to limit the public
-api.
-
-Only listing the public/user api issues in broad strokes. Thousands of
-lines of code was changed, deleted or replaced so a list of changes is
-not really practical.
-
-* Version 2020.07.08
-
-A majour code refactoring exercise was under taken. Not only was code
-improved where possible new functionality was added and in a few cases
-removed.
-
-* Version 2019.9.14
-
-Added date-time type to data-type-defs using local-time library.
-
-* Version 2020.6.13
-
-Made loading of indexes faster, and added alternative implementations
-(avl-tree) for indexing guts.
+You will learn a lot from reading the test code.
 
 [[file:home.org][Home]]

@@ -6,7 +6,7 @@ At its core =cl-naive-store= is a log structured database.
 
 A log-structured database is a type of database management system that
 organizes and stores its data in a sequential, append-only
-manner. Instead of overwriting data directly, it records all changes
+manner. Instead of overwriting data, it records all changes
 as a continuous stream of log entries. Each entry typically captures
 an operation, such as an insertion, update, or deletion, along with
 the associated data.
@@ -17,7 +17,9 @@ High Write Throughput: Since all changes are simply appended, the
 system can achieve high write speeds.
 
 Simplified Crash Recovery: By replaying the log from a known good
-state, the database can recover its state after a crash.
+state, the database can recover its state after a crash. The replaying
+of the log however kicks you in the teeth when you get to tens of
+millions of records.
 
 Consistent Snapshots: By marking points in the log, consistent
 snapshots of the database can be obtained without halting writes.
@@ -37,12 +39,18 @@ layer that the store becomes a proper document store.
 
 =cl-naive-store= does not enforce the use of data schemas for your
 data. Data schemas are optional and when used is only there to use as
-a guideline, no strict enforcement of data schemas are done.
+a guideline, no strict enforcement of data schemas are done. This in
+line with what is expected of a document store.
 
 ** Choosing Layers of Functionality
 
 Depending on the your use case you need to choose the appropriate
-layer(s) to use.
+layer(s) to use. It must be noted that you can use a mixture of layers
+depending on your requirements, this adds complexity to your data
+schemas and will take a lot of testing to get the right balance.
+
+As a rule of thumb using the full document layer will serve most
+purposes well.
 
 *** Base Layer (Simple Log Database)
 
@@ -66,7 +74,7 @@ When should you use just the base layer?
 What you cannot do with the base layer is load millions of documents
 with keys. The simple reason for this is that the underlying structure
 (array) for the base layer does not support fast duplicate checking
-for keys. Duplicate checking is essential when loading a log
+for keys. Duplicate checking is essential when loading (replaying) a log
 structured database from file.
 
 This layer also does not have intelligence to deal with hierarchical
@@ -75,9 +83,8 @@ data efficiently.
 *** Indexed Layer
 
 The indexed layer =naive-indexed= introduces document identity. It
-changes the underlying structure of the store to use hash tables that
-support fast duplicate checking and lightning fast look-ups of
-individual documents or groups of documents.
+adds hash tables that support fast duplicate checking and lightning
+fast look-ups of individual documents or groups of documents.
 
 So it is ideal for loading millions of records with keys.
 
@@ -86,8 +93,8 @@ data efficiently as it does not implement structured documents.
 
 *** Document Layer
 
-The document layer builds on the indexed layer to implement a full
-document store. This layer wraps data in a structure that allows it to
+The document layer builds on all the other layers to implement a full
+document store. This layer wraps a document in a structure that allows it to
 recognise and deal with reference and associated documents, taking
 document identity to its conclusion. In this layer you can reference a
 document from one collection in another collection efficiently.
@@ -146,17 +153,18 @@ The store has the following structure
 #+END_SRC
 
 #+RESULTS:
-[[file:universe.png]]
+[[file:multiverse.png]]
 
 *** Multiverse
 
 A multiverse is the top structural container for data. A multiverse
-contains one or more universes. A multiverse could be viewed as a clustering of clusters of
-databases.
+contains one or more universes. A multiverse could be viewed as a
+clustering of clusters of databases.
 
 *** Universe
 
-A universe contains one or more stores. A universe could be viewed as a cluster of databases.
+A universe contains one or more stores. A universe could be viewed as
+a cluster of databases.
 
 *** Store
 
@@ -176,7 +184,7 @@ document with a hierarchical structure.
 When data is persisted the file folders/directories mirror the
 relationship above, which makes it possible to lazy load the data only
 when needed from disk. Querying an unloaded collection will cause the
-loading of a collection and in the case of cl-naive-items any
+loading of a collection and in the case of cl-naive-documents any
 referenced collections as well.
 
 *** Documents
@@ -230,11 +238,11 @@ specifies which elements of a document it wants to use for sharding on
 a collection. If none is specified no sharding is done.
 
 You should not set up sharding to use data that can change for a
-document, it will cause problems. For instance if you use company name
-to affect sharding for data by company/client then you should not be
-able to change the company name for the document. If you need to do it
-on rare occasions then you should delete (and write out a new log file
-with those documents stripped out) to keep your sanity.
+document, it will cause problems. For instance if you use company
+name to affect sharding for data by company/client then you should not
+be able to change the company name for the document. If you need to do
+it on rare occasions then you should delete (and write out a new log
+file with those documents stripped out) to keep your sanity.
 
 ** Document Types
 
@@ -286,10 +294,10 @@ Other peculiarities of Naive Documents:
   key-value pair can hold other documents (child documents). Child
   documents come in two basic flavours, documents that have no
   collection of their own (associated documents), and documents
-  referenced from other collections (references documents). When a top
+  referenced from other collections (reference documents). When a top
   level document is persisted only "references" to the referenced
-  child document are persisted. Associated documents are persisted in
-  full.
+  child document are persisted (The child document itself is not
+  updated!). Associated documents are persisted in full.
 
 ** BLOBS
 

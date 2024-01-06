@@ -141,8 +141,9 @@ So if you are customising cl-naive-store use do-sequence for simple parallel pro
 ")
 
 (defun initialize ()
-  ;; We cannot fork threads while compilinging systems because this prevents saving a lisp image!!!
-  ;; Instead, we must defer forking threads to when we launch the executable image, and initialize
+  ;; We cannot fork threads while compilinging systems because this
+  ;; prevents saving a lisp image!!!  Instead, we must defer forking
+  ;; threads to when we launch the executable image, and initialize
   ;; the program.
   (unless lparallel:*kernel*
     (setf lparallel:*kernel* (lparallel:make-kernel
@@ -152,8 +153,6 @@ So if you are customising cl-naive-store use do-sequence for simple parallel pro
                                            (let ((*query-cache* *query-cache*))
                                              (declare (ignorable *query-cache*))
                                              (funcall x)))))))
-
-
 
 (defun call-do-sequence (thunk with-index-p sequence &key parallel-p)
   (if (and (not *disable-parallel-p*) parallel-p)
