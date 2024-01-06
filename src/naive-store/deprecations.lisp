@@ -108,8 +108,7 @@
 
  (function persist-collection-def (collection) replaced-by
            persist-definition as
-           (let ((collection% (gensym))
-                 (with-data-p% (gensym)))
+           (let ((collection% (gensym)))
              `(let ((,collection% ,collection))
                 (persist-definition
                  ,collection%)))))
