@@ -8,7 +8,6 @@
       :cl-naive-store.naive-core
       :cl-naive-store.naive-documents
       :cl-naive-store.naive-indexed
-      :cl-naive-merkle
       )
     "List of packages re-exported from :cl-naive-store.
 Matches the :depends-on components in the :cl-naive-store system."))
