@@ -177,12 +177,22 @@ make test-run-tests
 You should see the following at the end.
 
 #+BEGIN_EXAMPLE
-SUCCESS COUNT:       46
-FAILURE COUNT:        0
-TOTAL TESTS:         46
-Completed Test CL-NAIVE-STORE-TESTS:TEST-ALL
-#+END_EXAMPLE
+Testsuite TEST-DEFINITIONS:
 
+Testsuite TEST-BASIC:
+
+Testsuite TEST-BASIC-PERSISTED:
+
+Testsuite TEST-INDEXED:
+
+Testsuite TEST-NAIVE-DOCUMENTS:
+
+Testsuite TEST-SHARDING-SIMPLE:
+
+Testsuite TEST-SHARDING-INDEXED:
+Passed:       48
+Failed:        0
+#+END_EXAMPLE
 
 Alternatively if you want to run the tests manually
 
