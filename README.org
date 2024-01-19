@@ -164,7 +164,6 @@ cd cl-naive-store/
 Run make with any of the following
 
 - test
-- test-load-systems
 - test-run-tests
 - run-tests-ccl
 - run-tests-sbcl
