@@ -184,7 +184,7 @@ document with a hierarchical structure.
 When data is persisted the file folders/directories mirror the
 relationship above, which makes it possible to lazy load the data only
 when needed from disk. Querying an unloaded collection will cause the
-loading of a collection and in the case of cl-naive-documents any
+loading of a collection and in the case of naive-documents any
 referenced collections as well.
 
 *** Documents
@@ -196,16 +196,16 @@ using cl read-line.
 
 =naive-indexed= adds the concept of a UUID (aka hash key).
 
-=naive-documents= adds additional meta data like the universe, store,
-collection, changed data and older versions to the document.
-
+=naive-documents= adds additional meta data like the multiverse,
+universe, store, collection, changed data and old versions to the
+document.
 
 ** In memory
 
 Data is loaded into memory for querying and lookups, that makes them
 fast.
 
-You can load the whole universe, a store, a collection or a shard at a
+You can load the whole multiverse, universe, a store, a collection or a shard at a
 time.
 
 ** Lazy Loading
@@ -217,7 +217,6 @@ memory. Data in memory can easily be garbage collected if not in use
 any more. =cl-naive-store= does not do garbage collection for you that
 is left to the user.
 
-
 ** Persistence
 
 =cl-naive-store= relies on the fact that objects are translatable to
@@ -225,7 +224,6 @@ key-value pairs and writes plists to a file per collection. Note of
 caution here if you go and store unprintable values (ie not readable)
 in the db you are going to be very disappointed when you try to load
 the db again!
-
 
 ** Sharding
 
@@ -262,14 +260,16 @@ and persist-object should be enough.
 
 ** Definitions
 
-=cl-naive-store= stores definitions (plist trees) for universe, store,
-collection and document-types to help with the loading of a multiverse
-automatically. These can be used instead of loading the store in code
-steps.
+=cl-naive-store= stores definitions (plist trees) for multiverse,
+universe, store, collection and document-types. These can be user to
+load of a multiverse with minimal code instead of loading the store in
+code steps.
 
-You can use =definitions= to define the full data schema.
+You can use =definitions= to define the full multiverse schema.
 
-For a in depth discussion look at [[file:definitions.org][Definitions]].
+#+begin_comment
+For an in depth discussion look at [[file:definitions.org][Definitions]].
+#+end_comment
 
 ** Naive Documents
 
@@ -283,8 +283,8 @@ Other peculiarities of Naive Documents:
 
 - Nothing stops you form adding "new" key values/types to your
   document at any time, since they are not validated against a
-  document definition. A typical document database should be able to
-  store different document types or at least document-types with
+  document-type definition. A typical document database should be able
+  to store different document types or at least document-types with
   varying data.
 - A document has key-values that are used to check for equality when
   adding an object to a collection
@@ -307,4 +307,4 @@ correct file type is used.
 
 There are no tests for blobs yet so use at own risk!
 
-[[file:home.org][Home]] [[file:home.org][Previous]] [[file:examples.org][Next]]
+[[file:home.org][Home]] :noexport: [[file:releases.org][Previous]] :noexport: [[file:examples.org][Next]] :noexport:

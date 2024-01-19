@@ -1,15 +1,21 @@
 
-
-#+include: ./overview.org
-
 #+include: ./home.org
+#+include: ./releases.org
+#+include: ./overview.org
+#+include: ./definitions.org
+
+#+include: ./examples.org
+#+include: ./definitions-example.org :minlevel 2
+#+include: ./basic-example.org :minlevel 2
+#+include: ./basic-example-with-persistence.org :minlevel 2
+#+include: ./indexed-example.org :minlevel 2
+#+include: ./documents-example.org :minlevel 2
+#+include: ./sharding-example.org :minlevel 2
+
 #+include: ./user-api.org
 #+include: ./implementor-api.org
 #+include: ./utils.org
-
-#+include: ./examples.org
-
-* Releases
-#+include: ./releases.org :minlevel 2
-
+#+include: ./tests.org
 #+include: ./rough-bench-marks.org
+
+

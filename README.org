@@ -1,8 +1,9 @@
 * cl-naive-store
 
-=cl-naive-store= is a database (document store to more precise) which is
-persistent, in-memory (lazily-loaded), indexed, and written completely in
-Common Lisp.
+=cl-naive-store= is a log structured document store. Documents are
+loaded in-memory to facilitate fast querying. Depending on how you use
+the store documents will be lazy loaded and indexed. It is written
+completely in Common Lisp.
 
 The "naive" comes from the fact that data is persisted
 as plists in files to make them human and machine readable, also there
@@ -26,16 +27,29 @@ process.
 
 ** News
 
-=cl-naive-store.utils= was added to help with loading database from
-definitions.
+The concept of a multiverse was added to the store. Previously the top
+level container for data was a universe (a clustering of databases). A
+multiverse is the top structural container for data no. A multiverse
+contains one or more universes. A multiverse could be viewed as a
+clustering of clusters of databases.
+
+Code underwent a majour refactoring. The user api was
+simplified. cl-naive-deprecation was used to help ease you into the
+api changes.
+
+Tests where rewritten to use cl-naive-tests and are a lot simpler to
+read and learn from.
+
+Code to manage your database schemas was added to naive-core. You can
+now use schema files to initialise and load a database.
+
+Speed tests where added for those that want to dig into performance
+metrics. Going through speed tests code will teach you a couple of
+tricks about how to use the library optimally.
 
 ** Acknowledgements
 
-I must also give a big shout out to Pascal J. Bourguignon for code
-reviews, threading code, test code and a whole lot more. His guidance
-was invaluable, even if I did not always listen to him. */Pascal does
-not endorse this software in any way, shape or form, he assisted me
-when and where I asked for specific help./*
+Thank you very much to everyone that contributed over the years.
 
 ** Features
 
@@ -136,7 +150,8 @@ All tests pass on SBCL an CCL
 
 ** Development Roadmap
 
-Have a look at the Gitlab [[https://gitlab.com/Harag/cl-naive-store/-/issues][issue tracker]], future development is tagged accordingly.
+The cl-naive-* projects are not available in quicklisp, and wont be
+for the forseeable future.
 
 ** Tests
 

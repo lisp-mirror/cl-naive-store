@@ -7,7 +7,7 @@ All the speed tests basically do is:
 1. Inserts a lot (1 mil) of documents into a collection.
 2. Persist the collection.
 3. Clears the collection and reloads it from persisted file(s).
-4. Repeats 1 to 3 with a lot more (usually x10) documents.
+4. Repeats 1 to 3 with a lot more (usually 10m) documents.
 
 The tests will fail if expected time was exceeded for any task.
 
@@ -39,4 +39,4 @@ fast, simple queries complete in fractions of a second.
 
 #+END_SRC
 
-[[file:home.org][Home]]
+[[file:home.org][Home]] :noexport: [[file:tests.org][Previous]] :noexport:

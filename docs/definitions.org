@@ -1,0 +1,43 @@
+* Definitions
+
+Definitions should always be a valid plist if you want to use the
+functions in naive-core to manipulate them.
+
+This is the overview of what a full schema should look like.
+
+#+BEGIN_SRC lisp
+(:multiverse
+ [attributes]
+ :universes ((:universe
+              [attributes]
+              :stores ((:store
+                        [attributes]
+                        :collections ((:collection
+                                       ([attributes])))
+                        :document-types ((:document-type
+                                          [attributes]
+                                          :elements ((:element ([attributes]))))))))))
+#+END_SRC
+
+[attributes] roughly maps to slots from the related classes. Not all
+slots are supported. Having a long hard look at the classes and the
+examples will give you a good idea of which slots are supported. If
+you are still not sure have a look at add-definition-element code for
+each type of element.
+
+You can add, remove and persist elements of definitions.
+
+Have a look at the api documentation for:
+
+- persist-definition
+
+  A definition is created from the data base object element passed and
+  stored with the data in the appropriate directory for its level.
+  
+- add-definition-element
+- remove-definition-element
+
+To load a store from a definition you can use load-from-definition.
+
+Have a look at the [[file:definitions-example.org][example]] and tests/test-definitions.lisp to learn
+more about how to use definitions.

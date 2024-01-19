@@ -1,18 +1,30 @@
-* Examples :noexport:
+* Examples                                                         
 
 Examples below become more and more complex as you go down the list.
 
+** Definitions :noexport:
+
 [[file:definitions-example.org][Definitions Example]]
 
-[[file:basic-example.org][Basic Example]]
+** Basic :noexport:
+
+[[file:basic-example.org][Basic Example]] 
+
+** Persistence :noexport:
 
 [[file:basic-example-with-persistence.org][Basic Example with Persistence]]
 
+** Indexed :noexport:
+
 [[file:indexed-example.org][Indexed Example]]
+
+** Documents :noexport:
 
 [[file:documents-example.org][Naive Documents]]
 
+** Sharding :noexport:
+
 [[file:sharding-example.org][Sharding]]
 
-[[file:home.org][Home]] [[file:overview.org][Previous]] [[file:basic-example.org][Next​]]
+[[file:home.org][Home]] :noexport: [[file:overview.org][Previous]] :noexport: [[file:definitions-example.org][Next​]] :noexport:
 

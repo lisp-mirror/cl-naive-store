@@ -1,0 +1,29 @@
+* Tests
+
+=cl-naive-store.tests.asd= loads tests
+
+To run all the tests.
+
+#+BEGIN_SRC lisp
+(cl-naive-tests:run)
+#+END_SRC
+
+To run a specific test, specify the test suite.
+
+#+BEGIN_SRC lisp
+(cl-naive-tests:run :suites :test-definitions)
+;;or
+(cl-naive-tests:run :suites :test-basic)
+;;or
+(cl-naive-tests:run :suites :test-basic-persisted)
+;;or
+(cl-naive-tests:run :suites :test-indexed)
+;;or
+(cl-naive-tests:run :suites :test-naive-documents)
+;;or
+(cl-naive-tests:run :suites :test-sharding-simple)
+;;or
+(cl-naive-tests:run :suites :test-sharding-indexed)
+#+END_SRC
+
+[[file:home.org][Home]] :noexport: [[file:utils.org][Previous]] :noexport: [[file:rough-bench-marks.org][Next]] :noexport:

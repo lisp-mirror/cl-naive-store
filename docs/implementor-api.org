@@ -312,4 +312,4 @@ plist represents an document.
 
 *** [generic function] naive-impl:compose-document ((collection document-collection) shard document-form &key handle-duplicates-p &allow-other-keys)
 
-[[file:home.org][Home]]
+[[file:home.org][Home]] :noexport: [[file:user-api.org][Previous]] :noexport: [[file:utils.org][Next]] :noexport:

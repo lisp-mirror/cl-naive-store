@@ -1,13 +1,14 @@
+* Releases 
 
-* Version 2023.12.19
+** Version 2023.12.19
 
-** Multiverse
+*** Multiverse
 
 Added the concept of a multiverse to the store. The main reason was so
 you can set up more complex data schemas with references across
 stores.
 
-** Code Refactor
+*** Code Refactor
 
 There use to be a lot of different methods to add, remove and persist
 stuff in naive store. This has been cleaned up to have just a couple
@@ -19,19 +20,20 @@ immediately. Eventually you will have to update your code.
 
 In general the code is cleaner and the interface simpler to learn.
 
-** Speed
+*** Speed
 
 Did work on cleaning up speed bottle necks.
 
-** Bugs
+*** Bugs
 
 Many bugs where fixed during the conversion of the tests to cl-naive-tests.
 
-** Tests
+*** Tests
 
 cl-naive-store now uses cl-naive-tests and the tests where rewritten
 for better coverage and to be cleaner.
 
 You will learn a lot from reading the test code.
 
-[[file:home.org][Home]]
+[[file:home.org][Home]] :noexport: [[file:home.org][Previous]] :noexport: [[file:overview.org][Next]] :noexport:
+

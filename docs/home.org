@@ -1,4 +1,4 @@
-* cl-naive-store
+* Introduction
 
 =cl-naive-store= is a log structured document store. Documents are
 loaded in-memory to give facilitate fast querying. Depending on how
@@ -16,8 +16,11 @@ what is possible.
 ** Layered Design
 
 =cl-naive-store= can do a lot but you as the user must decide how much
-of the store's functionality you want to use for your own project. See
-[[file:overview.org][Choosing Layers of Functionality]] for more information.
+of the store's functionality you want to use for your own project.
+
+#+begin_comment
+See [[file:overview.org][Choosing Layers of Functionality]] for more information.
+#+end_comment
 
 Functionality was broken down into these packages:
 
@@ -50,59 +53,35 @@ The following .asd files can be used to load different functionality:
 
 - =cl-naive-store.asd= loads the whole shebang.
 
-** Overview
-
-[[file:overview.org][Overview]]
-
-** Examples
-
-[[file:examples.org][Examples]]
-
-** Releases
+** Releases :noexport:
 
 [[file:releases.org][Releases]]
 
-** User API
+** Overview :noexport:
 
-[[file:user-api.org][User API Documentation]]
+[[file:overview.org][Overview]]
 
-** Implementor API
+** Examples :noexport:
+
+[[file:examples.org][Examples]]
+
+** User API :noexport:
+
+[[file:user-api.org][User API Documentation]] :noexport:
+
+** Implementor API :noexport:
 
 [[file:implementor-api.org][Implementor API Documentation]]
 
-** Utils
+** Utils :noexport:
 
-Some [[utilities.org][utilities]]. More to come in the future.
+Some [[file:utils.org][utilities]]. More to come in the future.
 
-** Tests
+** Tests :noexport:
 
-=cl-naive-store.tests.asd= loads tests
+See [[file:tests.org][tests]] for more information.
 
-To run all the tests.
-
-#+BEGIN_SRC lisp
-(cl-naive-tests:run)
-#+END_SRC
-
-To run a specific test, specify the test suite.
-
-#+BEGIN_SRC lisp
-(cl-naive-tests:run :suites :test-definitions)
-;;or
-(cl-naive-tests:run :suites :test-basic)
-;;or
-(cl-naive-tests:run :suites :test-basic-persisted)
-;;or
-(cl-naive-tests:run :suites :test-indexed)
-;;or
-(cl-naive-tests:run :suites :test-naive-documents)
-;;or
-(cl-naive-tests:run :suites :test-sharding-simple)
-;;or
-(cl-naive-tests:run :suites :test-sharding-indexed)
-#+END_SRC
-
-** Rough Bench Marks
+** Rough Bench Marks :noexport:
 
 There are also performance tests that you can run if you are curious
 about performance of the different layers. 
@@ -110,4 +89,4 @@ about performance of the different layers.
 [[file:rough-bench-marks.org][See Rough Bench Marks]]
 
 
-Home Previous [[file:overview.org][Next]]
+[[file:releases.org][Next]] :noexport:

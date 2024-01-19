@@ -5,5 +5,5 @@ Shows how to create a multiverse from a definition.
 #+BEGIN_SRC lisp
 
 
-[[file:home.org][Home]] [[file:exmamples.org][Previous]] [[file:basic-example.org][Next​]]
+[[file:home.org][Home]] :noexport: [[file:exmamples.org][Previous]] :noexport: [[file:basic-example.org][Next​]] :noexport:
 

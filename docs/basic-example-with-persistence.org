@@ -2,7 +2,6 @@
 
 In this example only the bare minimum is used and documents added are **persisted**.
 
-
 #+BEGIN_SRC lisp
 (ignore-errors (delete-package :naive-examples))
 
@@ -81,7 +80,7 @@ the file
   (:NAME "Sannie" :SURNAME "Gieter" :ID 321)
 #+END_SRC
 
-** Lazy Loading:
+** Lazy Loading
 
 In this example =query-data= loaded and persisted (in one step) the
 data into the collection. To show that the data was successfully
@@ -90,4 +89,4 @@ collection is cleared and only then queried.
 
 You can explicitly load the collection yourself by using =(load-data collection)=.
 
-[[file:home.org][Home]] [[file:basic-example.org][Previous]] [[file:indexed-example.org][Next]]
+[[file:home.org][Home]] :noexport: [[file:basic-example.org][Previous]] :noexport: [[file:indexed-example.org][Next]] :noexport:
