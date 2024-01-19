@@ -1,4 +1,4 @@
-% Created 2024-01-19 Fri 09:41
+% Created 2024-01-19 Fri 10:11
 % Intended LaTeX compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
@@ -27,11 +27,11 @@
 \tableofcontents
 
 \section{Introduction}
-\label{sec:org02392f9}
+\label{sec:org787b926}
 
 \texttt{cl-naive-store} is a log structured document store. Documents are
-loaded in-memory to facilitate fast querying. Depending on how you use
-the store documents will be lazy loaded and indexed. It is written
+loaded in-memory to give facilitate fast querying. Depending on how
+you use the store documents will be lazy loaded. indexed, and written
 completely in Common Lisp.
 
 The "naive" comes from the fact that data is persisted
@@ -43,16 +43,19 @@ customised, have a look at the implementation API to get an idea of
 what is possible.
 
 \subsection{Layered Design}
-\label{sec:orgd392736}
+\label{sec:org208e047}
 
 \texttt{cl-naive-store} can do a lot but you as the user must decide how much
 of the store's functionality you want to use for your own project.
+
+See \href{overview.org}{Choosing Layers of Functionality} for more information.
 
 Functionality was broken down into these packages:
 
 \begin{itemize}
 \item \texttt{cl-naive-store.naive-core}
 \item \texttt{cl-naive-store.document-types}
+\item \texttt{cl-naive-store.definitions}
 \item \texttt{cl-naive-store.naive-documents}
 \item \texttt{cl-naive-store.naive-indexed}
 \item \texttt{cl-naive-store.tests}
@@ -81,21 +84,23 @@ documents-types, definitions and document functionality.
 
 \item \texttt{cl-naive-store.asd} loads the whole shebang.
 \end{itemize}
+
+
 \section{Releases}
-\label{sec:org841eb11}
+\label{sec:org7428f5a}
 
 \subsection{Version 2023.12.19}
-\label{sec:org8efcff7}
+\label{sec:org83c7c91}
 
 \subsubsection{Multiverse}
-\label{sec:org2c0670f}
+\label{sec:org3082203}
 
 Added the concept of a multiverse to the store. The main reason was so
 you can set up more complex data schemas with references across
 stores.
 
 \subsubsection{Code Refactor}
-\label{sec:org9b24160}
+\label{sec:org2ea96e5}
 
 There use to be a lot of different methods to add, remove and persist
 stuff in naive store. This has been cleaned up to have just a couple
@@ -108,29 +113,28 @@ immediately. Eventually you will have to update your code.
 In general the code is cleaner and the interface simpler to learn.
 
 \subsubsection{Speed}
-\label{sec:orge74f081}
+\label{sec:orgfb06d39}
 
 Did work on cleaning up speed bottle necks.
 
 \subsubsection{Bugs}
-\label{sec:org7606eb9}
+\label{sec:orgad2dbfe}
 
 Many bugs where fixed during the conversion of the tests to cl-naive-tests.
 
 \subsubsection{Tests}
-\label{sec:orgb26f6f9}
+\label{sec:org1e2eda0}
 
 cl-naive-store now uses cl-naive-tests and the tests where rewritten
 for better coverage and to be cleaner.
 
 You will learn a lot from reading the test code.
 
-\href{home.org}{Home} :noexport: \href{home.org}{Previous} :noexport: \href{overview.org}{Next} :noexport:
 \section{Overview}
-\label{sec:orgd5c7db8}
+\label{sec:org2a62f94}
 
 \subsection{Log Structured Database}
-\label{sec:org21e24d5}
+\label{sec:org2a580bc}
 
 At its core \texttt{cl-naive-store} is a log structured database.
 
@@ -173,7 +177,7 @@ a guideline, no strict enforcement of data schemas are done. This in
 line with what is expected of a document store.
 
 \subsection{Choosing Layers of Functionality}
-\label{sec:org6c1e1fe}
+\label{sec:org84c2039}
 
 Depending on the your use case you need to choose the appropriate
 layer(s) to use. It must be noted that you can use a mixture of layers
@@ -184,7 +188,7 @@ As a rule of thumb using the full document layer will serve most
 purposes well.
 
 \subsubsection{Base Layer (Simple Log Database)}
-\label{sec:orgc97c47c}
+\label{sec:org0841725}
 
 The base layer \texttt{naive-core} implements the basics of a log store with
 in memory querying.
@@ -215,7 +219,7 @@ This layer also does not have intelligence to deal with hierarchical
 data efficiently.
 
 \subsubsection{Indexed Layer}
-\label{sec:orge4e7b4e}
+\label{sec:org7d2d620}
 
 The indexed layer \texttt{naive-indexed} introduces document identity. It
 adds hash tables that support fast duplicate checking and lightning
@@ -227,7 +231,7 @@ This layer also does not have intelligence to deal with hierarchical
 data efficiently as it does not implement structured documents.
 
 \subsubsection{Document Layer}
-\label{sec:org4f4a6c7}
+\label{sec:org4499a22}
 
 The document layer builds on all the other layers to implement a full
 document store. This layer wraps a document in a structure that allows it to
@@ -242,40 +246,40 @@ It is in this layer that you can start using data schemas (document
 types) for your collections.
 
 \subsection{Functionality by Layer}
-\label{sec:orga498d0d}
+\label{sec:org668d2f8}
 
 \texttt{cl-naive-store.*} packages are designed to be layered to achieve complex
 behaviour in incremental steps.
 
 \subsubsection{Functionality Matrix}
-\label{sec:orgbcc9e04}
+\label{sec:orgfee314b}
 
 \begin{center}
-\begin{tabular}{lllll}
-Functionality & naive-core & naive-indexed & document-types & naive-documents\\[0pt]
------- & ------ & ------ & ------ & ------\\[0pt]
-Load data into memory & T &  &  & \\[0pt]
-Delete Data & T &  &  & \\[0pt]
-Persist data to file & T &  &  & \\[0pt]
-Query Data & T &  &  & \\[0pt]
-Single Key Value & T &  &  & \\[0pt]
-Unique Object Identifier &  & T &  & \\[0pt]
-Multiple Key Values &  & T &  & \\[0pt]
-Key Value Lookups &  & T &  & \\[0pt]
-Index Data &  & T &  & \\[0pt]
-Index Lookups &  & T &  & \\[0pt]
-Handles Duplicates Properly &  & T &  & \\[0pt]
-Data Type aware Universe &  &  & T & \\[0pt]
-Data Schemas/Definitions & T &  &  & \\[0pt]
-Hierarchical Data Objects &  &  &  & T\\[0pt]
-Cross Collection Reference Objects &  &  &  & T\\[0pt]
-Object Version Tracking &  &  &  & T\\[0pt]
-Object Value Change Tracking &  &  &  & T\\[0pt]
+\begin{tabular}{llllll}
+Functionality & naive-core & naive-indexed & document-types & definitions & naive-documents\\[0pt]
+------ & ------ & ------ & ------ & ------ & ------\\[0pt]
+Load data into memory & T &  &  &  & \\[0pt]
+Delete Data & T &  &  &  & \\[0pt]
+Persist data to file & T &  &  &  & \\[0pt]
+Query Data & T &  &  &  & \\[0pt]
+Single Key Value & T &  &  &  & \\[0pt]
+Unique Object Identifier &  & T &  &  & \\[0pt]
+Multiple Key Values &  & T &  &  & \\[0pt]
+Key Value Lookups &  & T &  &  & \\[0pt]
+Index Data &  & T &  &  & \\[0pt]
+Index Lookups &  & T &  &  & \\[0pt]
+Handles Duplicates Properly &  & T &  &  & \\[0pt]
+Data Type aware Universe &  &  & T &  & \\[0pt]
+Data Schemas/Definitions &  &  &  & T & \\[0pt]
+Hierarchical Data Objects &  &  &  &  & T\\[0pt]
+Cross Collection Reference Objects &  &  &  &  & T\\[0pt]
+Object Version Tracking &  &  &  &  & T\\[0pt]
+Object Value Change Tracking &  &  &  &  & T\\[0pt]
 \end{tabular}
 \end{center}
 
 \subsection{Structure of the store}
-\label{sec:org7f4f68a}
+\label{sec:orgfbb86b6}
 
 The store has the following structure 
 
@@ -284,27 +288,27 @@ The store has the following structure
 \end{center}
 
 \subsubsection{Multiverse}
-\label{sec:org00eb225}
+\label{sec:org8a3cf84}
 
 A multiverse is the top structural container for data. A multiverse
 contains one or more universes. A multiverse could be viewed as a
 clustering of clusters of databases.
 
 \subsubsection{Universe}
-\label{sec:org1091a2f}
+\label{sec:org266c5eb}
 
 A universe contains one or more stores. A universe could be viewed as
 a cluster of databases.
 
 \subsubsection{Store}
-\label{sec:org425c26f}
+\label{sec:orgf758660}
 
 A store contains one or more collections. A store could be viewed as a database.
 
 A store also contains one or more document-types.
 
 \subsubsection{Document Type}
-\label{sec:org264c208}
+\label{sec:org4617506}
 
 Document types are type schemas. A collection can be linked to a document-type. However
 not all document-types have a direct link to a collection. Some
@@ -312,7 +316,7 @@ document types are indirectly linked because they are part of a
 document with a hierarchical structure.
 
 \subsubsection{Collection}
-\label{sec:orgac5363c}
+\label{sec:orge0cb22f}
 
 When data is persisted the file folders/directories mirror the
 relationship above, which makes it possible to lazy load the data only
@@ -321,7 +325,7 @@ loading of a collection and in the case of naive-documents any
 referenced collections as well.
 
 \subsubsection{Documents}
-\label{sec:orgb6b3b5e}
+\label{sec:org26dae6b}
 
 A document in \texttt{cl-naive-store} in simplest terms is a list of key
 value pairs, in other words a property list. This is also how a
@@ -335,7 +339,7 @@ universe, store, collection, changed data and old versions to the
 document.
 
 \subsection{In memory}
-\label{sec:org32c8bcc}
+\label{sec:org8bd1ce5}
 
 Data is loaded into memory for querying and lookups, that makes them
 fast.
@@ -344,7 +348,7 @@ You can load the whole multiverse, universe, a store, a collection or a shard at
 time.
 
 \subsection{Lazy Loading}
-\label{sec:orgb48b9a1}
+\label{sec:org24281d1}
 
 You do not have to explicitly load data into memory upfront. You can
 leave it up to the store to only load data when needed. It means that
@@ -354,7 +358,7 @@ any more. \texttt{cl-naive-store} does not do garbage collection for you that
 is left to the user.
 
 \subsection{Persistence}
-\label{sec:orga90bc66}
+\label{sec:orgad0b04f}
 
 \texttt{cl-naive-store} relies on the fact that objects are translatable to
 key-value pairs and writes plists to a file per collection. Note of
@@ -363,7 +367,7 @@ in the db you are going to be very disappointed when you try to load
 the db again!
 
 \subsection{Sharding}
-\label{sec:org2f0fb64}
+\label{sec:orgaf34aaf}
 
 Sharding is the breaking down of files into smaller files, in the case
 of naive-store that means that instead of one file per collection there
@@ -381,7 +385,7 @@ it on rare occasions then you should delete (and write out a new log
 file with those documents stripped out) to keep your sanity.
 
 \subsection{Document Types}
-\label{sec:orgb508a12}
+\label{sec:orgae8c579}
 
 \texttt{cl-naive-store} is mostly/blissfully unaware of user defined document
 types and value types. \texttt{document-types} adds document-type and element
@@ -398,7 +402,7 @@ definitions you need to implement it yourself, overriding add-object
 and persist-object should be enough.
 
 \subsection{Definitions}
-\label{sec:org4a214b3}
+\label{sec:orgf7feb43}
 
 \texttt{cl-naive-store} stores definitions (plist trees) for multiverse,
 universe, store, collection and document-types. These can be user to
@@ -407,8 +411,10 @@ code steps.
 
 You can use \texttt{definitions} to define the full multiverse schema.
 
+For an in depth discussion look at \href{definitions.org}{Definitions}.
+
 \subsection{Naive Documents}
-\label{sec:org4becc92}
+\label{sec:org7e776d8}
 
 Naive Documents uses \texttt{naive-core}, \texttt{naive-indexed}, \texttt{document-types}
 and \texttt{definitions} to create a more complex/fleshed out data store
@@ -439,7 +445,7 @@ updated!). Associated documents are persisted in full.
 \end{itemize}
 
 \subsection{BLOBS}
-\label{sec:orgd76f9e9}
+\label{sec:org0d23455}
 
 \texttt{cl-naive-store} knows how to deal with values that are blobs. Basically
 blobs are written to their own files and if file type is relevant the
@@ -447,9 +453,34 @@ correct file type is used.
 
 There are no tests for blobs yet so use at own risk!
 
-\href{home.org}{Home} :noexport: \href{releases.org}{Previous} :noexport: \href{examples.org}{Next} :noexport:
 \section{Definitions}
-\label{sec:org86ff536}
+\label{sec:orgeb209d9}
+
+There are two main sources of definitions, hand crafted or persisted
+definitions.
+
+Persisted definitions are found for individual elements along the
+directory structure of the peristed data and is relative to the
+multiverse/universe/store/collection structure. These definitions can
+be considered as partial definitions because they do not contain any
+information about their children. This is because they are created
+during add-multiverse-element and at that stage the element might not
+have any children yet. It also means that there is not one central
+complete definition that can show what the full store structure
+looks like.
+
+A complete definition of all the multiverse elments is typically
+created by hand as a plist tree. You could of course create such a
+complete definition by walking the directory tree. A complete
+definition could be used for bootstrapping the database if
+needed. Bootstrapping the whole database is of course counter to the
+lazy loading principal that is supported by naive-store.
+
+The definition manipulation functions supplied are simple in the sense
+that they will not ensure the integrity of the final definition. For
+example if you remove a document-type that document-type might still
+be used by a collection which will cause errors when loading from such
+a broken definition.
 
 Definitions should always be a valid plist if you want to use the
 functions in naive-core to manipulate them.
@@ -496,1149 +527,12 @@ Have a look at the \href{definitions-example.org}{example} and tests/test-defini
 more about how to use definitions.
 
 \section{Examples}
-\label{sec:org42b61b0}
+\label{sec:org182a1f8}
 
 Examples below become more and more complex as you go down the list.
 
-\subsection{Schema Definitions Example}
-\label{sec:orgf69dc69}
-
-Shows how to create a multiverse from a definition.
-
-\begin{verbatim}
-(ignore-errors (delete-package :naive-examples))
-
-(require 'cl-naive-store.naive-documents)
-
-(defpackage :naive-examples
-  (:use :cl :cl-naive-store.naive-documents))
-
-(in-package :naive-examples)
-
-(defun example-location ()
-  (cl-fad:merge-pathnames-as-directory
-   (user-homedir-pathname)
-   (make-pathname :directory (list :relative "multiverse"))))
-
-;;Deleting existing example database
-(cl-fad:delete-directory-and-files
- "~/multiverse/universe/simple-store"
- :if-does-not-exist :ignore)
-
-(defvar *multiverse-definition*
-  `(:multiverse
-    (:name "multiverse"
-     :universe-class cl-naive-store.naive-core:universe
-     :location ,(example-location)
-     :universes
-
-     ((:universe
-       (:name "universe"
-        :location ,(cl-fad:merge-pathnames-as-directory
-                    (example-location)
-                    (make-pathname :directory (list :relative "universe")))
-        ;;Universe classes can be specific to a universe.
-        :universe-class cl-naive-store.naive-core:universe
-        :store-class cl-naive-store.naive-documents:document-store
-        :collection-class cl-naive-store.naive-documents:document-collection
-        :document-type-class cl-naive-store.document-types:document-type
-        :stores ((:store
-                  (:name "human-resources"
-                   :collections ((:collection
-                                  (:name "laptops"
-                                   :label "Laptops"
-                                   :document-type "laptop"))
-                                 (:collection
-                                  (:name "employees"
-                                   :label "Employees"
-                                   :document-type "employee")))
-                   :document-types
-                         ((:document-type
-                           (:name "laptop"
-                            :label "Laptop"
-                            :elements ((:element
-                                        (:name :id
-                                         :label "Serial No"
-                                         :key-p t
-                                         :concrete-type (:type :string)
-                                         :attributes ((:attribute
-                                                       (:name :display
-                                                        :value t))
-                                                      (:attribute
-                                                       (:name :editable
-                                                        :value t)))
-                                         :documentation "Unique no that identifies the laptop."))
-                                       (:element
-                                        (:name :make
-                                         :label "Manufaturer"
-                                         :concrete-type (:type :string)
-                                         :attributes ((:attribute
-                                                       (:name :display
-                                                        :value t))
-                                                      (:attribute
-                                                       (:name :editable
-                                                        :value t)))
-                                         :documentation "Then manufaturer of the laptop."))
-                                       (:element (:name :model
-                                                  :label "Model"
-                                                  :concrete-type (:type :string)
-                                                  :attributes ((:attribute
-                                                                (:name :display
-                                                                 :value t))
-                                                               (:attribute
-                                                                (:name :editable
-                                                                 :value t)))
-                                                  :documentation "Model of the laptop.")))
-                            :attributes ()
-                            :documentation "List of laptops the company owns."))
-
-                          (:document-type
-                           (:name "child"
-                            :label "Child"
-                            :elements ((:element
-                                        (:name :name
-                                         :label "Name"
-                                         :key-p t
-                                         :concrete-type (:type :string)
-                                         :attributes ((:attribute
-                                                       (:name :display
-                                                        :value t))
-                                                      (:attribute
-                                                       (:name :editable
-                                                        :value t)))
-                                         :documentation "Name of child"))
-                                       (:element
-                                        (:name :sex
-                                         :label "Gender"
-                                         :concrete-type (:type :keyword)
-                                         :attributes ((:attribute
-                                                       (:name :display
-                                                        :value t))
-                                                      (:attribute
-                                                       (:name :editable
-                                                        :value t))
-                                                      (:attribute
-                                                       (:name :value-list
-                                                        :value (:male :female))))
-                                         :documentation "Gender of the child, can only be male or female."))
-                                       (:element
-                                        (:name :age
-                                         :label "Age"
-                                         :concrete-type (:type :number)
-                                         :attributes
-                                               ((:attribute
-                                                 (:name :display
-                                                  :value t))
-                                                (:attribute
-                                                 (:name :editable
-                                                  :value t))
-                                                (:attribute
-                                                 (:name :setf-validate
-                                                  :value
-                                                        (lambda (age)
-                                                          (if (<= age 21)
-                                                              (values t nil)
-                                                              (values nil "Child is to old"))))))
-                                         :documentation "How old the child is")))
-                            :attributes ()
-                            :documentation "List of laptops the company owns."))
-
-                          (:document-type
-                           (:name "employee"
-                            :label "Employee"
-                            :elements ((:element
-                                        (:name :emp-
-                                         :label "Employee Number"
-                                         :key-p t
-                                         :concrete-type (:type :number)
-                                         :attributes ((:attribute
-                                                       (:name :display
-                                                        :value t))
-                                                      (:attribute
-                                                       (:name :editable
-                                                        :value t)))
-                                         :documentation "Unique identifier of employee."))
-                                       (:element (:name :name
-                                                  :label "Name"
-                                                  :concrete-type (:type :string)
-                                                  :attributes ((:attribute
-                                                                (:name :display
-                                                                 :value t))
-                                                               (:attribute
-                                                                (:name :editable
-                                                                 :value t)))
-                                                  :documentation "Name of employee"))
-                                       (:element
-                                        (:name :sex
-                                         :label "Gender"
-                                         :concrete-type (:type :keyword)
-                                         :attributes
-                                               ((:attribute
-                                                 (:name :display
-                                                  :value t))
-                                                (:attribute
-                                                 (:name :editable
-                                                  :value t))
-                                                (:attribute
-                                                 (:name :value-list
-                                                  :value (:male :female))))
-
-                                         :documentation "Gender of the child, can only be male or female."))
-                                       (:element
-                                        (:name :dependents
-                                         :label "Children"
-                                         :concrete-type (:type :list
-                                                         :spec (:type :document
-                                                                :spec (:type "child"
-                                                                       :accessor (:name))))
-
-                                         :attributes ((:attribute
-                                                       (:name :display
-                                                        :value t))
-                                                      (:attribute
-                                                       (:name :editable
-                                                        :value t)))
-                                         :documentation "List of the employees children"))
-                                       (:element
-                                        (:name :laptop
-                                         :label "Laptop"
-                                         :concrete-type (:type :document
-                                                         :spec (:type "laptop"
-                                                                :collection "laptop-collection"
-                                                                :accessor (:id)))
-
-                                         :attributes ((:attribute
-                                                       (:name :display
-                                                        :value t))
-                                                      (:attribute
-                                                       (:name :editable
-                                                        :value t)))
-                                         :documentation "Laptop allocated to employee"))
-                                       (:element
-                                        (:name :first-born
-                                         :label "First Born Child"
-                                         :concrete-type (:type :document
-                                                         :spec (:type "child"
-                                                                :collection "employees"
-                                                                :accessor (:emp-no :dependents :name)))
-
-                                         :attributes ((:attribute
-                                                       (:name :display
-                                                        :value t))
-                                                      (:attribute
-                                                       (:name :editable
-                                                        :value t)))
-                                         :documentation "List of the employees children")))
-                            :attributes ()
-                            :documentation "List of laptops the company owns."))))))))))))
-
-(defparameter *multiverse* nil)
-
-(setf *multiverse* (cl-naive-store.naive-core:load-from-definition
-                    nil :multiverse *multiverse-definition* :with-children-p t))
-
-;;Interogate multiverse
-(break "~S" *multiverse*)
-
-\end{verbatim}
-
-\href{home.org}{Home} :noexport: \href{exmamples.org}{Previous} :noexport: \href{basic-example.org}{Next​} :noexport:
-\subsection{Basic Example}
-\label{sec:orgdbc5e3c}
-
-In this example uses \texttt{naive-core} only, ie. the bare minimum
-functionality. Documents \textbf{\textbf{are not persisted}} in this example. There are
-use cases where the store can be used as kind of temporary database.
-
-\begin{verbatim}
-(ignore-errors (delete-package :naive-examples))
-
-;;Load to use cl-naive-store
-(require 'cl-naive-store)
-
-(defpackage :naive-examples (:use :cl :cl-getx :cl-naive-store.naive-core))
-(in-package :naive-examples)
-
-;;Required to correctly initialize lparallel:*kernel*.
-(initialize)
-
-
-;;Deleting existing example database
-(cl-fad:delete-directory-and-files
- "~/multiverse/universe/simple-store"
- :if-does-not-exist :ignore)
-
-(let* (;;Create a multiverse.
-       (multiverse (make-instance
-                    'multiverse
-                    :name "multiverse"
-                    :location "~/multiverse/" ;Setting the location on disk.
-                    :universe-class 'universe))
-       ;;Create a universe and add it to the multiverse
-       (universe (add-multiverse-element
-                  multiverse
-                  (make-instance
-                   'universe
-                   :name "universe"
-                   :multiverse multiverse
-                   :location "~/multiverse/universe/" ;Setting the location on disk.
-                   :store-class 'store)))
-       ;;Create a store and add it to the universe
-       (store (add-multiverse-element
-               universe
-               (make-instance 'store
-                              :name "simple-store"
-                              :collection-class 'collection)))
-
-       ;;Create a collection and add it to the store
-       (collection (add-multiverse-element
-                    store
-                    (make-instance 'collection
-                                   :name "simple-collection"
-                                   ;;Specifying the key element, else its :key
-                                   :keys '(:id)))))
-
-  ;;Add some documents to the collection
-  (add-document collection (list :name "Piet" :surname "Gieter" :id 123))
-  (add-document collection (list :name "Sannie" :surname "Gieter" :id 321))
-  (add-document collection (list :name "Koos" :surname "Van" :id 999))
-
-  ;;Duplicates are handled by default, so this will not cause a duplicate document
-  (add-document collection (list :name "Piet" :surname "Gieter" :id 123))
-
-  ;;Query the collection
-  (query-data collection :query (lambda (document)
-                                  (<= (getx document :id) 900))))
-\end{verbatim}
-
-Output:
-
-You can see that Piet Gieter appears only once, because duplicates are handled.
-
-\begin{verbatim}
-((:NAME "Piet" :SURNAME "Gieter" :ID 123)
- (:NAME "Sannie" :SURNAME "Gieter" :ID 321))
-\end{verbatim}
-
-To allow duplicates you need to set handle-duplicates-p to nil when
-adding, persisting and loading the data.
-
-\href{home.org}{Home} :noexport: \href{definitions-example.org}{Previous} :noexport: \href{basic-example-with-persistence.org}{Next} :noexport:
-\subsection{Basic Example with Persistence}
-\label{sec:org0009360}
-
-In this example only the bare minimum is used and documents added are \textbf{\textbf{persisted}}.
-
-\begin{verbatim}
-(ignore-errors (delete-package :naive-examples))
-
-;;Load to use cl-naive-store
-(require 'cl-naive-store)
-(defpackage :naive-examples (:use :cl :cl-getx :cl-naive-store.naive-core))
-(in-package :naive-examples)
-
-;;Required to correctly initialize lparallel:*kernel*.
-(initialize)
-
-;;Deleting existing example database
-(cl-fad:delete-directory-and-files
- "~/multiverse/universe/simple-store"
- :if-does-not-exist :ignore)
-
-(let* (;;Create a multiverse.
-       (multiverse (make-instance
-                    'multiverse
-                    :name "multiverse"
-                    :location "~/multiverse/" ;Setting the location on disk.
-                    :universe-class 'universe))
-       ;;Create a universe and add it to the multiverse
-       (universe (add-multiverse-element
-                  multiverse
-                  (make-instance
-                   'universe
-                   :name "universe"
-                   :multiverse multiverse
-                   :location "~/multiverse/universe/" ;Setting the location on disk.
-                   :store-class 'store)))
-       ;;Create a store and add it to the universe
-       (store (add-multiverse-element
-               universe
-               (make-instance 'store
-                              :name "simple-store"
-                              :collection-class 'collection)))
-
-       ;;Create a collection and add it to the store
-       (collection (add-multiverse-element
-                    store
-                    (make-instance 'collection
-                                   :name "simple-collection"
-                                   ;;Specifying the key element, else its :key
-                                   :keys '(:id)))))
-
-  ;;Add some documents to the collection
-  (persist-document collection (list :name "Piet" :surname "Gieter" :id 123))
-  (persist-document collection (list :name "Sannie" :surname "Gieter" :id 321))
-  (persist-document collection (list :name "Koos" :surname "Van" :id 999))
-
-  ;;Clear the collection, ie unload documents from memory so we can
-  ;;show that it has been persisted.
-  (clear-collection collection)
-
-  ;;Query the collection, query-data will load the data from file if
-  ;;the collection is empty
-  (query-data collection :query (lambda (document)
-                                  (<= (getx document :id) 900))))
-\end{verbatim}
-
-Output:
-
-\begin{verbatim}
-((:NAME "Piet" :SURNAME "Gieter" :ID 123)
- (:NAME "Sannie" :SURNAME "Gieter" :ID 321))
-\end{verbatim}
-
-To see the file created for the data go to
-\textasciitilde{}/multiverse/universe/simple-store/simple-collection/ there you should
-find a simple-collection.log file and you should see the following in
-the file
-
-\begin{verbatim}
-(:NAME "Piet" :SURNAME "Gieter" :ID 123)
-(:NAME "Sannie" :SURNAME "Gieter" :ID 321)
-\end{verbatim}
-
-\subsubsection{Lazy Loading}
-\label{sec:orgbc8816b}
-
-In this example \texttt{query-data} loaded and persisted (in one step) the
-data into the collection. To show that the data was successfully
-persisted and that query will lazy load the data when needed, the
-collection is cleared and only then queried. 
-
-You can explicitly load the collection yourself by using \texttt{(load-data collection)}.
-
-\href{home.org}{Home} :noexport: \href{basic-example.org}{Previous} :noexport: \href{indexed-example.org}{Next} :noexport:
-\subsection{Indexed Example}
-\label{sec:org009f10a}
-
-In this example we extend the basic functionality with indexing.
-
-\begin{verbatim}
-;;Load to use cl-naive-store
-(require 'cl-naive-store)
-(defpackage :naive-examples (:use :cl :cl-getx :cl-naive-store.naive-core
-                             :cl-naive-store.naive-indexed))
-(in-package :naive-examples)
-
-;;Required to correctly initialize lparallel:*kernel*.
-(initialize)
-
-;;Deleting existing example database
-(cl-fad:delete-directory-and-files
- "~/multiverse/universe/simple-store"
- :if-does-not-exist :ignore)
-
-;;Create a class that inherits form indexed-collection-mixin and collection.
-(defclass indexded-collection (indexed-collection-mixin collection)
-  ())
-
-(let* (;;Create a multiverse.
-       (multiverse (make-instance
-                    'multiverse
-                    :name "multiverse"
-                    :location "~/multiverse/" ;Setting the location on disk.
-                    :universe-class 'universe))
-       ;;Create a universe and add it to the multiverse
-       (universe (add-multiverse-element
-                  multiverse
-                  (make-instance
-                   'universe
-                   :name "universe"
-                   :multiverse multiverse
-                   :location "~/multiverse/universe/" ;Setting the location on disk.
-                   :store-class 'store)))
-       ;;Create a store and add it to the universe
-       (store (add-multiverse-element
-               universe
-               (make-instance 'store
-                              :name "simple-store"
-                              :collection-class 'indexed-collection)))
-
-       ;;Create a collection and add it to the store
-       (collection (add-multiverse-element
-                    store
-                    (make-instance 'indexed-collection
-                                   :name "simple-collection"
-                                   ;;Specifying the key element, else its :key
-                                   :keys '(:id)
-                                   ;; Specifying the elements to set up indexes for.
-                                   :indexes '((:name :surname)))))
-       (results))
-
-  ;;Load Collection if it was created before.
-  ;; (load-data collection)
-
-  ;;Add some documents to the collection
-
-  (persist-document collection (list :name "Piet" :surname "Gieter" :id 123))
-  (persist-document collection (list :name "Sannie" :surname "Gieter" :id 321))
-  (persist-document collection (list :name "Koos" :surname "Van" :id 999))
-  (persist-document collection (list :name "Frikkie" :surname "Frikkedel" :id 1001))
-  (persist-document collection (list :name "Tannie" :surname "Frikkedel" :id 1002))
-
-  ;;Lookup koos using index values and add it to results
-  (push
-   (index-lookup-values collection (list (list :name "Koos")
-                                         (list :surname "Van")))
-   results)
-
-  ;;Lookup Frikkedel using index values and add it to results
-  (push
-   (index-lookup-values collection (list :surname "Frikkedel"))
-   results)
-
-  ;;Query the collection, query-data will load the data from file if the collection is empty,
-  ;;and add it to the results
-  (push (query-data collection :query (lambda (document)
-                                        (<= (getx document :id) 900)))
-        results)
-
-  (reverse results))
-
-\end{verbatim}
-
-Output:
-
-;; Hashes will obviously be different for you.
-
-\begin{verbatim}
-((:DESC "Looked up Piet using index-lookup-hash." :VALUE
- (:NAME "Piet" :SURNAME "Gieter" :ID 123 :HASH
-  "AB2CBF3C-41AE-4656-BE03-B360BCF6A707"))
-(:DESC
- "Koos that we looked up using index-lookup-values and the index values of Koos and Van."
- :VALUE
- ((:NAME "Koos" :SURNAME "Van" :ID 999 :HASH
-   "693A8B07-046E-4643-8FB2-926A965424BF")))
-(:DESC
- "A list of both Frikie and Tannie that we looked up using index-lookup-values and the surname. This is called a partial index lookup. You can enable or disable partial indexes."
- :VALUE
- ((:NAME "Tannie" :SURNAME "Frikkedel" :ID 1002 :HASH
-   "44A3BF6E-57C4-40BF-8692-54241564611D")
-  (:NAME "Frikkie" :SURNAME "Frikkedel" :ID 1001 :HASH
-   "5C7E02C7-3674-45FE-94A9-0B843478BA5E")))
-(:DESC
- "Queried all id's <= 900 using query-data. The query will use indexes internally when possible."
- :VALUE
- ((:NAME "Sannie" :SURNAME "Gieter" :ID 321 :HASH
-   "D0F597B2-12A2-4E05-971C-65B44F5CD4C4")
-  (:NAME "Piet" :SURNAME "Gieter" :ID 123 :HASH
-   "AB2CBF3C-41AE-4656-BE03-B360BCF6A707"))))
-\end{verbatim}
-
-
-\href{home.org}{Home} :noexport: \href{basic-example-with-persistence.org}{Previous} :noexport: \href{documents-example.org}{Next} :noexport:
-\subsection{Naive Documents Example}
-\label{sec:org069272d}
-
-Using \texttt{cl-naive-store.naive-documents} gives you a lot of functionality out of the
-box, but you need to do more work to set it up right.
-
-\begin{verbatim}
-(ignore-errors (delete-package :naive-examples))
-
-;;Setup to use cl-naive-store
-(require 'cl-naive-store)
-(defpackage :naive-examples (:use
-                             :cl
-                             :cl-getx :cl-naive-store.naive-core
-                             :cl-naive-store.naive-indexed
-                             :cl-naive-store.document-types
-                             :cl-naive-store.naive-documents))
-(in-package :naive-examples)
-
-;;Required to correctly initialize lparallel:*kernel*.
-(initialize)
-
-;;Deleting existing example database
-(cl-fad:delete-directory-and-files
- "~/multiverse/universe/simple-store"
- :if-does-not-exist :ignore)
-
-;;Create a data definition for an employee
-;;It looks like a lot but dont panic its simple.
-(defparameter *employee-document-type*
-  '(:document-type (:name "employee"
-                    :label "Employee"
-                    :elements
-                    ((:element
-                      (:name :emp-no
-                       :label "Employee No"
-                       :key-p t
-                       :concrete-type :string
-                       :attributes ((:attribute
-                                     (:name :display
-                                      :value t))
-                                    (:attribute
-                                     (:name :editable
-                                      :value t)))))
-                     (:element
-                      (:name :name
-                       :label "Name"
-                       :concrete-type :string
-                       :attributes ((:attribute
-                                     (:name :display
-                                      :value t))
-                                    (:attribute
-                                     (:name :editable
-                                      :value t)))))
-                     (:element
-                      (:name :surname
-                       :label "Surname"
-                       :concrete-type :string
-                       :attributes ((:attribute
-                                     (:name :display
-                                      :value t))
-                                    (:attribute
-                                     (:name :editable
-                                      :value t))))))
-                    :documentation "This type represents a simple employee master.")))
-
-(let* (;;Create Multiverse
-       (multiverse
-         (make-instance
-          'multiverse
-          :name "multiverse"
-          :location "~/multiverse/" ;Setting the location on disk.
-          :universe-class 'universe))
-       ;;Add universe to multiverse
-       (universe
-         (add-multiverse-element
-          multiverse
-          (make-instance
-           'universe
-           :name "universe"
-           :multiverse multiverse
-           :location "~/multiverse/universe/" ;Setting the location on disk.
-           :store-class 'document-store)))
-       (store
-         (add-multiverse-element
-          universe
-          (make-instance (store-class universe)
-                         :name "simple-store"
-                         :collection-class
-                         'cl-naive-store.naive-documents:document-collection)))
-       (document-type
-         (load-from-definition
-            store
-            :document-type
-            *employee-document-type*
-            :with-children-p t))
-       (collection (add-multiverse-element
-                    store
-                    (make-instance (collection-class store)
-                                   :name "simple-collection"
-                                   :document-type document-type
-                                   ;; Not specifying the keys to show
-                                   ;; that they are retrieved from the document-type
-                                   ;; if if no key is set.
-                                   ;; :keys ...
-                                   ;; Specifying the elements to set up indexes for.
-                                   :indexes '((:name :surname)))))
-       ;;Add doc to collection
-       (doc (persist-document collection
-                              (make-document
-                               :store (store collection)
-                               :collection collection
-                               :document-type "employee"
-                               :elements (list :name "Piet" :surname "Gieter"
-                                               :emp-no 123))))
-       (results))
-
-  ;;Persist store definition with its document type and collection.
-  (persist multiverse :definitions-only-p t)
-
-  ;;Add some documents to the collection
-
-  (persist-document collection
-                    (make-document
-                     :store (store collection)
-                     :collection collection
-                     :document-type "employee"
-                     :elements (list :name "Sannie" :surname "Gieter" :emp-no 321)))
-
-  (persist-document collection
-                    (make-document
-                     :store (store collection)
-                     :collection collection
-                     :document-type "employee"
-                     :elements (list :name "Koos" :surname "Van" :emp-no 999)))
-
-  (persist-document collection
-                    (make-document
-                     :store (store collection)
-                     :collection collection
-                     :document-type "employee"
-                     :elements (list :name "Frikkie" :surname "Frikkedel" :emp-no 1001)))
-
-  (persist-document collection
-                    (make-document
-                     :store (store collection)
-                     :collection collection
-                     :document-type "employee"
-                     :elements (list :name "Tannie" :surname "Frikkedel" :emp-no 1002)))
-
-  ;;Look up piet by hash
-  (push (list :desc "Looked up Piet using index-lookup-hash."
-              :value (index-lookup-hash collection (getx doc :hash)))
-        results)
-
-  ;;Lookup koos using index values and add it to results
-  (push
-   (list :desc "Koos that we looked up using index-lookup-values and the index values of Koos and Van."
-         :value
-         (index-lookup-values collection (list (list :name "Koos")
-                                               (list :surname "Van"))))
-   results)
-
-  ;;Lookup Frikkedel using index values and add it to results
-  (push
-   (list :desc "A list of both Frikie and Tannie that we looked up using index-lookup-values and the surname. This is called a partial index lookup. You can enable or disable partial indexes."
-         :value
-         (index-lookup-values collection (list :surname "Frikkedel")))
-   results)
-
-  ;;Query the collection, query-data will load the data from file if
-  ;;the collection is empty, and add it to the results
-  (push
-   (list :desc "Queried all id's <= 900 using query-data. The query will use indexes internally when possible."
-         :value
-         (query-data collection :query (lambda (document)
-                                         (<= (getx document :emp-no) 900))))
-   results)
-
-  (reverse results))
-\end{verbatim}
-
-Output:
-
-\begin{verbatim}
-((:DESC "Looked up Piet using index-lookup-hash." :VALUE
-  #S(DOCUMENT
-     :UNIVERSE #<UNIVERSE (:NAME "universe" :MULTIVERSE "multiverse" :LOCATION
-                           "~/multiverse/universe/" :STORES
-                           ("simple-store")) {104C234E83}>
-     :STORE #<DOCUMENT-STORE (:NAME "simple-store" :UNIVERSE "universe"
-                              :LOCATION #P"~/multiverse/universe/simple-store/"
-                              :COLLECTIONS ("simple-collection")) {104C2B6C03}>
-     :COLLECTION #<DOCUMENT-COLLECTION (:NAME "simple-collection" :STORE
-                                        "simple-store" :LOCATION
-                                        #P"~/multiverse/universe/simple-store/simple-collection/simple-collection.log"
-                                        :DOCUMENT-TYPE "employee" :SHARDS
-                                        ("simple-c")) {104C411AC3}>
-     :DOCUMENT-TYPE "employee"
-     :HASH "B58F9362-BDE0-465C-9013-04BF6541C8F7"
-     :ELEMENTS (:NAME "Piet" :SURNAME "Gieter" :EMP-NO 123)
-     :CHANGES NIL
-     :VERSIONS NIL
-     :DELETED-P NIL
-     :PERSISTED-P T))
- (:DESC
-  "Koos that we looked up using index-lookup-values and the index values of Koos and Van."
-  :VALUE
-  (#S(DOCUMENT
-      :UNIVERSE #<UNIVERSE (:NAME "universe" :MULTIVERSE "multiverse" :LOCATION
-                            "~/multiverse/universe/" :STORES
-                            ("simple-store")) {104C234E83}>
-      :STORE #<DOCUMENT-STORE (:NAME "simple-store" :UNIVERSE "universe"
-                               :LOCATION
-                               #P"~/multiverse/universe/simple-store/"
-                               :COLLECTIONS
-                               ("simple-collection")) {104C2B6C03}>
-      :COLLECTION #<DOCUMENT-COLLECTION (:NAME "simple-collection" :STORE
-                                         "simple-store" :LOCATION
-                                         #P"~/multiverse/universe/simple-store/simple-collection/simple-collection.log"
-                                         :DOCUMENT-TYPE "employee" :SHARDS
-                                         ("simple-c")) {104C411AC3}>
-      :DOCUMENT-TYPE #<DOCUMENT-TYPE (:NAME "employee" :STORE "simple-store"
-                                      :ELEMENTS
-                                      (:SURNAME :NAME :EMP-NO)) {104C2B6CA3}>
-      :HASH "B0E59C8E-2241-490A-B904-1ABA62FD5C9B"
-      :ELEMENTS (:NAME "Koos" :SURNAME "Van" :EMP-NO 999)
-      :CHANGES NIL
-      :VERSIONS NIL
-      :DELETED-P NIL
-      :PERSISTED-P T)))
- (:DESC
-  "A list of both Frikie and Tannie that we looked up using index-lookup-values and the surname. This is called a partial index lookup. You can enable or disable partial indexes."
-  :VALUE
-  (#S(DOCUMENT
-      :UNIVERSE #<UNIVERSE (:NAME "universe" :MULTIVERSE "multiverse" :LOCATION
-                            "~/multiverse/universe/" :STORES
-                            ("simple-store")) {104C234E83}>
-      :STORE #<DOCUMENT-STORE (:NAME "simple-store" :UNIVERSE "universe"
-                               :LOCATION
-                               #P"~/multiverse/universe/simple-store/"
-                               :COLLECTIONS
-                               ("simple-collection")) {104C2B6C03}>
-      :COLLECTION #<DOCUMENT-COLLECTION (:NAME "simple-collection" :STORE
-                                         "simple-store" :LOCATION
-                                         #P"~/multiverse/universe/simple-store/simple-collection/simple-collection.log"
-                                         :DOCUMENT-TYPE "employee" :SHARDS
-                                         ("simple-c")) {104C411AC3}>
-      :DOCUMENT-TYPE #<DOCUMENT-TYPE (:NAME "employee" :STORE "simple-store"
-                                      :ELEMENTS
-                                      (:SURNAME :NAME :EMP-NO)) {104C2B6CA3}>
-      :HASH "6BF9DC95-5158-4B60-A7E0-929BC2D7684F"
-      :ELEMENTS (:NAME "Tannie" :SURNAME "Frikkedel" :EMP-NO 1002)
-      :CHANGES NIL
-      :VERSIONS NIL
-      :DELETED-P NIL
-      :PERSISTED-P T)
-   #S(DOCUMENT
-      :UNIVERSE #<UNIVERSE (:NAME "universe" :MULTIVERSE "multiverse" :LOCATION
-                            "~/multiverse/universe/" :STORES
-                            ("simple-store")) {104C234E83}>
-      :STORE #<DOCUMENT-STORE (:NAME "simple-store" :UNIVERSE "universe"
-                               :LOCATION
-                               #P"~/multiverse/universe/simple-store/"
-                               :COLLECTIONS
-                               ("simple-collection")) {104C2B6C03}>
-      :COLLECTION #<DOCUMENT-COLLECTION (:NAME "simple-collection" :STORE
-                                         "simple-store" :LOCATION
-                                         #P"~/multiverse/universe/simple-store/simple-collection/simple-collection.log"
-                                         :DOCUMENT-TYPE "employee" :SHARDS
-                                         ("simple-c")) {104C411AC3}>
-      :DOCUMENT-TYPE #<DOCUMENT-TYPE (:NAME "employee" :STORE "simple-store"
-                                      :ELEMENTS
-                                      (:SURNAME :NAME :EMP-NO)) {104C2B6CA3}>
-      :HASH "97DC3D26-97A9-4B75-A8A3-36B849CAE347"
-      :ELEMENTS (:NAME "Frikkie" :SURNAME "Frikkedel" :EMP-NO 1001)
-      :CHANGES NIL
-      :VERSIONS NIL
-      :DELETED-P NIL
-      :PERSISTED-P T)))
- (:DESC
-  "Queried all id's <= 900 using query-data. The query will use indexes internally when possible."
-  :VALUE
-  (#S(DOCUMENT
-      :UNIVERSE #<UNIVERSE (:NAME "universe" :MULTIVERSE "multiverse" :LOCATION
-                            "~/multiverse/universe/" :STORES
-                            ("simple-store")) {104C234E83}>
-      :STORE #<DOCUMENT-STORE (:NAME "simple-store" :UNIVERSE "universe"
-                               :LOCATION
-                               #P"~/multiverse/universe/simple-store/"
-                               :COLLECTIONS
-                               ("simple-collection")) {104C2B6C03}>
-      :COLLECTION #<DOCUMENT-COLLECTION (:NAME "simple-collection" :STORE
-                                         "simple-store" :LOCATION
-                                         #P"~/multiverse/universe/simple-store/simple-collection/simple-collection.log"
-                                         :DOCUMENT-TYPE "employee" :SHARDS
-                                         ("simple-c")) {104C411AC3}>
-      :DOCUMENT-TYPE "employee"
-      :HASH "B94547F2-DEE5-4408-A6DB-459E193E0B22"
-      :ELEMENTS (:NAME "Sannie" :SURNAME "Gieter" :EMP-NO 321)
-      :CHANGES NIL
-      :VERSIONS NIL
-      :DELETED-P NIL
-      :PERSISTED-P T)
-   #S(DOCUMENT
-      :UNIVERSE #<UNIVERSE (:NAME "universe" :MULTIVERSE "multiverse" :LOCATION
-                            "~/multiverse/universe/" :STORES
-                            ("simple-store")) {104C234E83}>
-      :STORE #<DOCUMENT-STORE (:NAME "simple-store" :UNIVERSE "universe"
-                               :LOCATION
-                               #P"~/multiverse/universe/simple-store/"
-                               :COLLECTIONS
-                               ("simple-collection")) {104C2B6C03}>
-      :COLLECTION #<DOCUMENT-COLLECTION (:NAME "simple-collection" :STORE
-                                         "simple-store" :LOCATION
-                                         #P"~/multiverse/universe/simple-store/simple-collection/simple-collection.log"
-                                         :DOCUMENT-TYPE "employee" :SHARDS
-                                         ("simple-c")) {104C411AC3}>
-      :DOCUMENT-TYPE "employee"
-      :HASH "B58F9362-BDE0-465C-9013-04BF6541C8F7"
-      :ELEMENTS (:NAME "Piet" :SURNAME "Gieter" :EMP-NO 123)
-      :CHANGES NIL
-      :VERSIONS NIL
-      :DELETED-P NIL
-      :PERSISTED-P T))))
-\end{verbatim}
-
-To change a value for an employee you just set the value using
-getx. For example lets change Sannie's surname.
-
-\begin{verbatim}
-(let ((sannie (first (index-lookup-values
-                      (get-multiverse-element
-                       :collection
-                       (get-multiverse-element
-                        :store
-                        *universe* "simple-store")
-                       "simple-collection")
-                      (list (list :name "Sannie")
-                            (list :surname "Gieter"))))))
-
-  (setf (getx sannie :surname) "Potgieter"))
-\end{verbatim}
-
-Which will give you
-
-\begin{verbatim}
-#S(document
-   :STORE #<document-STORE {10172A8A73}>
-   :COLLECTION #<document-COLLECTION {1017369EA3}>
-   :DATA-TYPE "employee"
-   :HASH "68434DF1-A04D-4D33-96F1-89D217A193FD"
-   :VALUES (:NAME "Sannie" :SURNAME "Gieter" :EMP-NO 321)
-   :CHANGES (:NAME "Sannie" :SURNAME "Potgieter" :EMP-NO 321)
-   :VERSIONS NIL
-   :DELETED-P NIL
-   :PERSISTED-P T)
-\end{verbatim}
-
-The update values can be found in :changes, and will stay there until
-the document is persisted or abandoned.
-
-Take note that \textbf{\textbf{getx}} will return "Potgieter" now even if the
-document has not been persisted yet.
-
-\href{home.org}{Home} :noexport: \href{indexed-example.org}{Previous} :noexport: \href{sharding-example.org}{Next} :noexport:
-\subsection{Sharding Example}
-\label{sec:org6790baf}
-
-In this example we will use sharding with document types.
-
-\begin{verbatim}
-(ignore-errors (delete-package :naive-examples))
-
-;;Setup to use cl-naive-store
-(require 'cl-naive-store)
-(defpackage :naive-examples (:use
-                             :cl
-                             :cl-getx :cl-naive-store.naive-core
-                             :cl-naive-store.naive-indexed
-                             :cl-naive-store.document-types
-                             :cl-naive-store.naive-documents))
-(in-package :naive-examples)
-
-;;Required to correctly initialize lparallel:*kerel*.
-(initialize)
-
-(defparameter *surnames*
-  #("Smith" "Johnson" "Williams" "Jones" "Brown" "Davis" "Miller")
-  "A vector of surnames.")
-
-(defparameter *countries*
-  #("Afghanistan" "Albania" "Algeria" "Andorra" "Angola"
-    "Antigua and Barbuda" "Argentina" "Armenia" "Australia" "Austria"
-    "Azerbaijan" "Bahamas" "Bahrain" "Bangladesh" "Barbados" "Belarus"
-    "Belgium" "Belize" "Benin" "Bhutan" "Bolivia" "Bosnia and Herzegovina"
-    "Botswana" "Brazil" "Brunei" "Bulgaria" "Burkina Faso" "Burundi"
-    "Côte d'Ivoire" "Cabo Verde" "Cambodia" "Cameroon" "Canada"
-    "Central African Republic" "Chad" "Chile" "China" "Colombia" "Comoros"
-    "Congo" "Costa Rica" "Croatia" "Cuba" "Cyprus"
-    "Czechia" "Democratic Republic of the Congo"
-    "Denmark" "Djibouti" "Dominica" "Dominican Republic" "Ecuador" "Egypt"
-    "El Salvador" "Equatorial Guinea" "Eritrea" "Estonia"
-    "Eswatini" "Ethiopia" "Fiji" "Finland" "France"
-    "Gabon" "Gambia" "Georgia" "Germany" "Ghana" "Greece" "Grenada"
-    "Guatemala" "Guinea" "Guinea-Bissau" "Guyana" "Haiti" "Holy See"
-    "Honduras" "Hungary" "Iceland" "India" "Indonesia" "Iran" "Iraq"
-    "Ireland" "Israel" "Italy" "Jamaica" "Japan" "Jordan" "Kazakhstan"
-    "Kenya" "Kiribati" "Kuwait" "Kyrgyzstan" "Laos" "Latvia" "Lebanon"
-    "Lesotho" "Liberia" "Libya" "Liechtenstein" "Lithuania" "Luxembourg"
-    "Madagascar" "Malawi" "Malaysia" "Maldives" "Mali" "Malta"
-    "Marshall Islands" "Mauritania" "Mauritius" "Mexico" "Micronesia"
-    "Moldova" "Monaco" "Mongolia" "Montenegro" "Morocco" "Mozambique"
-    "Myanmar" "Namibia" "Nauru" "Nepal" "Netherlands"
-    "New Zealand" "Nicaragua" "Niger" "Nigeria" "North Korea"
-    "North Macedonia" "Norway" "Oman" "Pakistan" "Palau" "Palestine State"
-    "Panama" "Papua New Guinea" "Paraguay" "Peru" "Philippines" "Poland"
-    "Portugal" "Qatar" "Romania" "Russia" "Rwanda" "Saint Kitts and Nevis"
-    "Saint Lucia" "Saint Vincent and the Grenadines" "Samoa" "San Marino"
-    "Sao Tome and Principe" "Saudi Arabia" "Senegal" "Serbia" "Seychelles"
-    "Sierra Leone" "Singapore" "Slovakia" "Slovenia" "Solomon Islands"
-    "Somalia" "South Africa" "South Korea" "South Sudan" "Spain"
-    "Sri Lanka" "Sudan" "Suriname" "Sweden" "Switzerland" "Syria"
-    "Tajikistan" "Tanzania" "Thailand" "Timor-Leste" "Togo" "Tonga"
-    "Trinidad and Tobago" "Tunisia" "Turkey" "Turkmenistan" "Tuvalu"
-    "Uganda" "Ukraine" "United Arab Emirates" "United Kingdom"
-    "United States of America" "Uruguay" "Uzbekistan" "Vanuatu"
-    "Venezuela" "Vietnam" "Yemen" "Zambia" "Zimbabwe")
-  "A vector of country names.")
-
-(defparameter *employee-document-type*
-  '(:document-type (:name "employee"
-                    :label "Employee"
-                    :elements
-                    ((:element
-                      (:name :emp-no
-                       :label "Employee No"
-                       :key-p t
-                       :concrete-type :string
-                       :attributes ((:attribute
-                                     (:name :display
-                                      :value t))
-                                    (:attribute
-                                     (:name :editable
-                                      :value t)))))
-                     (:element
-                      (:name :name
-                       :label "Name"
-                       :concrete-type :string
-                       :attributes ((:attribute
-                                     (:name :display
-                                      :value t))
-                                    (:attribute
-                                     (:name :editable
-                                      :value t)))))
-                     (:element
-                      (:name :surname
-                       :label "Surname"
-                       :concrete-type :string
-                       :attributes ((:attribute
-                                     (:name :display
-                                      :value t))
-                                    (:attribute
-                                     (:name :editable
-                                      :value t))))))
-                    :documentation "This type represents a simple employee master.")))
-
-;;Cannot go below 202! The tests will fail.
-(defparameter *size* 10000)
-
-(defparameter *expected-shard-count* 0)
-
-;;Doing this so you can rerun the code from here onwards.
-(progn
-  ;;Deleting existing example database
-  (cl-fad:delete-directory-and-files
-   "~/multiverse/universe/simple-store"
-   :if-does-not-exist :ignore)
-
-  (let* ((multiverse
-           (make-instance
-            'multiverse
-            :name "multiverse"
-            :location "~/multiverse/" ;Setting the location on disk.
-            :universe-class 'universe))
-         ;;Add universe to multiverse
-         (universe
-           (add-multiverse-element
-            multiverse
-            (make-instance
-             'universe
-             :name "universe"
-             :multiverse multiverse
-             :location "~/multiverse/universe/" ;Setting the location on disk.
-             :store-class 'document-store)))
-         (store
-           (add-multiverse-element
-            universe
-            (make-instance (store-class universe)
-                           :name "simple-store"
-                           :collection-class
-                           'cl-naive-store.naive-documents:document-collection)))
-         (document-type
-           (make-instance
-            'document-type
-            :name (getf
-                   (getf *employee-document-type* :document-type)
-                   :name)
-            :label (getf
-                    (getf *employee-document-type* :document-type)
-                    :label)
-            :elements (mapcar
-                       (lambda (element)
-                         (make-instance
-                          'element
-                          :name(getf (getf element :element) :name)
-                          :key-p (getf (getf element :element) :key-p)
-                          :concrete-type (getf (getf element :element) :concrete-type)
-                          :attributes (getf (getf element :element) :attributes)))
-                       (getf
-                        (getf *employee-document-type* :document-type)
-                        :elements))))
-         (collection
-           (add-multiverse-element
-            store
-            (make-instance (collection-class store)
-                           :name "simple-collection"
-                           :keys '(:emp-no)
-                           :document-type document-type
-                           ;; Creating shards based on the country that the employee
-                           ;; belongs to.  It is a bad example you should not shard on
-                           ;; any value that could change in the future!
-                           :shard-elements '(:country))))
-         (emp-country  0)
-         (emp-surname  0)
-         (unique-countries (make-hash-table :test 'equalp)))
-
-    (setf *expected-shard-count* 0)
-
-    (cl-naive-store.naive-core:add-multiverse-element store document-type)
-
-    (persist multiverse :definitions-only-p t)
-
-    (unless (data-loaded-p collection)
-      ;;Populate the collection.
-      (dotimes (emp-no *size*)
-        ;; We create employees country per country and loop again if we need more:
-        (let ((country  (aref *countries* emp-country))
-              (surname  (aref *surnames* emp-surname)))
-
-          (unless (gethash country unique-countries)
-            (incf *expected-shard-count*)
-            (setf (gethash country unique-countries) country))
-
-          (incf emp-surname)
-
-          ;;We only have only 7 surnames start again on surnames
-          (when (<= (length *surnames*) emp-surname)
-            (setf emp-surname 0)
-            ;;move on to next country
-            ;;(setf emp-country (mod (1+ emp-country) (length *countries*)))
-            (if (< emp-country (- (length *countries*) 1))
-                (incf emp-country)
-                (setf emp-country 0)))
-
-          (add-document collection
-                        (list
-                         :country country
-                         :surname surname
-                         :name (format nil "Slave No ~A" emp-no)
-                         :emp-no emp-no)
-                        :handle-duplicates-p nil)))
-
-      ;; Bulk perist documents
-      (persist-collection collection))
-
-    ;;We are just going to investigate the shards and not do a lot data
-    ;;lookups like in other examples.
-    (list (list :desc "Count of shards in collection."
-                :value (length (shards collection)))
-          (list :desc "The count of physical shard files for the collection."
-                :value (length (uiop:directory-files
-                                (cl-fad:merge-pathnames-as-directory
-                                 (location store)
-                                 (make-pathname :directory
-                                                (list :relative
-                                                      (name collection))))))))))
-
-\end{verbatim}
-
-Output:
-
-\begin{verbatim}
-((:DESC "Count of shards in collection." :VALUE 195)
- (:DESC "The count of physical shard files for the collection." :VALUE 195))
-\end{verbatim}
-
-\href{home.org}{Home} :noexport: \href{documents-example.org}{Previous} :noexport:
-
 \section{User API}
-\label{sec:org743234b}
+\label{sec:org00ee4ee}
 
 The classes, accessors and generic functions used by the typical user
 of cl-naive-store. Please have a look at the documentation and
@@ -1648,10 +542,10 @@ to cutsomize cl-naive-store then you need to use the functionality
 described here in condjuction with the Implementor's Api.
 
 \subsection{Naive Core}
-\label{sec:orgd78be29}
+\label{sec:org2868ff4}
 
 \subsubsection{[generic function] query-definitions (definition \&key fn element)}
-\label{sec:orga6810f8}
+\label{sec:org06f2566}
 
 Queries the definition passed for an element or elements.
 
@@ -1660,44 +554,44 @@ If an element is supplied limits calling the function to those elements or if no
 If you need more control use cl-naive-ptrees directly.
 
 \subsubsection{[generic function] get-definition-element (element-type parent name)}
-\label{sec:orgd05ff2e}
+\label{sec:org18b6212}
 
 Fetches a definition of the type element-type by name from the parent definition.
 
 \subsubsection{[generic function] add-definition-element (element-type definition element \&key name-path)}
-\label{sec:org1995cdd}
+\label{sec:orgd04ad25}
 
 Adds a definition element to the parent definition.
 
 \begin{enumerate}
 \item add-definition-element ((element-type (eql :collection)) definition collection \&key name-path replace-p)
-\label{sec:org755324c}
+\label{sec:org2124794}
 \item add-definition-element ((element-type (eql :document-type)) definition collection \&key name-path replace-p)
-\label{sec:orgafa1d28}
+\label{sec:org433e476}
 \item add-definition-element ((element-type (eql :store)) definition collection \&key name-path replace-p)
-\label{sec:org5bd340d}
+\label{sec:orgb6c4e1d}
 \item add-definition-element ((element-type (eql :universe)) definition collection \&key name-path replace-p)
-\label{sec:org4612057}
+\label{sec:orga27460d}
 \end{enumerate}
 
 \subsubsection{[generic function] remove-definition-element (element-type definition element-name \&key name-path)}
-\label{sec:org475b7a2}
+\label{sec:orgeb822b4}
 
 Removes a definition element from the definition.
 
 \begin{enumerate}
 \item remove-definition-element ((element-type (eql :universe)) definition element-name \&key name-path)
-\label{sec:org46a1541}
+\label{sec:org067ca9a}
 \item remove-definition-element ((element-type (eql :store)) definition element-name \&key name-path)
-\label{sec:org84f847b}
+\label{sec:org23367a9}
 \item remove-definition-element ((element-type (eql :collection)) definition element-name \&key name-path)
-\label{sec:org52f1e0b}
+\label{sec:orgd30d659}
 \item remove-definition-element ((element-type (eql :document-type)) definition element-name \&key name-path)
-\label{sec:orge4d6d32}
+\label{sec:orgcd39fec}
 \end{enumerate}
 
 \subsubsection{[function] get-definitions (location definition-type)}
-\label{sec:org2db8141}
+\label{sec:orga56e2d2}
 
 Returns persisted definitions for the type (multiverse, universe,
 store, collection) using the passed object that can be a multiverse,
@@ -1705,14 +599,14 @@ universe, store, collection.  If no definition-type is not supplied
 the definition of the object is returned.
 
 \subsubsection{[function] get-definition (location definition-type name \&key (error-p t))}
-\label{sec:orgb599887}
+\label{sec:orgc8e9742}
 
 Returns a persisted definition for the type (multiverse, universe,
 store, collection) using the passed object that can be a multiverse,
 universe, store, collection.
 
 \subsubsection{[generic function] instance-from-definition (definition-type definition)}
-\label{sec:org80dbd5d}
+\label{sec:orgb24e4f0}
 
 Instanciates an element from the definition for the likes of
 multiverse, universe, store, collection or document-type.
@@ -1722,19 +616,19 @@ and children elements.
 
 \begin{enumerate}
 \item instance-from-definition ((class (eql 'multiverse)) definition)
-\label{sec:orgdcf4636}
+\label{sec:orgc7f3b21}
 \item instance-from-definition ((class (eql 'universe)) definition)
-\label{sec:org43b53e0}
+\label{sec:org49c5ca1}
 \item instance-from-definition ((class (eql 'store)) definition)
-\label{sec:org725e542}
+\label{sec:org831ac56}
 \item instance-from-definition ((class (eql 'collection)) definition)
-\label{sec:orgc4f2096}
+\label{sec:orgdcffdb0}
 \item instance-from-definition ((class (eql 'document-type)) definition)
-\label{sec:org6703cd7}
+\label{sec:org5e66a7b}
 \end{enumerate}
 
 \subsubsection{[generic function] load-from-definition (parent definition-type definition \&key class with-children-p with-data-p)}
-\label{sec:orge56fb41}
+\label{sec:org36d11bc}
 
 Instanciates an element from the definition for the likes of
 multiverse, universe, store, collection or document-type and loads it
@@ -1757,22 +651,22 @@ that if you load data this way you are forgoing lazy loading.
 
 \begin{enumerate}
 \item load-from-definition ((multiverse multiverse) (definition-type (eql :universe)) definition \&key class with-children-p with-data-p)
-\label{sec:orgfefa082}
+\label{sec:org70011b9}
 \item load-from-definition ((universe universe) (definition-type (eql :store)) definition \&key class with-children-p with-data-p)
-\label{sec:orge13cfff}
+\label{sec:orgd4c2190}
 \item load-from-definition ((store store) (definition-type (eql :collection)) definition \&key class with-children-p with-data-p)
-\label{sec:org820a297}
+\label{sec:org739a126}
 \item load-from-definition ((store store) (definition-type (eql :document-type)) definition \&key class with-children-p with-data-p)
-\label{sec:org2c2bd81}
+\label{sec:org94a0cda}
 \end{enumerate}
 
 \subsubsection{[generic function] load-from-definition-file (parent definition-type name \&key class with-children-p with-data-p)}
-\label{sec:org3773e82}
+\label{sec:orgbce9177}
 
 Loads a definition from a file.
 
 \subsubsection{[class] shard}
-\label{sec:orge6e2c7e}
+\label{sec:org80d621f}
 
 Sharding is when you break the physical file that backs the collection
 into smaller files based on data elements of a document. An instance
@@ -1781,33 +675,33 @@ into memory.
 
 \begin{enumerate}
 \item\relax [accessor] mac
-\label{sec:orgd18eb7b}
+\label{sec:org40a254d}
 
 Mac to identify shard.
 
 \item\relax [accessor] location
-\label{sec:orgef58fa1}
+\label{sec:orga4edaa9}
 
 The file path to this shard is stored.
 
 \item\relax [accessor] documents
-\label{sec:orgef098ea}
+\label{sec:org39dd39e}
 
 Documents belonging to shard stored in an adjustable array.
 
 \item\relax [accessor] status
-\label{sec:org062f54e}
+\label{sec:org52332c0}
 
 Used internally during the loading of the documents in a shard to help with locking.
 
 \item\relax [accessor] lock
-\label{sec:org9211506}
+\label{sec:org3a14d25}
 
 Used internally to do shard specific locking.
 \end{enumerate}
 
 \subsubsection{[class] multiverse}
-\label{sec:orge51a8ab}
+\label{sec:orgcf2f949}
 
 A multiverse is the top structural container for data. A multiverse
 contains one or more universes. A multiverse could be viewed as a clustering of clusters of
@@ -1815,17 +709,17 @@ databases.
 
 \begin{enumerate}
 \item\relax [accessor] name
-\label{sec:org5dd19f3}
+\label{sec:org642d973}
 
 Mulitiverse name.
 
 \item\relax [accessor] universes
-\label{sec:org2bfe640}
+\label{sec:orgc50443d}
 
 List of universes contained by this multiverse.
 
 \item\relax [accessor] universe-class
-\label{sec:org432e866}
+\label{sec:orgaf46fdb}
 
 The class that should be used to make universes.
 
@@ -1836,35 +730,35 @@ dynamicly created when definition files are loaded. (see store notes
 for more about this.)
 
 \item\relax [accessor] Location
-\label{sec:org6ead46c}
+\label{sec:orgcefa151}
 
 The directory path to universes for this multiverse.
 \end{enumerate}
 
 \subsubsection{[class] universe}
-\label{sec:org4c0d04e}
+\label{sec:org842eb8c}
 
 A universe contains one or more stores. A universe could be viewed as
 a cluster of databases.
 
 \begin{enumerate}
 \item\relax [accessor] multiverse
-\label{sec:org50ab24a}
+\label{sec:orge91f759}
 
 The multiverse the universe belongs to.
 
 \item\relax [accessor] name
-\label{sec:orgea73418}
+\label{sec:org24ff82b}
 
 Universe name.
 
 \item\relax [accessor] stores
-\label{sec:org6566afd}
+\label{sec:org9322395}
 
 List of stores contained by this universe.
 
 \item\relax [accessor] store-class
-\label{sec:orge6015fa}
+\label{sec:orgc1ca6b4}
 
 The class that should be used to make stores.
 
@@ -1875,13 +769,13 @@ created when definition files are loaded. (see store notes for more
 about this.)
 
 \item\relax [accessor] location
-\label{sec:orgd065645}
+\label{sec:org9f1ce1d}
 
 Directory path to stores of this universe.
 \end{enumerate}
 
 \subsubsection{[class] store}
-\label{sec:orgbe5530f}
+\label{sec:orga635f19}
 
 Document types and their associated collections are organized into
 groups called stores.
@@ -1899,55 +793,55 @@ can of worms.
 
 \begin{enumerate}
 \item\relax [accessor] universe
-\label{sec:org639c03d}
+\label{sec:orga5e0ef0}
 
 The universe the store belongs to.
 
 \item\relax [accessor] name
-\label{sec:org0ee63b8}
+\label{sec:orge3172ac}
 
 Store name.
 
 \item\relax [accessor] collection-class
-\label{sec:orgea4d968}
+\label{sec:orgd5666c7}
 
 The class that should be used to make collections.
 
 \item\relax [accessor] collections
-\label{sec:orgf3f7c50}
+\label{sec:org4a1b510}
 
 List of collections represented by this store.
 
 \item\relax [accessor] Location
-\label{sec:org08be04e}
+\label{sec:org9218007}
 
 The directory path to the document-type files and collection files for
 this store.
 \end{enumerate}
 
 \subsubsection{[class] collection}
-\label{sec:org7884372}
+\label{sec:orgea9645a}
 
 A collection of documents of a specific document-type.
 
 \begin{enumerate}
 \item\relax [accessor] store
-\label{sec:orgc7ff0a3}
+\label{sec:org580c102}
 
 The store that this collection belongs to.
 
 \item\relax [accessor] name
-\label{sec:orgc56328b}
+\label{sec:org7bc67b8}
 
 The collection name.
 
 \item\relax [accessor] location
-\label{sec:orga7be04e}
+\label{sec:org5c90d23}
 
 The directory path to where files for this collection are stored.
 
 \item\relax [accessor] shards
-\label{sec:org4bdd781}
+\label{sec:org0096f3c}
 
 A vector of shards.
 
@@ -1958,7 +852,7 @@ sharding, we chose to also introduce the use of lparrallel to speed
 up many functions and lparrallel has a preference for arrays.
 
 \item\relax [accessor] keys
-\label{sec:org0890e31}
+\label{sec:org952d40d}
 
 Keys need to be set to handle duplicates, the default is :key if :key
 is not found in the document then duplicates will occur.
@@ -1970,13 +864,13 @@ the document-type is checked for keys as well and the collection's
 keys will be set to the keys set in the document-type elements.
 
 \item\relax [accessor] shard-elements
-\label{sec:org5226156}
+\label{sec:org032edcd}
 
 shard-elements is a list of document element keywords to use for sharding.
 \end{enumerate}
 
 \subsubsection{[method] documents ((collection collection))}
-\label{sec:org9f53a2e}
+\label{sec:orgd4082a0}
 
 It is a convenience function to retrieve all documents without having
 to deal with shards.
@@ -1985,42 +879,42 @@ Loops over all the shards for a collection to gather all the
 documents.
 
 \subsubsection{[method] getx and (setf getx)}
-\label{sec:org57e35d9}
+\label{sec:orgc3f05ef}
 
 Implements getx for multiverse, universe, store and collection.
 
 This means instead of ([accessor] object) you can use (getx object :[accessor]).
 
 \subsubsection{[generic function] status (shard) and (setf status)}
-\label{sec:org29caaf8}
+\label{sec:orgfd4c0fa}
 
 Used to monitor shards during loading.
 
 \begin{enumerate}
 \item (setf status) (new-status (shard shard))
-\label{sec:orgd78a32c}
+\label{sec:orge320acc}
 
 \item status ((shard shard))
-\label{sec:org84d153d}
+\label{sec:orgd5365ef}
 \end{enumerate}
 
 \subsubsection{[generic function] short-mac (shard)}
-\label{sec:org92cfec0}
+\label{sec:orgf999d9e}
 
 Return a short string containing a prefix of the MAC.
 
 \begin{enumerate}
 \item short-mac ((shard shard))
-\label{sec:org5321723}
+\label{sec:orgb37a180}
 \end{enumerate}
 
 \subsubsection{[function] match-shard (filename shards)}
-\label{sec:org5bd3a3b}
+\label{sec:orgad43359}
 
 Check filename against a list of shards to find the matching shard.
 
 \subsubsection{[generic function] get-shard (collection shard-mac \&key \&allow-other-keys)}
-\label{sec:orgb961e66}
+\label{sec:org7a06b92}
 
 Get the shard object by its mac. Shard lookups are done so much that
 there is no choice but to cache them in a hashtable, but that
@@ -2028,78 +922,78 @@ hashtable needs to be thread safe so using safe functions to get and
 set.
 
 \subsubsection{[generic function] make-shard (collection shard-mac))}
-\label{sec:org8602c2d}
+\label{sec:org1d1d1b9}
 make-shard ((collection indexed-collection-mixin) shard-mac)
 
 Creates an instance of a shard using the supplied mac.
 
 \subsubsection{[function] document-shard-mac (collection document)}
-\label{sec:org9d7c2bd}
+\label{sec:org78ef40c}
 
 Calculating a mac is expensive so caching shard value macs in a
 hashtable but that hashtable needs to be thread safe so using safe
 functions to get and set.
 
 \subsubsection{[generic function] query-multiverse (element fn)}
-\label{sec:orgfd9168a}
+\label{sec:org4d92c30}
 
 Queries the multiverse element passed for an element or elements.
 
 \begin{enumerate}
 \item query-multiverse ((collection collection) fn)
-\label{sec:orgb1f19d5}
+\label{sec:orgb466a1a}
 
 \item query-multiverse ((store store) fn)
-\label{sec:org9b7bf39}
+\label{sec:org390514d}
 
 \item query-multiverse ((universe universe) fn)
-\label{sec:org0f370ef}
+\label{sec:orge4b8e3d}
 
 \item query-multiverse ((multiverse multiverse) fn)
-\label{sec:org0cb654b}
+\label{sec:org5d35d93}
 \end{enumerate}
 
 \subsubsection{[generic function] get-multiverse-element (element-type parent name)}
-\label{sec:org8fde332}
+\label{sec:org1b8c249}
 
 Fetches an element of the type with matching name.
 
 \begin{enumerate}
 \item get-multiverse-element ((element-type (eql :universe)) (multiverse multiverse) name)
-\label{sec:org6c34042}
+\label{sec:org62400c5}
 
 \item get-multiverse-element ((element-type (eql :store)) (universe universe) name)
-\label{sec:org5a7e8c1}
+\label{sec:orgd1c8332}
 
 \item get-multiverse-element ((element-type (eql :collection)) (store store) name)
-\label{sec:org95db810}
+\label{sec:org201639f}
 \end{enumerate}
 
 \subsubsection{[generic function] persist (object \&key \&allow-other-keys)}
-\label{sec:orge1cdda0}
+\label{sec:orge101029}
 
 \begin{enumerate}
 \item persist ((multiverse multiverse) \&key \&allow-other-keys)
-\label{sec:org6b0ec84}
+\label{sec:org4efedc3}
 
 Persists a multiverse definition and not what it contains! Path to
 file is of this general format /multiverse/multiverse-name.universe.
 
 \item persist ((universe universe) \&key \&allow-other-keys)
-\label{sec:org75d68d2}
+\label{sec:org918fff8}
 
 Persists a universe definition and not what it contains! Path to file
 is of this general format
 /multiverse/universe-name/universe-name.universe.
 
 \item persist ((store store) \&key \&allow-other-keys)
-\label{sec:org2e9e535}
+\label{sec:orgf9f9dc9}
 
 Persists a store definition and not what it contains! Path to file is
 of this general format /universe/store-name/store-name.store.
 
 \item persist ((collection collection) \&key \&allow-other-keys)
-\label{sec:orge5a5119}
+\label{sec:org6b709ac}
 
 Persists a collection definition and the documents in a
 collection. Path to file for data is this general format
@@ -2107,47 +1001,47 @@ collection. Path to file for data is this general format
 \end{enumerate}
 
 \subsubsection{[function] persist-collection (collection)}
-\label{sec:org71f7a26}
+\label{sec:org72d8d06}
 
 Persists the documents in a collection in the order that they where
 added.
 
 \subsubsection{[generic function] add-multiverse-element (parent element \&key persist-p)}
-\label{sec:org2792aba}
+\label{sec:org9e43c95}
 
 Adds an instance of a multiverse element to the parent instance.
 
 \begin{enumerate}
 \item add-multiverse-element ((multiverse multiverse) (universe universe))
-\label{sec:org4938991}
+\label{sec:orgadb73c9}
 \item add-multiverse-element ((universe universe) (store store))
-\label{sec:org7109b4e}
+\label{sec:org90ec73e}
 \item add-multiverse-element ((store store) (collection collection))
-\label{sec:orgea844d2}
+\label{sec:org0f38d20}
 \end{enumerate}
 
 \subsubsection{[generic function] clear-collection (collection)}
-\label{sec:orga3e9999}
+\label{sec:orga70efe1}
 
 Clears documents indexes etc from collection.
 
 \subsubsection{[generic function] remove-multiverse-element (parent element)}
-\label{sec:orgd59719c}
+\label{sec:orgb085577}
 
 Removes an instance of a multiverse element from the parent instance.
 
 \begin{enumerate}
 \item remove-multiverse-element ((store store) (collection collection) \&key remove-data-from-disk-p)
-\label{sec:org6a17525}
+\label{sec:org5d6d6fd}
 \item remove-multiverse-element ((multiverse multiverse) (universe universe) \&key)
-\label{sec:org1bd6203}
+\label{sec:orgc65be5a}
 \item remove-multiverse-element ((universe universe) (store store) \&key)
-\label{sec:org9908900}
+\label{sec:org08f693a}
 \end{enumerate}
 
 
 \subsubsection{[generic function] load-data (collection \&key force-reload-p \&allow-other-keys)}
-\label{sec:org7a43de9}
+\label{sec:orgd506b59}
 
 Loads the data documents of a collection from file or files if
 sharding is used. If the data is already loaded it wont reload it.
@@ -2156,23 +1050,23 @@ shard-macs is a list of shard macs to indicate which shards should be
 used. If no shards are specified all shards will be loaded.
 
 \subsubsection{[generic function] ensure-location (object)}
-\label{sec:org0e888d0}
+\label{sec:org26fb6ee}
 
 Tries to find or build path to cl-naive-store files.
 
 \begin{enumerate}
 \item ensure-location ((object multiverse))
-\label{sec:orgc194c02}
+\label{sec:orgb9b4329}
 \item ensure-location ((object universe))
-\label{sec:org35405bc}
+\label{sec:org8ee120d}
 \item ensure-location ((object store))
-\label{sec:org0a68c63}
+\label{sec:org4f4b016}
 \item ensure-location ((object collection))
-\label{sec:org25c9c4d}
+\label{sec:orgb25f329}
 \end{enumerate}
 
 \subsubsection{[generic function] data-loaded-p (container \&key *allow-other-keys)}
-\label{sec:org0683ada}
+\label{sec:org34765e8}
 
 Checks if the data is loaded for the container, be it universe , store or collection.
 
@@ -2190,18 +1084,18 @@ if there is at least one document in the container.
 
 \begin{enumerate}
 \item data-loaded-p ((collection collection) \&key \&allow-other-keys)
-\label{sec:org64a7f69}
+\label{sec:orgf02fc28}
 
 \item data-loaded-p ((store store) \&key \&allow-other-keys)
-\label{sec:org5f20865}
+\label{sec:org43f0f5d}
 
 \item data-loaded-p ((universe universe) \&key \&allow-other-keys)
-\label{sec:org2f81ea9}
+\label{sec:org0b2e76f}
 \end{enumerate}
 
 
 \subsubsection{[generic function] document-values (document)}
-\label{sec:orgad4aff9}
+\label{sec:orgb02ee69}
 
 Returns a plist of document values.
 
@@ -2216,14 +1110,14 @@ considerably.
 
 \begin{enumerate}
 \item document-values (document)
-\label{sec:org9a31d8a}
+\label{sec:org0053509}
 
 \item document-values ((document document))
-\label{sec:org5d33297}
+\label{sec:org5120cf5}
 \end{enumerate}
 
 \subsubsection{[generic function] key-values (collection values \&key \&allow-other-keys)}
-\label{sec:orgbc22bef}
+\label{sec:org3483875}
 
 key-values ((collection collection) values \&key \&allow-other-keys)
 
@@ -2232,11 +1126,11 @@ the collection keys or uses hash.
 
 \begin{enumerate}
 \item key-values ((collection collection) values \&key \&allow-other-keys)
-\label{sec:org9801a02}
+\label{sec:org3975d00}
 \end{enumerate}
 
 \subsubsection{[generic function] existing-document (collection document \&key shard \&allow-other-keys)}
-\label{sec:org10fd1cb}
+\label{sec:orge8cd654}
 
 Finds any documents with the same key values. This could return the
 exact same document or a similar document.
@@ -2249,7 +1143,7 @@ This is an essential part of loading and persisting documents, take
 care when implementing.
 
 \subsubsection{[generic function] deleted-p (document)}
-\label{sec:org3e648b3}
+\label{sec:orgf3bdc1c}
 
 (setf deleted-p) (value document \&key \&allow-other-keys))
 
@@ -2260,7 +1154,7 @@ documents it does not remove a data document from the underlying file
 it just marks it as deleted.
 
 \subsubsection{[generic function] remove-document (collection document \&key shard \&allow-other-keys)}
-\label{sec:org910edb8}
+\label{sec:org97bd3e7}
 
 remove-document ((collection collection) document \&key shard \&allow-other-keys)
 
@@ -2271,11 +1165,11 @@ shard to remove the document from.
 
 \begin{enumerate}
 \item remove-document ((collection collection) document \&key shard \&allow-other-keys)
-\label{sec:orgcc1b905}
+\label{sec:org270413e}
 \end{enumerate}
 
 \subsubsection{[generic function] delete-document (collection document \&key shard \&allow-other-keys))}
-\label{sec:org2713fa0}
+\label{sec:org7189125}
 
 delete-document ((collection collection) document \&key shard \&allow-other-keys)
 
@@ -2287,11 +1181,11 @@ shard to remove the document from.
 
 \begin{enumerate}
 \item delete-document ((collection collection) document \&key shard \&allow-other-keys)
-\label{sec:orgbb4b7b5}
+\label{sec:org2a6238e}
 \end{enumerate}
 
 \subsubsection{[generic function] add-document (collection document \&key shard \&allow-other-keys)}
-\label{sec:org16deae6}
+\label{sec:org8a5b505}
 
 Adds a document to the collection, it DOES NOT PERSIST the change, if
 you want adding with persistance use persist-document or persist the
@@ -2322,7 +1216,7 @@ naive-impl:\%loading-shard\% must be used as the default.
 
 \begin{enumerate}
 \item add-document ((collection collection) document \&key (shard naive-impl:\%loading-shard\%) (handle-duplicates-p t) (replace-existing-p t) \&allow-other-keys)
-\label{sec:org9c239f5}
+\label{sec:org1feaff0}
 
 None of the following will have an effect if handle-duplicates = nil.
 
@@ -2338,7 +1232,7 @@ naive-impl:\%loading-shard\% is used.
 \end{enumerate}
 
 \subsubsection{[generic function] persist-document (collection document-form \&key shard \&allow-other-keys)}
-\label{sec:org8466fd8}
+\label{sec:org8733cd9}
 
 persist-document ((collection collection) document \&key shard (handle-duplicates-p t) delete-p \&allow-other-keys)
 
@@ -2350,11 +1244,11 @@ function from trying to establish which shard on its own.
 
 \begin{enumerate}
 \item persist-document ((collection collection) document \&key shard (handle-duplicates-p t) delete-p (file-name nil new-file-p) file-stream dont-add-to-collection-p \&allow-other-keys)
-\label{sec:orgef7da2a}
+\label{sec:orge0536a0}
 \end{enumerate}
 
 \subsubsection{[generic function] naive-reduce (collection \&key query function initial-value \&allow-other-keys)}
-\label{sec:orgfdc2789}
+\label{sec:org12ff36c}
 
 naive-reduce ((hash-table hash-table) \&key query function initial-value  \&allow-other-keys)
 
@@ -2373,22 +1267,22 @@ naive-reduce :before ((collection collection) \&key shards \&allow-other-keys)
 Lazy loading data.
 
 \subsubsection{[generic function] query-data (collection \&key query \&allow-other-keys)}
-\label{sec:org14e1c1a}
+\label{sec:orge361e2d}
 
 \begin{enumerate}
 \item query-data :before ((collection collection) \&key shards \&allow-other-keys)
-\label{sec:org80ec9dd}
+\label{sec:orgab1f2fe}
 
 Does lazy loading
 
 \item query-data ((collection collection) \&key query shards \&allow-other-keys)
-\label{sec:orgb2b0996}
+\label{sec:orgc078534}
 
 \item query-data ((store store) \&key collection-name query shards \&allow-other-keys)
-\label{sec:orgea7feb8}
+\label{sec:orgf6e51e8}
 
 \item query-data ((hash-table hash-table) \&key query \&allow-other-keys)
-\label{sec:org2049acc}
+\label{sec:org41c64db}
 
 Returns the data that satisfies the query.
 
@@ -2400,25 +1294,25 @@ Will only use shards supplied if supplied.
 \end{enumerate}
 
 \subsubsection{[generic function] query-document (collection \&key query \&allow-other-keys)}
-\label{sec:org918d775}
+\label{sec:org18dddd2}
 
 \begin{enumerate}
 \item query-document :before ((collection collection) \&key shards \&allow-other-keys)
-\label{sec:orge82e6cb}
+\label{sec:orgbd64d49}
 
 Does lazy loading.
 
 \item query-document ((collection collection) \&key query shards \&allow-other-keys)
-\label{sec:org42227c7}
+\label{sec:org7ad8e5b}
 
 \item query-document ((store store) \&key collection-name query \&allow-other-keys)
-\label{sec:org34a6141}
+\label{sec:org02e8c58}
 
 \item query-document ((list list) \&key query \&allow-other-keys)
-\label{sec:org4ae3135}
+\label{sec:org1ef930e}
 
 \item query-document ((hash-table hash-table) \&key query \&allow-other-keys)
-\label{sec:org83652dc}
+\label{sec:orge7f8ae0}
 
 Returns the first last document found, and any others that satisfies
 the query
@@ -2429,7 +1323,7 @@ Does lazy loading.
 \end{enumerate}
 
 \subsubsection{[generic function] sanitize-data-file (collection \&key \&allow-other-keys)}
-\label{sec:org620294b}
+\label{sec:org2c1c574}
 
 This removes all the deleted data documents and history from a
 collection. When a collection is loaded only the active documents are
@@ -2438,47 +1332,47 @@ new file and then replacing the old file.
 
 \begin{enumerate}
 \item sanitize-data-file ((collection collection) \&key \&allow-other-keys)
-\label{sec:orgadfc5ad}
+\label{sec:org8c93b75}
 \end{enumerate}
 
 \subsubsection{[generic function] sanitize-universe (universe \&key \&allow-other-keys)}
-\label{sec:org4769ec3}
+\label{sec:org120556e}
 
 Sanitize all collections of a universe. See sanitize-data-file for details.
 
 \subsection{Naive Indexed}
-\label{sec:org76f4a73}
+\label{sec:org2d8882d}
 
 \subsubsection{[global parameter] \textbf{do-partial-indexing}}
-\label{sec:org70a93ef}
+\label{sec:org0ea2994}
 
 When this is set to t (which is the default), indexing is done for the
 individual elements of the indexes as well.
 
 \subsubsection{[class] indexed-shard (shard)}
-\label{sec:org5dd8d4c}
+\label{sec:orgaca3f66}
 
 \begin{enumerate}
 \item\relax [accessor] hash-index
-\label{sec:orgc901d27}
+\label{sec:org0e8ed67}
 
 Hash table keyed on document uuid for quick retrieval of an document.
 
 \item\relax [accessor] key-value-index
-\label{sec:orgd619c6e}
+\label{sec:orgda61769}
 
 Hash table keyed on document key values for quick retrieval of an document.
 Used when doing key value equality comparisons.
 \end{enumerate}
 
 \subsubsection{[class] indexed-collection-mixin}
-\label{sec:org8337f66}
+\label{sec:org520e2a2}
 
 Collection extension to add very basic indexes.
 
 \begin{enumerate}
 \item\relax [accessor] indexes
-\label{sec:org971ca52}
+\label{sec:org06416bf}
 
 List of index combinations. Also indexes members partially if
 \textbf{do-partial-indexing} is t, for example '((:emp-no :surname gender))
@@ -2487,22 +1381,22 @@ is indexed as (:emp-no :surname :gender), (:emp-no :surname), :emp-no,
 \end{enumerate}
 
 \subsubsection{[class] indexed-collection}
-\label{sec:orgcf19d06}
+\label{sec:org7575d20}
 
 There for convenience. Specialisations are done on the mixin.
 
 \subsubsection{[method] make-shard ((collection indexed-collection-mixin) shard-mac)}
-\label{sec:org5ba78e5}
+\label{sec:org1b8c710}
 
 Extends make-shard to deal with indexed collections.
 
 \subsubsection{[method] get-shard ((collection indexed-collection-mixin) shard-mac \&key \&allow-other-keys)}
-\label{sec:org9233dfd}
+\label{sec:orgff71b50}
 
 Extends get-shard to deal with indexed collections.
 
 \subsubsection{[generic function] hash (document)}
-\label{sec:org2a8463a}
+\label{sec:orgeec551d}
 
 (setf hash) (value document)
 
@@ -2513,7 +1407,7 @@ to a collection. naive-store-indexed uses a UUID in its default
 implementation.
 
 \subsubsection{[generic function] index-lookup-values  (collection values \&key shards \&allow-other-keys)}
-\label{sec:org8cdb927}
+\label{sec:org9f5f007}
 
 index-lookup-values ((collection indexed-collection-mixin) values
 \&key (shards (and naive-impl:\%loading-shard\% (list naive-impl:\%loading-shard\%)))
@@ -2525,7 +1419,7 @@ document-types then the order of values matter.
 Will use shards to limit the lookup to specific shards.
 
 \subsubsection{[generic function] index-lookup-hash (collection hash \&key shards \&allow-other-keys)}
-\label{sec:org7021e92}
+\label{sec:org337b0ec}
 
 index-lookup-hash ((collection indexed-collection-mixin) hash
 (shards (and naive-impl:\%loading-shard\%	(list naive-impl:\%loading-shard\%)))
@@ -2535,11 +1429,11 @@ Looks up document in UUID hash index.
 
 \begin{enumerate}
 \item index-lookup-hash ((collection indexed-collection-mixin) hash \&key (shards (and naive-impl:\%loading-shard\% (list naive-impl:\%loading-shard\%))) \&allow-other-keys)
-\label{sec:org7d48180}
+\label{sec:org8e7f467}
 \end{enumerate}
 
 \subsubsection{[generic function] add-index (collection shard document position \&key \&allow-other-keys)}
-\label{sec:orgbd652dc}
+\label{sec:org5f67e03}
 
 Adds a document to two indexes. The first uses a UUID that will stay
 with the document for its life time. The UUID is used when persisting
@@ -2562,12 +1456,12 @@ add-document.
 
 \begin{enumerate}
 \item add-index ((collection indexed-collection-mixin) shard document position \&key key-values \&allow-other-keys)
-\label{sec:orgba4d437}
+\label{sec:org3483307}
 \end{enumerate}
 
 
 \subsubsection{[generic function] remove-index (collection shard document \&key \&allow-other-keys)}
-\label{sec:org18127a8}
+\label{sec:org1d67d7c}
 
 remove-index ((collection indexed-collection-mixin) shard document \&key \&allow-other-keys)
 
@@ -2576,10 +1470,10 @@ Removes a data document from the UUID and key value indexes.
 A shard must be supplied.
 
 \subsubsection{[method] existing-document ((collection indexed-collection-mixin) document \&key(shard naive-impl:\%loading-shard\%)  key-values \&allow-other-keys)}
-\label{sec:org6ae4b34}
+\label{sec:orgf7eb816}
 
 \subsubsection{[method] add-document ((collection indexed-collection-mixin) document \&key (shard naive-impl:\%loading-shard\%) (handle-duplicates-p t) (replace-existing-p t) (update-index-p t) \&allow-other-keys)}
-\label{sec:orgdc6b083}
+\label{sec:org825a84e}
 
 Duplicates are not allowed for indexed collections!
 
@@ -2598,22 +1492,22 @@ really $\backslash$"new$\backslash$" to the collection the indexes will be updat
 case.
 
 \subsubsection{[method] naive-reduce ((collection indexed-collection-mixin) \&key index-values query function initial-value)}
-\label{sec:org0c0f205}
+\label{sec:orgf69c101}
 
 Extends naive-reduce to be able to take advantage of indexing. Reduce
 is done on values retrieved by the supplier index.
 
 \subsubsection{[method] query-data ((collection indexed-collection-mixin) \&key index-values query \&allow-other-keys)}
-\label{sec:org766e93b}
+\label{sec:orgbaef21e}
 
 Extends query-data to be able to take advantage of indexing. Query is
 done on values retrieved by the supplier index.
 
 \subsection{Document Types}
-\label{sec:orge51a00c}
+\label{sec:org87cb44e}
 
 \subsubsection{[class] element}
-\label{sec:org61c18d9}
+\label{sec:org84b1e1a}
 
 A definition of an element of a document.
 
@@ -2627,23 +1521,23 @@ or a mix.
 
 \begin{enumerate}
 \item\relax [accessor] name
-\label{sec:org527212b}
+\label{sec:orge4bf6ad}
 
 Name of the element. This should be a KEYWORD if you want data
 portability and some internals might expect a keyword.
 
 \item\relax [accessor] document-type
-\label{sec:org6eb0d74}
+\label{sec:org05f153c}
 
 The document-type that this element belongs to.
 
 \item\relax [accessor] concrete-type
-\label{sec:orgdd55121}
+\label{sec:org1034ef2}
 
 A user defined "thing" that defines the type specifics of an element.
 
 \item\relax [accessor] key-p
-\label{sec:orga0d8568}
+\label{sec:org3ee74c1}
 
 Indicates that the element is part of the primary key.
 
@@ -2652,12 +1546,12 @@ new document is persisted naive-store-documents checks for documents
 with the same index value and then updates the existing document.
 
 \item\relax [accessor] attributes
-\label{sec:org0c1b372}
+\label{sec:org00cd77d}
 A property list of additional element attributes.
 \end{enumerate}
 
 \subsubsection{[class] document-type}
-\label{sec:orgd99b095}
+\label{sec:org9158248}
 
 A class that can be use to represent a complex document.
 
@@ -2678,22 +1572,22 @@ definitions to get a feel for the intended use.
 
 \begin{enumerate}
 \item\relax [accessor] store
-\label{sec:org148cc65}
+\label{sec:org8ccbb92}
 
 The store that this document-type belongs to.
 
 \item\relax [accessor] name
-\label{sec:orgf0a9968}
+\label{sec:orgebf54e4}
 
 String representing a document-type name.
 
 \item\relax [accessor] location
-\label{sec:org85ebe6f}
+\label{sec:orgff2ec6d}
 
 The directory path to where files for this collection are stored.
 
 \item\relax [accessor] element-class
-\label{sec:orgd8e4230}
+\label{sec:org4da890a}
 
 The class that should be used to make element documents.
 NOTES:
@@ -2703,163 +1597,163 @@ can be dynamicly created when definition type definitions are read
 from file. See naive-store-documents for usage examples.
 
 \item\relax [accessor] label
-\label{sec:orgfacaca6}
+\label{sec:orgbc4d06a}
 
 Human readable/formated short description.
 
 \item\relax [accessor] elements
-\label{sec:org3a0e0db}
+\label{sec:orgcbec5f0}
 
 Field definitions that represents a data unit.
 \end{enumerate}
 
 \subsubsection{[generic function] get-attribute (element attribute)}
-\label{sec:org5bb9aec}
+\label{sec:org15c3594}
 
 \subsubsection{[generic function] get-element (document-type element)}
-\label{sec:orgf130285}
+\label{sec:org3e6528b}
 
 
 \subsubsection{[class] document-type-collection-mixin}
-\label{sec:org44f6ef0}
+\label{sec:org6c21367}
 
 Collection extention to make collection of a specific document-type.
 
 \begin{enumerate}
 \item\relax [accessor] document-type
-\label{sec:orgdcf7acb}
+\label{sec:org7c28956}
 
 The document-type that this collection contains documents of.
 \end{enumerate}
 
 
 \subsubsection{[class] document-type-store-mixin}
-\label{sec:org5483b9d}
+\label{sec:org3e16b3b}
 
 \begin{enumerate}
 \item\relax [accessor] document-type-class
-\label{sec:orga1f39d4}
+\label{sec:org558477f}
 
 The class that should be used to make document-type documents.
 IMPL NOTES: To deal with customization of document-type.
 
 \item\relax [accessor] document-types
-\label{sec:org9306a46}
+\label{sec:org887d81a}
 
 List of document-types represented by this store's collections.
 \end{enumerate}
 
 \subsubsection{[method] cl-naive-store.naive-core:query-multiverse ((element element) fn)}
-\label{sec:org3c68980}
+\label{sec:org77a9853}
 
 \subsubsection{[method] cl-naive-store.naive-core:query-multiverse ((collection document-type-collection-mixin) fn)}
-\label{sec:orgbc388fa}
+\label{sec:org1398f54}
 
 \subsubsection{[method] cl-naive-store.naive-core:query-multiverse ((document-type document-type) fn)}
-\label{sec:org9e6e0fe}
+\label{sec:org1065c82}
 
 \subsubsection{[method] cl-naive-store.naive-core:query-multiverse ((store document-type-store-mixin) fn)}
-\label{sec:orgd1ca511}
+\label{sec:org59b760c}
 
 \subsubsection{[generic function] get-attribute (element attribute))}
-\label{sec:org8c22b8c}
+\label{sec:orgbd5bfdf}
 
 Gets an attribute of an element.
 
 \begin{enumerate}
 \item get-attribute ((element element) attribute)
-\label{sec:orge01a8f2}
+\label{sec:org9411a05}
 \end{enumerate}
 
 \subsubsection{[generic function] get-element (document-type element)}
-\label{sec:org64ee0e7}
+\label{sec:org4c4b013}
 
 Gets an element from a document type.
 
 \subsubsection{[method] cl-naive-store.naive-core:persist-definition ((document-type document-type))}
-\label{sec:orgc8a70b7}
+\label{sec:org6a57193}
 
 \subsubsection{[method] cl-naive-store.naive-core:persist ((document-type document-type) \&key \&allow-other-keys)}
-\label{sec:org2ccd870}
+\label{sec:org5eaa272}
 
 \subsubsection{[method] cl-naive-store.naive-core:persist ((store document-type-store-mixin) \&key definitions-only-p (children-p t) \&allow-other-keys)}
-\label{sec:org44ba678}
+\label{sec:org141eb71}
 
 \subsubsection{[method] cl-naive-store.naive-core:get-multiverse-element ((element-type (eql :element)) (document-type document-type) name)}
-\label{sec:org212391f}
+\label{sec:org0853e44}
 
 \subsubsection{[method] cl-naive-store.naive-core:get-multiverse-element ((element-type (eql :document-type)) (store document-type-store-mixin) name)}
-\label{sec:orgbb2fa24}
+\label{sec:orgf2df136}
 
 \subsubsection{[method] cl-naive-store.naive-core:get-multiverse-element ((element-type (eql :document-type)) (store store) name)}
-\label{sec:org47d887a}
+\label{sec:org89a6ad9}
 
 \subsubsection{[method] cl-naive-store.naive-core:add-multiverse-element ((document-type document-type) (element element))}
-\label{sec:org758f48a}
+\label{sec:orgc02f678}
 
 \subsubsection{[method] cl-naive-store.naive-core:add-multiverse-element((store document-type-store-mixin) (collection collection))}
-\label{sec:org3d03425}
+\label{sec:org6ab0b04}
 
 \subsubsection{[method] cl-naive-store.naive-core:add-multiverse-element ((store document-type-store-mixin) (document-type document-type))}
-\label{sec:orge064d7c}
+\label{sec:org8b7eb51}
 
 \subsubsection{[method] cl-naive-store.naive-core:add-multiverse-element :after ((store document-type-store-mixin) (collection document-type-collection-mixin))}
-\label{sec:org3d5cfce}
+\label{sec:org886ae2f}
 
 \subsubsection{[method] cl-naive-store.naive-core:instance-from-definition ((class (eql 'element)) definition)}
-\label{sec:org6141ec1}
+\label{sec:orgd4e25f0}
 
 \subsubsection{[method] cl-naive-store.naive-core:instance-from-definition ((class (eql 'document-type)) definition)}
-\label{sec:org4863d20}
+\label{sec:org50c1b02}
 
 \subsubsection{[method] cl-naive-store.naive-core:load-from-definition ((document-type document-type) (definition-type (eql :element)) definition \&key class with-children-p with-data-p)}
-\label{sec:org8422b9f}
+\label{sec:orgfd39f3d}
 
 \subsubsection{[method] cl-naive-store.naive-core:load-from-definition ((store document-type-store-mixin) (definition-type (eql :document-type)) definition \&key class with-children-p with-data-p)}
-\label{sec:org9bd16d7}
+\label{sec:org8898267}
 
 \subsubsection{[method] cl-naive-store.naive-core:instance-from-definition ((class (eql 'document-type-store-mixin)) definition)}
-\label{sec:org31cde7d}
+\label{sec:org953735e}
 
 \subsubsection{[method] cl-naive-store.naive-core:ensure-location ((object document-type))}
-\label{sec:org7bfded2}
+\label{sec:org8c6b9fa}
 
 \subsubsection{[method] cl-naive-store.naive-core:load-from-definition-file (parent (definition-type (eql :element)) name \&key class with-children-p with-data-p)}
-\label{sec:org57aad9f}
+\label{sec:orgf01e087}
 
 \subsubsection{[method] cl-naive-store.naive-core:load-from-definition ((store document-type-store-mixin) (definition-type (eql :collection)) definition \&key class with-children-p with-data-p)}
-\label{sec:orgf8fa41a}
+\label{sec:orgd38a23d}
 
 \subsubsection{[method] persist-definition ((collection document-type-collection-mixin))}
-\label{sec:orgd21477f}
+\label{sec:org167ac7f}
 
 \subsubsection{[method] key-values ((collection document-type-collection-mixin) document \&key \&allow-other-keys)}
-\label{sec:orge82df63}
+\label{sec:orga4072df}
 
 \subsection{Naive Documents}
-\label{sec:org7f5d505}
+\label{sec:orgb45735e}
 
 \subsubsection{[class] document-collection (indexed-collection-mixin document-type-collection-mixin collection)}
-\label{sec:orgfd33920}
+\label{sec:org464bd74}
 
 Document collection class used to specialize on for cl-naive-store.naive-documents.
 
 \subsubsection{[class] document-store (document-type-store-mixin store)}
-\label{sec:orgc458f9b}
+\label{sec:org331ba91}
 
 cl-naive-store.naive-documents specialization of store.
 
 \subsubsection{[method] cl-naive-store.naive-core:instance-from-definition ((class (eql 'document-collection)) definition)}
-\label{sec:orgba84589}
+\label{sec:orge42f084}
 
 \subsubsection{[method] cl-naive-store.naive-core:load-from-definition ((store cl-naive-store.naive-documents:document-store) (definition-type (eql :collection)) definition \&key class with-children-p with-data-p)}
-\label{sec:orga39ede8}
+\label{sec:orga0d333a}
 
 \subsubsection{[method] cl-naive-store.naive-core:instance-from-definition ((class (eql 'document-store)) definition)}
-\label{sec:org20693a8}
+\label{sec:org177eeea}
 
 \subsubsection{[struct] document}
-\label{sec:org29eb887}
+\label{sec:org2482936}
 A basic struct that represents a document object. A struct is used
 because there is meta data that we want to add to the actual document
 values and there is additional functionality like being able to know
@@ -2879,28 +1773,28 @@ what has changed in the values during updates.
 \end{itemize}
 
 \subsubsection{[generic function] hash ((document document))}
-\label{sec:org33e75df}
+\label{sec:org9000e86}
 
 \subsubsection{[generic function] key-values ((collection document-collection) document \&key \&allow-other-keys)}
-\label{sec:orgd08b6fb}
+\label{sec:org24e0e20}
 
 \subsubsection{[generic function] document-values ((document document))}
-\label{sec:orged54568}
+\label{sec:org7daa9a6}
 
 \subsubsection{[generic function] existing-document ((collection document-collection) document \&key key-values \&allow-other-keys)}
-\label{sec:orgc0aaf55}
+\label{sec:orgbd3925b}
 
 \subsubsection{[generic function] persist-document ((collection document-collection) document \&key allow-key-change-p delete-p \&allow-other-keys)}
-\label{sec:org4a98a89}
+\label{sec:org58049fc}
 
 persist-document for document-collection is lenient in what it takes
 as a document, it can be of type document or a plist.
 
 \subsubsection{[generic function] persist-document index-values ((collection document-collection) (values document) \&key \&allow-other-keys)}
-\label{sec:org145fede}
+\label{sec:org0a72ada}
 
 \subsubsection{[generic function] getx ((document document) accessor \&key \&allow-other-keys)}
-\label{sec:orgab4fc6e}
+\label{sec:orgf75338a}
 
 (setf getx) (value (document document) accessor  \&key (change-control-p t) \&allow-other-keys)
 
@@ -2930,13 +1824,12 @@ actual data members.
 store and universe using getx.
 
 \subsubsection{[generic function] digx ((place document) \&rest indicators)}
-\label{sec:org3a15675}
+\label{sec:org8d228dc}
 
 (setf digx) (value (place document) \&rest indicators)
 
-\href{home.org}{Home} :noexport: \href{examples.org}{Previous} :noexport: \href{implementor-api.org}{Next} :noexport:
 \section{Implementors API}
-\label{sec:orgc804869}
+\label{sec:orgaf6ddd2}
 
 cl-naive-store was designed and written to be completely customisable,
 but this introduces a whole "class" of api functions that should not
@@ -2948,46 +1841,46 @@ This api in condjunction with the User Api can be used
 to customise cl-naive-store.
 
 \subsection{Naive Core}
-\label{sec:org6a6722e}
+\label{sec:org67089cd}
 
 \subsubsection{[function] map-append (fn \&rest lists)}
-\label{sec:org508db64}
+\label{sec:orgc1b2361}
 
 Non distructive version of mapcan.
 
 \subsubsection{[function] maphash-collect (fn hash-table \&key append-p)}
-\label{sec:org37effb9}
+\label{sec:org8f7397e}
 
 Collects the results of a maphash. Pushes to a list by default, use
 append-p to append instead. NIL results are not collected.
 
 \subsubsection{[function] frmt (control-string \&rest args)}
-\label{sec:org1c42178}
+\label{sec:orgf5a523e}
 
 Short hand for (format nil ..).
 
 \subsubsection{[function] trim-whitespacee (string)}
-\label{sec:org98488bd}
+\label{sec:org373f870}
 
 Removes white spaces from a string.
 
 \subsubsection{[function] empty-p (value)}
-\label{sec:orgbc8fc5f}
+\label{sec:org023c1f8}
 
 Checks if value is null/nil or an empty string..
 
 \subsubsection{[function] plist-to-values (values)}
-\label{sec:org1c177f8}
+\label{sec:org63c9e91}
 
 Returns the values of a plist.
 
 \subsubsection{[function] plist-to-pairs (values)}
-\label{sec:org329912b}
+\label{sec:org3fe0559}
 
 Returns a list of key value pairs of a plist.
 
 \subsubsection{[generic function] make-mac (value \&key (key \textbf{mac-key}))}
-\label{sec:org1b10707}
+\label{sec:orgbebc385}
 
 Produces a mac from the value. Mac's should differ for different values.
 
@@ -2996,26 +1889,26 @@ NOTES:
 This is used to create shard filenames.
 
 \subsubsection{[global parameter] \%loading-shard\%}
-\label{sec:org8c6d072}
+\label{sec:orgba6f18c}
 
 Used during the loading of an individual shard. That way no heavy
 recursive locking has to be done.
 
 \subsubsection{[generic function] gethash-safe (key hash \&key lock recursive-p)}
-\label{sec:orgf6acec4}
+\label{sec:org2806953}
 (setf gethash-safe) (new-value key hash \&key lock recursive-p)
 
 Puts lock around hash get access for those cl implementations that
 dont have a thread safe hashtable.
 
 \subsubsection{[generic function] remhash-safe (key hash \&key lock recursive-p)}
-\label{sec:orge0ba26a}
+\label{sec:org4c807f7}
 
 Puts lock around hash remove access for those cl implementations that
 dont have a thread safe hashtable.
 
 \subsubsection{[global parameter] \textbf{disable-parallel-p}}
-\label{sec:org80d7f2b}
+\label{sec:orgbfd2372}
 
 Depending on the data and how naive-store is used switching of
 parallel processing could produce better performance. This does not
@@ -3030,7 +1923,7 @@ parallel processing or make sure that your customization obeys
 \textbf{disable-parallel-p} where possible.
 
 \subsubsection{[function] initialize ()}
-\label{sec:orge565565}
+\label{sec:org037665d}
 
 We cannot fork threads while compilinging systems because this
 prevents saving a lisp image!!!  Instead, we must defer forking
@@ -3038,7 +1931,7 @@ threads to when we launch the executable image, and initialize the
 program.
 
 \subsubsection{[macro] do-sequence ((element-var sequence \&key index-var (parallel-p nil)) \&body body)}
-\label{sec:org4508448}
+\label{sec:orgff76d4c}
 
 Iterates over the sequence applying body. In the body you can use the
 element-var and/or the index-var if supplied.
@@ -3068,7 +1961,7 @@ sequence is large (> 1000) or the body is excecution heavy.
 \noindent\rule{\textwidth}{0.5pt}
 
 \subsubsection{[macro] with-file-lock ((path \&key interval) \&body body)}
-\label{sec:orgf0a6dfb}
+\label{sec:org2cc4dcb}
 
 Get an exclusive lock on a file. If lock cannot be obtained, keep
 trying after waiting a while.
@@ -3076,7 +1969,7 @@ trying after waiting a while.
 Source: Giovanni Gigante \url{https://sourceforge.net/p/cl-cookbook/patches/8/}
 
 \subsubsection{[macro] file-to-string (file)}
-\label{sec:orgfdfb004}
+\label{sec:org189c8ac}
 
 Reads a file and returns the contents as a string.
 
@@ -3085,44 +1978,44 @@ you dont have to worry about supplying a string that can be written
 to.
 
 \subsubsection{[macro] with-open-file-lock ((stream file \&key (direction :output) (if-exists :append) (if-does-not-exist :create)) \&body body)}
-\label{sec:orgb2add40}
+\label{sec:org097e51f}
 
 Opens a file with a file lock and writes to the file.
 
 \subsubsection{[function] write-to-file (file object \&key (if-exists :append))}
-\label{sec:org5df153b}
+\label{sec:orgc78fb3a}
 
 Writes to file using with-open-file-lock.
 
 \subsubsection{[function] write-list-items-to-file (file list \&key (if-exists :append))}
-\label{sec:orgd1b028d}
+\label{sec:org8ea8af0}
 
 Does not wrap items in ().
 
 \subsubsection{[function] write-to-file (file object \&key (if-exists :append))}
-\label{sec:org8af8b68}
+\label{sec:org7562f89}
 
 Writes to file using with-open-file-lock.
 
 \subsubsection{[function] write-to-stream (stream object)}
-\label{sec:orgc499f9c}
+\label{sec:org01dd000}
 
 Writes to stream with fresh-lines.
 
 \subsubsection{[function] sexp-from-file (pathname)}
-\label{sec:org68e2a68}
+\label{sec:org1a807e1}
 (setf sexp-from-file) (new-sexp pathname)
 
 Read sexp from file.
 
 \noindent\rule{\textwidth}{0.5pt}
 \subsubsection{[global parameter] \textbf{break-on-error-log}}
-\label{sec:orge26bd00}
+\label{sec:org33bf28c}
 
 Causes a break when logging errors of type :error and :warning.
 
 \subsubsection{[function] write-log (location type message)}
-\label{sec:org4a08d4f}
+\label{sec:orge4236ef}
 
 Writes errors to location.
 
@@ -3137,12 +2030,12 @@ Note:
 Not writing stuff to .log files because that is what persist uses!!!.
 
 \subsubsection{[global parameter] \textbf{debug-log-p}}
-\label{sec:orgc3ed7f1}
+\label{sec:orgc4c1274}
 
 Switches debug logging or off for debug-log
 
 \subsubsection{[function] debug-log (format-control-string \&rest arguments-and-keys)}
-\label{sec:org802c7e5}
+\label{sec:org9ac58c8}
 
 Used for internal debug-logging.
 
@@ -3151,13 +2044,13 @@ arguments-and-keys may end with [:file-p f] [:path p].
 \noindent\rule{\textwidth}{0.5pt}
 
 \subsubsection{[generic function] type-of-doc-element (collection sexp)}
-\label{sec:orgc21cac5}
+\label{sec:orgfd93b06}
 
 Reports if the sexp represents a special form.
 
 \begin{enumerate}
 \item\relax [generic function] persist-form (collection shard element element-type \&key \&allow-other-keys)
-\label{sec:orgad0a01e}
+\label{sec:orgbea3e7c}
 
 persist-form (collection shard document (element-type (eql :document)) \&key \&allow-other-keys)
 persist-form (collection shard blob (element-type (eql :blob)) \&key \&allow-other-keys)
@@ -3174,12 +2067,12 @@ type-of-doc-element. If you specialize element you need to supply your
 own implementation of type-of-doc-element as well.
 
 \item\relax [generic function] persist-parse (collection shard sexp doc \&key \&allow-other-keys)
-\label{sec:orga5f4caf}
+\label{sec:org83bc6d1}
 
 Transcribes document to list form for persistence.
 
 \item\relax [generic function] persist-delete-document (collection shard document file \&key \&allow-other-keys))
-\label{sec:orgb946f83}
+\label{sec:org0805ef8}
 
 Marks document as deleted.
 
@@ -3187,7 +2080,7 @@ Marks document as deleted.
 \end{enumerate}
 
 \subsubsection{[function] load-document-reference-collection (universe document-ref)}
-\label{sec:org45bae15}
+\label{sec:org641c567}
 
 When documents are persisted to file any document values that are
 referencing an document in a different collection is first sanitized
@@ -3199,17 +2092,17 @@ converted to documents but for that to happen the collection
 containing the referenced documents need to be loaded first.
 
 \subsubsection{[generic function] find-document-by-hash (collection hash)}
-\label{sec:org7e04792}
+\label{sec:org95fccde}
 
 Finds the document that matches the hash.
 
 \subsubsection{[generic function] type-of-sexp (collection sexp)}
-\label{sec:org775be3f}
+\label{sec:org1fdf17c}
 
 Reports if the sexp represents a special form, like a blob or reference.
 
 \subsubsection{[generic function] compose-special (collection shard sexp type}
-\label{sec:org9a6ec67}
+\label{sec:org2084977}
 \&key handle-duplicates-p \&allow-other-keys)
 
 compose-special (collection sexp (type (eql :document)) \&key (handle-duplicates-p t) \&allow-other-keys)
@@ -3222,12 +2115,12 @@ Does special processing to compose a specific type of document or element.
 handle-duplicates-p is often toggled off to speed up loading of data.
 
 \subsubsection{[generic function] compose-parse (collection sexp doc)}
-\label{sec:org185aa4c}
+\label{sec:org1de03f6}
 
 Processes document form for compose-document.
 
 \subsubsection{[generic function] compose-document (collection shard document-form \&key (handle-duplicates-p t)  \&allow-other-keys)}
-\label{sec:org0341924}
+\label{sec:org00ac567}
 
 The loading of documents happens in a two step process. First
 documents are read with (\textbf{read-eval} nil). Then the sexp representing
@@ -3238,18 +2131,18 @@ representation.
 
 
 \subsection{Naive Indexed}
-\label{sec:org758c177}
+\label{sec:org194d953}
 
 \subsubsection{[generic function] cl-murmurhash:murmurhash ((s uuid:uuid) \&key (seed cl-murmurhash:*default-seed*) mix-only)}
-\label{sec:orgc172dc2}
+\label{sec:org11ba152}
 
 \subsubsection{[generic function] index-values (collection values \&key \&allow-other-keys)}
-\label{sec:orgf934af1}
+\label{sec:orgf6f847c}
 
 Returns a set of index values from the values of a data document.
 
 \subsubsection{[generic function] push-value-index (collection index-values document \&key shard \&allow-other-keys)}
-\label{sec:orgeffcc50}
+\label{sec:orgba07df2}
 
 Uses lists within the key-value-index hash-table to store/group
 documents that match a key value combination.
@@ -3259,98 +2152,56 @@ by the index lookup. The speed more than makes up for the occasional
 duplicate for now!
 
 \subsubsection{[generic function] remove-value-index (collection shad index-values document \&key \&allow-other-keys)}
-\label{sec:org994f80c}
+\label{sec:org3146b78}
 
 Removes a value index.
 
 \subsection{Documents}
-\label{sec:org21e3f6d}
+\label{sec:org3c5ae6c}
 
 \subsubsection{[generic function] naive-impl:type-of-doc-element ((collection document-collection) element)}
-\label{sec:org6e2d387}
+\label{sec:org2ef78d5}
 
 \subsubsection{[generic function] naive-impl:persist-form ((collection document-collection) blob (element-type (eql :blob))			 \&key root parent \&allow-other-keys)}
-\label{sec:org0a7dd2f}
+\label{sec:org08574df}
 
 \subsubsection{[generic function] naive-impl:persist-form ((collection document-collection) document (element-type (eql :reference-form)) \&key root parent \&allow-other-keys)}
-\label{sec:org6fb5619}
+\label{sec:org2fa3962}
 
 \subsubsection{[generic function] naive-impl:persist-form ((collection document-collection) document (element-type (eql :child-document)) \&key root parent \&allow-other-keys)}
-\label{sec:orgf8f4835}
+\label{sec:org171035b}
 
 \subsubsection{[generic function] naive-impl:persist-form ((collection document-collection) document (element-type (eql :document))}
-\label{sec:orgb68b3e8}
+\label{sec:org98ec91d}
 
 \subsubsection{[generic function] naive-impl:persist-parse ((collection document-collection) element doc \&key root parent \&allow-other-keys)}
-\label{sec:org064234e}
+\label{sec:org7e970e2}
 
 \noindent\rule{\textwidth}{0.5pt}
 
 \subsubsection{[function] document-values-p (list)}
-\label{sec:org1fa523f}
+\label{sec:orgd003147}
 
 Checks if plist contains :values keyword which would indicate the
 plist represents an document.
 
 \subsubsection{[generic function] naive-impl:type-of-sexp ((collection document-collection) document-form \&key handle-duplicates-p \&allow-other-keys)}
-\label{sec:org9da181a}
+\label{sec:org34076d3}
 
 \subsubsection{[generic function] naive-impl:compose-special ((collection document-collection) shard sexp (type (eql :document)) \&key handle-duplicates-p \&allow-other-keys)}
-\label{sec:org7870da7}
+\label{sec:orgb86fbc7}
 
 \subsubsection{[generic function] naive-impl:compose-special ((collection document-collection) shard sexp (type (eql :document)) \&key handle-duplicates-p \&allow-other-keys)}
-\label{sec:orgeb7f530}
+\label{sec:org6b0cbfa}
 
 \subsubsection{[generic function] naive-impl:compose-special ((collection document-collection) shard sexp (type (eql :blob)) \&key handle-duplicates-p \&allow-other-keys)}
-\label{sec:orgac8200a}
+\label{sec:org07dec3e}
 
 \subsubsection{[generic function] naive-impl:compose-document ((collection document-collection) shard document-form \&key handle-duplicates-p \&allow-other-keys)}
-\label{sec:org66c1361}
+\label{sec:org133eaeb}
 
-\href{home.org}{Home} :noexport: \href{user-api.org}{Previous} :noexport: \href{utils.org}{Next} :noexport:
-\section{Utils}
-\label{sec:org4cc2be9}
-
-Some utilities. More to come in the future.
-
-\subsection{[function] naive-document-to-sexp (document \&key (versions-p t))}
-\label{sec:org113e4e7}
-
-Converts a naive-documents:document to a sexp.
-
-versions-p includes or excludes old versions of the document.
-
-\subsection{[function] naive-documents-to-sexps (documents)}
-\label{sec:org66ef9aa}
-
-Used to prepare docs to be sent over HTTP or shared with some other
-system that does not have access to cl-naive-store.
-
-\subsection{[function] sexp-to-naive-document (multiverse sexp)}
-\label{sec:org30e8622}
-
-This function converts a sexp to a naive-documents:document. What it does not do is
-sync the info with any existing documents in the collection. You will
-have to do a perstist-document (or add-document if not a persisted
-collection) on this document to sync with any existing documents in
-the collection.
-
-If you intend to use add-document just note that it does not sync any
-child documents only persist-document does that as well. So if you are
-not carefull you can end up with more than one document with the same
-UUID and different values for child documents.
-
-The function does check for existing-documents to at least make sure
-that the same UUID is used and any child documents that do not have UUID's
-already are supplied with UUIDs. Child documents that are reference
-documents are also checked for consitent UUID.
-
-The conversion is done on the assumption you have not trashed the document
-beyond repair when you possibly hacked the sexp.
-
-\href{home.org}{Home} :noexport: \href{implementor-api.org}{Previous} :noexport: \href{tests.org}{Next} :noexport:
 \section{Tests}
-\label{sec:org1534a29}
+\label{sec:orgb557e41}
 
 \texttt{cl-naive-store.tests.asd} loads tests
 
@@ -3378,9 +2229,8 @@ To run a specific test, specify the test suite.
 (cl-naive-tests:run :suites :test-sharding-indexed)
 \end{verbatim}
 
-\href{home.org}{Home} :noexport: \href{utils.org}{Previous} :noexport: \href{rough-bench-marks.org}{Next} :noexport:
 \section{Bench Marks}
-\label{sec:orgc8d88c2}
+\label{sec:org482e698}
 
 You will have to load the speed test file manually to run the tests.
 
@@ -3422,6 +2272,4 @@ fast, simple queries complete in fractions of a second.
 (cl-naive-tests:run :suites :test-speed-sharding)
 
 \end{verbatim}
-
-\href{home.org}{Home} :noexport: \href{tests.org}{Previous} :noexport:
 \end{document}

@@ -89,4 +89,6 @@ collection is cleared and only then queried.
 
 You can explicitly load the collection yourself by using =(load-data collection)=.
 
-[[file:home.org][Home]] :noexport: [[file:basic-example.org][Previous]] :noexport: [[file:indexed-example.org][Next]] :noexport:
+* [[file:home.org][Home]] :noexport:                                                 
+* [[file:basic-example.org][Previous]] :noexport:
+* [[file:indexed-example.org][Next]]  :noexport:

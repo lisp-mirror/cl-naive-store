@@ -18,9 +18,7 @@ what is possible.
 =cl-naive-store= can do a lot but you as the user must decide how much
 of the store's functionality you want to use for your own project.
 
-#+begin_comment
 See [[file:overview.org][Choosing Layers of Functionality]] for more information.
-#+end_comment
 
 Functionality was broken down into these packages:
 
@@ -89,4 +87,4 @@ about performance of the different layers.
 [[file:rough-bench-marks.org][See Rough Bench Marks]]
 
 
-[[file:releases.org][Next]] :noexport:
+* [[file:releases.org][Next]]                                                             :noexport:

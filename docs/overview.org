@@ -267,9 +267,7 @@ code steps.
 
 You can use =definitions= to define the full multiverse schema.
 
-#+begin_comment
 For an in depth discussion look at [[file:definitions.org][Definitions]].
-#+end_comment
 
 ** Naive Documents
 
@@ -307,4 +305,7 @@ correct file type is used.
 
 There are no tests for blobs yet so use at own risk!
 
-[[file:home.org][Home]] :noexport: [[file:releases.org][Previous]] :noexport: [[file:examples.org][Next]] :noexport:
+* [[file:home.org][Home]] :noexport:                                                
+* [[file:releases.org][Previous]] :noexport:
+* [[file:examples.org][Next]] :noexport:
+

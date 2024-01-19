@@ -9,7 +9,8 @@ $ cat .gitignore
 *#
 *.#
 .#*
+*.tex
 
 # Can also ignore all directories and files in a directory.
-#xdb2/
+tests/artifacts/
 

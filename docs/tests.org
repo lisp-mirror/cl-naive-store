@@ -26,4 +26,6 @@ To run a specific test, specify the test suite.
 (cl-naive-tests:run :suites :test-sharding-indexed)
 #+END_SRC
 
-[[file:home.org][Home]] :noexport: [[file:utils.org][Previous]] :noexport: [[file:rough-bench-marks.org][Next]] :noexport:
+* [[file:home.org][Home]] :noexport:                                                 
+* [[file:utils.org][Previous]] :noexport:
+* [[file:rough-bench-marks.org][Next]]  :noexport:

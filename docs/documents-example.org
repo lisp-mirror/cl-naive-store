@@ -362,4 +362,6 @@ the document is persisted or abandoned.
 Take note that **getx** will return "Potgieter" now even if the
 document has not been persisted yet.
 
-[[file:home.org][Home]] :noexport: [[file:indexed-example.org][Previous]] :noexport: [[file:sharding-example.org][Next]] :noexport:
+* [[file:home.org][Home]] :noexport:                                                 
+* [[file:indexed-example.org][Previous]] :noexport:
+* [[file:sharding-example.org][Next]] :noexport:

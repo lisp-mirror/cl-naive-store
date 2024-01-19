@@ -34,4 +34,6 @@ documents are also checked for consitent UUID.
 The conversion is done on the assumption you have not trashed the document
 beyond repair when you possibly hacked the sexp.
 
-[[file:home.org][Home]] :noexport: [[file:implementor-api.org][Previous]] :noexport: [[file:tests.org][Next]] :noexport:
+* [[file:home.org][Home]] :noexport:                                                 
+* [[file:implementor-api.org][Previous]] :noexport:
+* [[file:tests.org][Next]]  :noexport:

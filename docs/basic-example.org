@@ -77,4 +77,6 @@ You can see that Piet Gieter appears only once, because duplicates are handled.
 To allow duplicates you need to set handle-duplicates-p to nil when
 adding, persisting and loading the data.
 
-[[file:home.org][Home]] :noexport: [[file:definitions-example.org][Previous]] :noexport: [[file:basic-example-with-persistence.org][Next]] :noexport:
+* [[file:home.org][Home]] :noexport:                                                 
+* [[file:definitions-example.org][Previous]] :noexport:
+* [[file:basic-example-with-persistence.org][Next]]  :noexport:

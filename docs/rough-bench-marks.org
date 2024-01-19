@@ -39,4 +39,5 @@ fast, simple queries complete in fractions of a second.
 
 #+END_SRC
 
-[[file:home.org][Home]] :noexport: [[file:tests.org][Previous]] :noexport:
+* [[file:home.org][Home]] :noexport:                                                  
+* [[file:tests.org][Previous]] :noexport:

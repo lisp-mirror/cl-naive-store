@@ -35,5 +35,7 @@ for better coverage and to be cleaner.
 
 You will learn a lot from reading the test code.
 
-[[file:home.org][Home]] :noexport: [[file:home.org][Previous]] :noexport: [[file:overview.org][Next]] :noexport:
+* [[file:home.org][Home]] :noexport:                                                  
+* [[file:home.org][Previous]] :noexport:
+* [[file:overview.org][Next]] :noexport:
 

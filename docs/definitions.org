@@ -1,5 +1,31 @@
 * Definitions
 
+There are two main sources of definitions, hand crafted or persisted
+definitions.
+
+Persisted definitions are found for individual elements along the
+directory structure of the peristed data and is relative to the
+multiverse/universe/store/collection structure. These definitions can
+be considered as partial definitions because they do not contain any
+information about their children. This is because they are created
+during add-multiverse-element and at that stage the element might not
+have any children yet. It also means that there is not one central
+complete definition that can show what the full store structure
+looks like.
+
+A complete definition of all the multiverse elments is typically
+created by hand as a plist tree. You could of course create such a
+complete definition by walking the directory tree. A complete
+definition could be used for bootstrapping the database if
+needed. Bootstrapping the whole database is of course counter to the
+lazy loading principal that is supported by naive-store.
+
+The definition manipulation functions supplied are simple in the sense
+that they will not ensure the integrity of the final definition. For
+example if you remove a document-type that document-type might still
+be used by a collection which will cause errors when loading from such
+a broken definition.
+
 Definitions should always be a valid plist if you want to use the
 functions in naive-core to manipulate them.
 
@@ -41,3 +67,6 @@ To load a store from a definition you can use load-from-definition.
 
 Have a look at the [[file:definitions-example.org][example]] and tests/test-definitions.lisp to learn
 more about how to use definitions.
+
+* [[file:home.org][Home]] :noexport:                                                 
+* [[file:overview.org][Previous]] :noexport:

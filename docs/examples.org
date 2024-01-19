@@ -26,5 +26,7 @@ Examples below become more and more complex as you go down the list.
 
 [[file:sharding-example.org][Sharding]]
 
-[[file:home.org][Home]] :noexport: [[file:overview.org][Previous]] :noexport: [[file:definitions-example.org][Next​]] :noexport:
+* [[file:home.org][Home]] :noexport:                                                 
+* [[file:overview.org][Previous]] :noexport:
+* [[file:definitions-example.org][Next​]] :noexport:
 

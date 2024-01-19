@@ -115,5 +115,6 @@ Output:
     "AB2CBF3C-41AE-4656-BE03-B360BCF6A707"))))
 #+END_SRC
 
-
-[[file:home.org][Home]] :noexport: [[file:basic-example-with-persistence.org][Previous]] :noexport: [[file:documents-example.org][Next]] :noexport:
+* [[file:home.org][Home]] :noexport:                                                 
+* [[file:basic-example-with-persistence.org][Previous]] :noexport:
+* [[file:documents-example.org][Next]]  :noexport:

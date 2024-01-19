@@ -228,5 +228,6 @@ Output:
  (:DESC "The count of physical shard files for the collection." :VALUE 195))
  #+END_SRC
 
-[[file:home.org][Home]] :noexport: [[file:documents-example.org][Previous]] :noexport:
+* [[file:home.org][Home]] :noexport:                                                 
+* [[file:documents-example.org][Previous]] :noexport:
 

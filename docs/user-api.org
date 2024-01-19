@@ -1002,4 +1002,6 @@ store and universe using getx.
 
 (setf digx) (value (place document) &rest indicators)
 
-[[file:home.org][Home]] :noexport: [[file:examples.org][Previous]] :noexport: [[file:implementor-api.org][Next]] :noexport:
+* [[file:home.org][Home]] :noexport:                                                 
+* [[file:examples.org][Previous]] :noexport:
+* [[file:implementor-api.org][Next]]  :noexport:
