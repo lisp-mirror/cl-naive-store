@@ -22,13 +22,8 @@ NAME ?= sbcl
 LISP ?= $(SBCL_LISP)
 QUIT ?= $(SBCL_QUIT)
 
-test tests: test-load-systems test-run-tests 
+test tests: test-run-tests 
 
-test-load-systems:
-	THISDIR=$(THISDIR) \
-	DEPENDENCYDIR=$(DEPENDENCYDIR) \
-	load_system=load_system_in_$(NAME) \
-	tests/test-load-systems
 
 run-tests-ccl:  NAME=ccl
 run-tests-ccl:  LISP=$(CCL_LISP)
@@ -67,6 +62,5 @@ help:
 	@ printf $(FMT) help                'Print this help.'
 	@ printf $(FMT) tests               'Run all the tests:'
 	@ printf $(FMT) test-run-tests      'Run the test properly.'
-	@ printf $(FMT) test-load-systems   'Compile and load the systems.'
 	@ printf $(FMT) documentation       'Build the documentation.'
 	@ printf $(FMT) clean               'Remove old products.'
