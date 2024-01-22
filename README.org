@@ -15,11 +15,8 @@ what is possible.
 
 ** Status
 
-The package is considered stable.
-
-Over the next couple of months the package will be used in
-commercial software and should get a good shake down during that
-process.
+The package is considered stable, but will keep on evolving as it is
+used in some commercial software.
 
 ** License
 
@@ -52,6 +49,7 @@ tricks about how to use the library optimally.
 Thank you very much to everyone that contributed over the years.
 
 ** Features
+
 
 *** Persisted
 
@@ -92,7 +90,6 @@ Functionality was broken down into these packages:
 
 - =cl-naive-store.naive-core=
 - =cl-naive-store.document-types=
-- =cl-naive-store.document-type-defs=
 - =cl-naive-store.naive-documents=
 - =cl-naive-store.naive-indexed=
 - =cl-naive-store.naive-merkle=
@@ -103,28 +100,52 @@ The following .asd files can be used to load different functionality:
 - =cl-naive-store.naive-core.asd= loads the most basic functionality for
   =cl-naive-store=. Use this if you don't any of the other extensions.
 
-- =cl-naive-store.naive-merkle.asd= loads =naive-documents= and the
-  /experimental/ merkle functionality.
-
 - =cl-naive-store.naive-indexed.asd= loads =naive-core= and index
   functionality.
 
 - =cl-naive-store.document-types.asd= loads =naive-core= and document-type
   functionality.
 
-- =cl-naive-store.document-defs.asd= loads =naive-core=, document-types
-  and type definition functionality.
-
-- =cl-naive-store.documents.asd= loads naive-core, naive-indexed,
-  documents-types, document-type-defs and document functionality.
+- =cl-naive-store.naive-documents.asd= loads naive-core, naive-indexed,
+  documents-types, and document functionality.
 
 - =cl-naive-store.asd= loads the whole shebang.
 
-- =cl-naive-store.test.asd= loads tests
+- =cl-naive-store.tests.asd= loads tests
+
+*** Schemas (New)
+
+You can use schema definitions to create and load whole database structures.
 
 ** Documentation
 
 The documentation can be found in the [[file:docs/][docs]] folder in the repository.
+
+** Installation
+
+*Be careful there is an older version of cl-naive-store in quicklisp
+that has not been removed yet. You need to clone the relevant projects
+to get the latest version.*
+
+The new dependencies are not in quicklisp and wont get there in the
+forseeable future so you have to clone them.
+
+#+BEGIN_EXAMPLE
+git clone https://gitlab.com/naive-x/cl-getx.git
+git clone https://gitlab.com/naive-x/cl-naive-tests.git
+git clone https://gitlab.com/naive-x/cl-naive-deprecation.git
+git clone https://gitlab.com/naive-x/cl-naive-ptrees.git
+git clone https://gitlab.com/naive-x/cl-naive-store.git
+#+END_EXAMPLE
+
+If you want to use them with quicklisp you need to create symbolic
+links in quicklisp/local-projects/.
+
+The rest of the dependencies can all be found in quicklisp.
+
+#+BEGIN_EXAMPLE
+(ql:quicklisp :cl-naive-store)
+#+END_EXAMPLE
 
 ** Examples
 
@@ -133,32 +154,30 @@ to simplistic for you have a look at the code in the tests.
 
 ** Dependencies
 
+- bordeaux-threads
 - cl-fad
-- iron-clad
 - cl-murmurhash
+- cl-getx
+- cl-cpus
+- cl-naive-deprecation
+- cl-naive-ptrees
+- cl-naive-tests (for tests only)
+- iron-clad
+- local-time
+- lparallel
 - split-sequence
 - uuid
-- local-time
-- cl-getx
-- bordeaux-threads
-- lparallel
-- cl-cpus
 
 ** Supported CL Implementations
 
 All tests pass on SBCL an CCL
-
-** Development Roadmap
-
-The cl-naive-* projects are not available in quicklisp, and wont be
-for the forseeable future.
 
 ** Tests
 
 Go to the tests folder
 
 #+BEGIN_EXAMPLE
-cd cl-naive-store/
+cd cl-naive-store/tests/
 #+END_EXAMPLE
 
 Run make with any of the following

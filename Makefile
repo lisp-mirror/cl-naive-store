@@ -1,6 +1,6 @@
 all: test
 
-.PHONY: test tests test-load-systems test-run-tests run-tests-ccl run-tests-sbcl docs documentation
+.PHONY: test tests test-run-tests run-tests-ccl run-tests-sbcl docs documentation
 
 # default values:
 ARTDIR = tests/artifacts/
