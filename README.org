@@ -179,6 +179,13 @@ All tests pass on SBCL an CCL
 
 ** Tests
 
+#+BEGIN_SRC lisp
+  (ql:quickload :cl-naive-store.tests)
+  (cl-naive-store.tests:test-all)
+#+END_SRC
+
+Alternatively you can use the make file to run tests.
+
 Go to the tests folder
 
 #+BEGIN_EXAMPLE
@@ -218,11 +225,6 @@ Passed:       48
 Failed:        0
 #+END_EXAMPLE
 
-Alternatively if you want to run the tests manually
 
-#+BEGIN_SRC lisp
-  (ql:quickload :cl-naive-store.tests)
-  (cl-naive-store.tests:test-all)
-#+END_SRC
 
 
