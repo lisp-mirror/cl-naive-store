@@ -124,7 +124,8 @@ You can use schema definitions to create and load whole database structures.
 
 ** Documentation
 
-The documentation can be found in the [[file:docs/][docs]] folder in the repository.
+The documentation can be found in the [[file:docs/][docs]] folder in the repository,
+start with the home.org file.
 
 ** Installation
 
