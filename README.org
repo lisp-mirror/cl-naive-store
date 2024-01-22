@@ -24,25 +24,30 @@ used in some commercial software.
 
 ** News
 
-The concept of a multiverse was added to the store. Previously the top
-level container for data was a universe (a clustering of databases). A
-multiverse is the top structural container for data no. A multiverse
-contains one or more universes. A multiverse could be viewed as a
-clustering of clusters of databases.
+- The concept of a multiverse was added to the store. Previously the
+  top level container for data was a universe (a clustering of
+  databases). A multiverse is the top structural container for data
+  now. A multiverse contains one or more universes. A multiverse could
+  be viewed as a clustering of clusters of databases.
 
-Code underwent a majour refactoring. The user api was
-simplified. cl-naive-deprecation was used to help ease you into the
-api changes.
+- Code underwent a majour refactoring. There where many changes but
+  the use of cl-naive-deprecation should allow old code to run as is
+  (compiler macros replace old code with new).
 
-Tests where rewritten to use cl-naive-tests and are a lot simpler to
-read and learn from.
+- Tests where rewritten to use cl-naive-tests and are a lot simpler to
+  read and learn from. Test coverage was also expanded considerably.
 
-Code to manage your database schemas was added to naive-core. You can
-now use schema files to initialise and load a database.
+- Code to manage your database schemas was added to naive-core. You
+  can now use schema files to initialise and load a database.
 
-Speed tests where added for those that want to dig into performance
-metrics. Going through speed tests code will teach you a couple of
-tricks about how to use the library optimally.
+- Speed tests where added for those that want to dig into performance
+  metrics. Going through speed tests code will teach you a couple of
+  tricks about how to use the library optimally.
+
+- Documentation was updated and expanded in some places. The
+  documentation PDF has been restructured to follow the org document
+  structuring now. Examples and some other stuff that was missing from
+  the PDF is now included as well.
 
 ** Acknowledgements
 
