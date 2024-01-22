@@ -1,21 +1,21 @@
+#+INCLUDE: ./home.org
+#+INCLUDE: ./releases.org
+#+INCLUDE: ./overview.org
+#+INCLUDE: ./definitions.org
 
-#+include: ./home.org
-#+include: ./releases.org
-#+include: ./overview.org
-#+include: ./definitions.org
+* Examples
 
-#+include: ./examples.org
-#+include: ./definitions-example.org :minlevel 2
-#+include: ./basic-example.org :minlevel 2
-#+include: ./basic-example-with-persistence.org :minlevel 2
-#+include: ./indexed-example.org :minlevel 2
-#+include: ./documents-example.org :minlevel 2
-#+include: ./sharding-example.org :minlevel 2
+#+INCLUDE: ./definitions-example.org :minlevel 2
+#+INCLUDE: ./basic-example.org :minlevel 2
+#+INCLUDE: ./basic-example-with-persistence.org :minlevel 2
+#+INCLUDE: ./indexed-example.org :minlevel 2
+#+INCLUDE: ./documents-example.org :minlevel 2
+#+INCLUDE: ./sharding-example.org :minlevel 2
 
-#+include: ./user-api.org
-#+include: ./implementor-api.org
-#+include: ./utils.org
-#+include: ./tests.org
-#+include: ./rough-bench-marks.org
+#+INCLUDE: ./user-api.org :minlevel 1
+#+INCLUDE: ./implementor-api.org :minlevel 1
+#+INCLUDE: ./utils.org :minlevel 1
+#+INCLUDE: ./tests.org :minlevel 1
+#+INCLUDE: ./rough-bench-marks.org :minlevel 1
 
 

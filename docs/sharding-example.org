@@ -218,7 +218,6 @@ In this example we will use sharding with document types.
                                  (make-pathname :directory
                                                 (list :relative
                                                       (name collection))))))))))
-
 #+END_SRC
 
 Output:
@@ -226,7 +225,7 @@ Output:
 #+BEGIN_SRC lisp
 ((:DESC "Count of shards in collection." :VALUE 195)
  (:DESC "The count of physical shard files for the collection." :VALUE 195))
- #+END_SRC
+#+END_SRC
 
 * [[file:home.org][Home]] :noexport:                                                 
 * [[file:documents-example.org][Previous]] :noexport:

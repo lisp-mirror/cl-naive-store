@@ -16,7 +16,6 @@ use cases where the store can be used as kind of temporary database.
 ;;Required to correctly initialize lparallel:*kernel*.
 (initialize)
 
-
 ;;Deleting existing example database
 (cl-fad:delete-directory-and-files
  "~/multiverse/universe/simple-store"
