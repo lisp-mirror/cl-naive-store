@@ -23,8 +23,8 @@ test:
       coverage_report:
         coverage_format: cobertura
         path: coverage.xml
-  coverage: /Coverage is \s(\d+.?\d+)%/
+  coverage: /Coverage is+\s(\d+.?\d+)%/
   
-
+47%
 
 
