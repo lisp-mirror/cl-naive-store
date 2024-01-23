@@ -14,7 +14,7 @@ before_script:
 test:
   stage: test
   script:
-    - echo "Coverage is 47%"
+    - echo 'Coverage is 47%'
     - make -C $CI_PROJECT_DIR test DEPENDENCYDIR=~/src/  ARTDIR=$CI_PROJECT_DIR/
 
   artifacts:
@@ -25,6 +25,6 @@ test:
         path: coverage.xml
   coverage: /Coverage is+\s(\d+.?\d+)%/
   
-47%
+
 
 
