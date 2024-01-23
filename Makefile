@@ -24,9 +24,9 @@ QUIT ?= $(SBCL_QUIT)
 define WITH-COVER
 (cl-naive-sb-cover-ext:with-sb-cover (:cl-naive-store.tests) \
   (cl-naive-tests:run) \
-  (cl-naive-sb-cover-ext:report-ext \
-   "$(THISDIR)/tests/coverage/sb-core/" \
-   :base-directory "$(THISDIR)/src/") \
+ ;;(cl-naive-sb-cover-ext:report-ext \
+ ;;  "$(THISDIR)/tests/coverage/sb-core/" \
+ ;;  :base-directory "$(THISDIR)/src/") \
   (let ((reports (cl-naive-sb-cover-ext:gitlab-reports \
                   (cl-naive-sb-cover-ext:summary-report \
                    (cl-naive-sb-cover-ext:report-stats \
