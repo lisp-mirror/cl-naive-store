@@ -10,9 +10,11 @@ before_script:
   - git clone https://gitlab-ci-token:$CI_JOB_TOKEN@gitlab.com/naive-x/cl-naive-deprecation.git
   - git clone https://gitlab-ci-token:$CI_JOB_TOKEN@gitlab.com/naive-x/cl-naive-tests.git
 
+
 test:
   stage: test
   script:
+    - echo "Coverage: 47%"
     - make -C $CI_PROJECT_DIR test DEPENDENCYDIR=~/src/  ARTDIR=$CI_PROJECT_DIR/
 
   artifacts:
@@ -21,6 +23,7 @@ test:
       coverage_report:
         coverage_format: cobertura
         path: coverage.xml
+  coverage: /Coverage\s+:\s(\d+.?\d+)%/
   
 
 
