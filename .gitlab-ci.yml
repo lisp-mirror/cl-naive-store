@@ -6,6 +6,7 @@ stages:
 before_script:
   - cd ~/src  
   - git clone https://gitlab-ci-token:$CI_JOB_TOKEN@gitlab.com/Harag/cl-getx.git
+  - git clone https://gitlab-ci-token:$CI_JOB_TOKEN@gitlab.com/naive-x/cl-naive-sb-cover-ext.git
   - git clone https://gitlab-ci-token:$CI_JOB_TOKEN@gitlab.com/naive-x/cl-naive-ptrees.git
   - git clone https://gitlab-ci-token:$CI_JOB_TOKEN@gitlab.com/naive-x/cl-naive-deprecation.git
   - git clone https://gitlab-ci-token:$CI_JOB_TOKEN@gitlab.com/naive-x/cl-naive-tests.git
@@ -15,14 +16,15 @@ test:
   stage: test
   script:
     - make -C $CI_PROJECT_DIR test DEPENDENCYDIR=~/src/  ARTDIR=$CI_PROJECT_DIR/
-    - cat $CI_PROJECT_DIR/coverage-summary.txt
+    - make -C $CI_PROJECT_DIR coverage DEPENDENCYDIR=~/src/  ARTDIR=$CI_PROJECT_DIR/
+    - cat $CI_PROJECT_DIR/tests/coverage/coverage-summary.txt
     
   artifacts:
     reports:
       junit: junit-results.xml
       coverage_report:
         coverage_format: cobertura
-        path: coverage.xml
+        path: tests/coverage/coverage.xml
   coverage: /expression-rate:+\s(\d+.?\d+)%/
   
 

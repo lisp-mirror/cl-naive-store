@@ -1,7 +1,6 @@
 all: test
 
-.PHONY: test tests test-run-tests run-tests-ccl run-tests-sbcl docs documentation
-
+.PHONY: test tests test-run-tests run-tests-ccl run-tests-sbcl docs documentation coverage echo
 # default values:
 ARTDIR = tests/artifacts/
 DEPENDENCYDIR = $(abspath $(CURDIR)/..)/
@@ -21,6 +20,28 @@ SBCL_QUIT = --quit
 NAME ?= sbcl
 LISP ?= $(SBCL_LISP)
 QUIT ?= $(SBCL_QUIT)
+
+define nwln
+
+endef
+
+define WITH-COVER
+(cl-naive-sb-cover-ext:with-sb-cover (:cl-naive-store.tests) \
+  (cl-naive-tests:run) \
+  (cl-naive-sb-cover-ext:report-ext \
+   "/home/phil/source/naive/cl-naive-store/tests/coverage/sb-core/" \
+   :base-directory "/home/phil/source/naive/cl-naive-store/src/") \
+  (let ((reports (cl-naive-sb-cover-ext:gitlab-reports \
+                  (cl-naive-sb-cover-ext:summary-report \
+                   (cl-naive-sb-cover-ext:report-stats \
+                    "/home/phil/source/naive/cl-naive-store/src/"))))) \
+    (cl-naive-sb-cover-ext:save-gitlab-reports \
+     reports \
+     "/home/phil/source/naive/cl-naive-store/tests/coverage/"))) 
+endef
+
+echo:
+	echo '$(WITH-COVER)'
 
 test tests: test-run-tests 
 
@@ -45,6 +66,17 @@ test-run-tests:
 		--eval '(cl-naive-tests:write-results cl-naive-tests:*suites-results* :format :text)' \
 		--eval '(cl-naive-tests:save-results cl-naive-tests:*suites-results* :file "$(ARTDIR)junit-results.xml" :format :junit)' \
 		--eval '(sb-ext:exit :code (if (cl-naive-tests:report) 0 200))' \
+		$(QUIT)
+
+coverage:
+	sbcl \
+		--eval '(load #P"~/quicklisp/setup.lisp")' \
+		--eval '(push "$(DEPENDENCYDIR)" ql:*local-project-directories*)' \
+		--eval '(push #P"$(THISDIR)" asdf:*central-registry*)' \
+		--eval '(ql:quickload :cl-naive-tests)' \
+                --eval '(ql:quickload :cl-naive-sb-cover-ext)' \
+		--eval '$(WITH-COVER)' \
+		--eval '(sb-ext:exit :code 0)' \
 		$(QUIT)
 
 docs:documentation
