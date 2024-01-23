@@ -4,7 +4,7 @@
   :author      "Phil Marneweck"
   :licence     "MIT"
   ;; Component attributes:
-  :version "2021.5.18"
+  :version "2023.12.19"
   :depends-on ("alexandria"
                "cl-getx"
                "cl-naive-tests"
