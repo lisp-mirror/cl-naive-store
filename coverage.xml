@@ -1,11 +1,16 @@
-<coverage line-rate="0.47" branch-rate="0.26" lines-covered="0"
-	  lines-valid="0" branches-covered="202" branches-valid="780"
-	  complexity="0.11" version="0" timestamp="1701692276">
+<coverage line-rate="0.47" branch-rate="0.26"
+	  expression-rate="0.47"
+	  lines-covered="2844.00"
+	  lines-valid="5670.00" branches-covered="202" branches-valid="780"
+	  expressions-covered="3309.00" expressions-valid="7065.00"
+	  complexity="0.11" version="0" timestamp="1701702926">
   <sources>
   </sources>
   <packages>
     <package name="cl-naive-store" line-rate="0.67" branch-rate="0" complexity="0">
       <classes>
+
+
 	<class name="deprecations" filename="src/document-types/deprecations.lisp" line-rate="0.13" branch-rate="0.00" complexity="0.00" ></class>
 	<class name="document-types" filename="src/document-types/document-types.lisp" line-rate="0.41" branch-rate="0.23" complexity="0.14" ></class>
 	<class name="packages" filename="src/document-types/packages.lisp" line-rate="1.00" branch-rate="0.00" complexity="0.00" ></class>
