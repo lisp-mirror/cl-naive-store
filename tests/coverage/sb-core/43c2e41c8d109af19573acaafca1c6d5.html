@@ -1,0 +1,58 @@
+<html><head><style type='text/css'>
+*.state-0 { background-color: #eeeeee }
+*.state-1 { background-color: #aaffaa }
+*.state-5 { background-color: #44dd44 }
+*.state-2 { background-color: #ffaaaa }
+*.state-10 { background-color: #ee6666 }
+*.state-15 { color: #aaaaaa; background-color: #eeeeee }
+*.state-9,*.state-6 { background-color: #ffffaa }
+div.key { margin: 20px; width: 200px }
+div.source { width: 88ex; background-color: #eeeeee; padding-left: 5px;
+             /* border-style: solid none none none; border-width: 1px;
+             border-color: #dddddd */ }
+
+*.line-number { color: #666666; float: left; width: 6ex; text-align: right; margin-right: 1ex; }
+
+table.summary tr.head-row { background-color: #aaaaff }
+table.summary tr td.text-cell { text-align: left }
+table.summary tr td.main-head { text-align: center }
+table.summary tr td { text-align: right }
+table.summary tr.even { background-color: #eeeeff }
+table.summary tr.subheading { background-color: #aaaaff}
+table.summary tr.subheading td { text-align: left; font-weight: bold; padding-left: 5ex; }
+</style></head><body><h3>Coverage report: /home/phil/source/naive/cl-naive-store/src/naive-indexed/packages.lisp <br />
+</h3>
+<table class='summary'><tr class='head-row'><td width='80px'>Kind</td><td width='80px'>Covered</td><td width='80px'>All</td><td width='80px'>%</td><tr class='odd'><td>expression</td><td>0</td><td>3</td><td>  0.0</td></tr>
+<tr class='even'><td>branch</td><td>0</td><td>0</td><td>nil  </td></tr>
+</table><div class='key'><b>Key</b><br />
+<div class='state-0'>Not instrumented</div><div class='state-15'>Conditionalized out</div><div class='state-1'>Executed</div><div class='state-2'>Not executed</div><div>&#160;</div><div class='state-5'>Both branches taken</div><div class='state-6'>One branch taken</div><div class='state-10''>Neither branch taken</div></div><nobr><div><code>
+</code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>1</code></div><code>&#160;<span class='state-2'>&#40;in&#45;package&#160;&#58;common&#45;lisp&#45;user&#41;</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>2</code></div><code>&#160;<span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>3</code></div><code>&#160;<span class='state-2'>&#40;defpackage&#160;&#58;cl&#45;naive&#45;store&#46;naive&#45;indexed</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>4</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#40;&#58;use&#160;&#58;cl&#160;&#58;cl&#45;naive&#45;store&#46;naive&#45;core&#160;&#58;cl&#45;getx&#41;</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>5</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#40;&#58;export</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>6</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;&#42;do&#45;partial&#45;indexing&#42;</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>7</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;indexed&#45;collection&#45;mixin</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>8</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;indexed&#45;collection</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>9</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;uuid&#45;index</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>10</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;key&#45;value&#45;index</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>11</code></div><code>&#160;<span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>12</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;indexes</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>13</code></div><code>&#160;<span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>14</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;hash</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>15</code></div><code>&#160;<span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>16</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;index&#45;lookup&#45;values</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>17</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;index&#45;lookup&#45;hash</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>18</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;index&#45;lookup</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>19</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;add&#45;index</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>20</code></div><code>&#160;<span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>21</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;remove&#45;index&#41;&#41;</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>22</code></div><code>&#160;<span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>23</code></div><code>&#160;<span class='state-2'>&#40;defpackage&#160;&#58;indexed&#45;impl</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>24</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#40;&#58;use&#160;&#58;cl&#160;&#58;cl&#45;getx&#160;&#58;cl&#45;murmurhash&#160;&#58;cl&#45;naive&#45;store&#46;naive&#45;core&#160;&#58;cl&#45;naive&#45;store&#46;naive&#45;indexed&#41;</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>25</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#40;&#58;export</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>26</code></div><code>&#160;<span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>27</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;index&#45;values</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>28</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;push&#45;value&#45;index</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>29</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;remove&#45;value&#45;index&#41;&#41;</code></div></body></html>

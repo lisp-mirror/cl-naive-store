@@ -16,8 +16,7 @@ test:
   stage: test
   script:
     - make -C $CI_PROJECT_DIR test DEPENDENCYDIR=~/src/  ARTDIR=$CI_PROJECT_DIR/
-    - make -C $CI_PROJECT_DIR coverage DEPENDENCYDIR=~/src/  ARTDIR=$CI_PROJECT_DIR/
-    - cat $CI_PROJECT_DIR/tests/artifacts/coverage/coverage-summary.txt
+    - cat $CI_PROJECT_DIR/tests/coverage/coverage-summary.txt
     
   artifacts:
     reports:

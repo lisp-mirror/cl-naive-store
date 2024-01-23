@@ -1,0 +1,84 @@
+<html><head><style type='text/css'>
+*.state-0 { background-color: #eeeeee }
+*.state-1 { background-color: #aaffaa }
+*.state-5 { background-color: #44dd44 }
+*.state-2 { background-color: #ffaaaa }
+*.state-10 { background-color: #ee6666 }
+*.state-15 { color: #aaaaaa; background-color: #eeeeee }
+*.state-9,*.state-6 { background-color: #ffffaa }
+div.key { margin: 20px; width: 200px }
+div.source { width: 88ex; background-color: #eeeeee; padding-left: 5px;
+             /* border-style: solid none none none; border-width: 1px;
+             border-color: #dddddd */ }
+
+*.line-number { color: #666666; float: left; width: 6ex; text-align: right; margin-right: 1ex; }
+
+table.summary tr.head-row { background-color: #aaaaff }
+table.summary tr td.text-cell { text-align: left }
+table.summary tr td.main-head { text-align: center }
+table.summary tr td { text-align: right }
+table.summary tr.even { background-color: #eeeeff }
+table.summary tr.subheading { background-color: #aaaaff}
+table.summary tr.subheading td { text-align: left; font-weight: bold; padding-left: 5ex; }
+</style></head><body><h3>Coverage report: /home/phil/source/naive/cl-naive-store/src/naive-store/naive-impl/package.lisp <br />
+</h3>
+<table class='summary'><tr class='head-row'><td width='80px'>Kind</td><td width='80px'>Covered</td><td width='80px'>All</td><td width='80px'>%</td><tr class='odd'><td>expression</td><td>0</td><td>1</td><td>  0.0</td></tr>
+<tr class='even'><td>branch</td><td>0</td><td>0</td><td>nil  </td></tr>
+</table><div class='key'><b>Key</b><br />
+<div class='state-0'>Not instrumented</div><div class='state-15'>Conditionalized out</div><div class='state-1'>Executed</div><div class='state-2'>Not executed</div><div>&#160;</div><div class='state-5'>Both branches taken</div><div class='state-6'>One branch taken</div><div class='state-10''>Neither branch taken</div></div><nobr><div><code>
+</code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>1</code></div><code>&#160;<span class='state-2'>&#40;defpackage&#160;&#58;naive&#45;impl</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>2</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#40;&#58;use&#160;&#58;cl&#160;&#58;cl&#45;getx&#160;&#58;cl&#45;naive&#45;store&#46;naive&#45;core&#41;</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>3</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#40;&#58;export</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>4</code></div><code>&#160;<span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>5</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;initialize</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>6</code></div><code>&#160;<span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>7</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#59;&#59;COMMON</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>8</code></div><code>&#160;<span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>9</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;frmt</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>10</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;map&#45;append</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>11</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;maphash&#45;collect</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>12</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;frmt</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>13</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;empty&#45;p</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>14</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;trim&#45;whitespace</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>15</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;plist&#45;to&#45;values</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>16</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;plist&#45;to&#45;pairs</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>17</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;make&#45;mac</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>18</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;&#37;loading&#45;shard&#37;</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>19</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;&#42;lock&#42;</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>20</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;gethash&#45;safe</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>21</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;remhash&#45;safe</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>22</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;&#42;disable&#45;parallel&#45;p&#42;</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>23</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;do&#45;sequence</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>24</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;set&#45;query&#45;cache</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>25</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;get&#45;query&#45;cache</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>26</code></div><code>&#160;<span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>27</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#59;&#59;LOGGING</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>28</code></div><code>&#160;<span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>29</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;&#42;break&#45;on&#45;error&#45;log&#42;</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>30</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;write&#45;log</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>31</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;&#42;debug&#45;log&#45;p&#42;</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>32</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;debug&#45;log</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>33</code></div><code>&#160;<span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>34</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#59;&#59;FILES</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>35</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;file&#45;to&#45;string</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>36</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;with&#45;file&#45;lock</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>37</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;with&#45;open&#45;file&#45;lock</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>38</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;write&#45;to&#45;file</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>39</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;write&#45;list&#45;to&#45;file</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>40</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;sexp&#45;from&#45;file</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>41</code></div><code>&#160;<span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>42</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#59;&#59;PARSING</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>43</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;load&#45;document&#45;reference&#45;collection</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>44</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;find&#45;document&#45;by&#45;hash</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>45</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;type&#45;of&#45;sexp</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>46</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;compose&#45;special</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>47</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;compose&#45;parse</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>48</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;compose&#45;document</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>49</code></div><code>&#160;<span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>50</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#59;&#59;PERSISTING</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>51</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;type&#45;of&#45;doc&#45;element</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>52</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;persist&#45;form</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>53</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;persist&#45;parse</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>54</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;persist&#45;document</span><span class='state-0'></span></code></div></nobr>
+<nobr><div class='source'><div class='line-number'><code>55</code></div><code>&#160;<span class='state-2'>&#160;&#160;&#160;&#58;persist&#45;delete&#45;document&#41;&#41;</code></div></body></html>
