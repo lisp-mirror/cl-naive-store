@@ -91,10 +91,22 @@ coverage:
 		--eval '(load #P"~/quicklisp/setup.lisp")' \
 		--eval '(push "$(DEPENDENCYDIR)" ql:*local-project-directories*)' \
 		--eval '(push #P"$(THISDIR)" asdf:*central-registry*)' \
+		--eval '(ql:quick-load :bordeaux-threads') \
+		--eval '(ql:quick-load :cl-fad)' \
+		--eval '(ql:quick-load :cl-getx)' \
+		--eval '(ql:quick-load :cl-murmurhash)' \
+		--eval '(ql:quick-load :cl-cpus)' \
+		--eval '(ql:quick-load :cl-naive-ptrees)' \
+		--eval '(ql:quick-load :cl-naive-deprecation)' \
+		--eval '(ql:quick-load :cl-naive-tests)' \
+		--eval '(ql:quick-load :ironclad)' \
+		--eval '(ql:quick-load :local-time)' \
+		--eval '(ql:quick-load :lparallel)' \
+		--eval '(ql:quick-load :split-sequence)' \
+		--eval '(ql:quick-load :uuid)' \
                 --eval '(ql:quickload :sb-cover)' \
 		--eval '(ql:quickload :cl-naive-tests)' \
                 --eval '(ql:quickload :cl-naive-sb-cover-ext)' \
-                --eval '(ql:quickload :cl-naive-store)' \
 		--eval '$(COVER-EVAL)' \
 		--eval '(cl-naive-tests:write-results cl-naive-tests:*suites-results* :format :text)' \
 		--eval '(cl-naive-tests:save-results cl-naive-tests:*suites-results* :file "$(ARTDIR)junit-results.xml" :format :junit)' \
