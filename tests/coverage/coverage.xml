@@ -1,9 +1,9 @@
-<coverage line-rate="0.42" branch-rate="0.26"
-  expression-rate="0.42"
-  lines-covered="2258.00"
-  lines-valid="5670.00" branches-covered="202" branches-valid="780"
-  expressions-covered="2987.00" expressions-valid="7065.00"
-  complexity="0.11" version="0" timestamp="1701721981">
+<coverage line-rate="0.44" branch-rate="0.27"
+  expression-rate="0.44"
+  lines-covered="2368.00"
+  lines-valid="5671.00" branches-covered="214" branches-valid="780"
+  expressions-covered="3127.00" expressions-valid="7076.00"
+  complexity="0.11" version="0" timestamp="1701771627">
 <sources>
 </sources>
 <packages>
@@ -31,19 +31,19 @@
 <class name="packages" filename="src/naive-indexed/packages.lisp" line-rate="0.00" branch-rate="0.00" complexity="0.00" ></class>
 <class name="parse-document" filename="src/naive-indexed/parse-document.lisp" line-rate="0.00" branch-rate="0.00" complexity="0.04" ></class>
 <class name="query" filename="src/naive-indexed/query.lisp" line-rate="0.39" branch-rate="0.00" complexity="0.00" ></class>
-<class name="blob" filename="src/naive-store/blob.lisp" line-rate="0.00" branch-rate="0.00" complexity="0.19" ></class>
+<class name="blob" filename="src/naive-store/blob.lisp" line-rate="0.28" branch-rate="0.00" complexity="0.18" ></class>
 <class name="definitions" filename="src/naive-store/definitions.lisp" line-rate="0.52" branch-rate="0.32" complexity="0.04" ></class>
 <class name="deprecations" filename="src/naive-store/deprecations.lisp" line-rate="0.00" branch-rate="0.00" complexity="0.00" ></class>
 <class name="documents" filename="src/naive-store/documents.lisp" line-rate="0.92" branch-rate="0.75" complexity="0.08" ></class>
 <class name="load" filename="src/naive-store/load.lisp" line-rate="0.67" branch-rate="0.47" complexity="0.09" ></class>
 <class name="maintenance" filename="src/naive-store/maintenance.lisp" line-rate="0.71" branch-rate="0.50" complexity="0.02" ></class>
 <class name="naive-core" filename="src/naive-store/naive-core.lisp" line-rate="0.45" branch-rate="0.26" complexity="0.13" ></class>
-<class name="common" filename="src/naive-store/naive-impl/common.lisp" line-rate="0.49" branch-rate="0.83" complexity="0.04" ></class>
-<class name="files" filename="src/naive-store/naive-impl/files.lisp" line-rate="0.48" branch-rate="0.00" complexity="0.00" ></class>
+<class name="common" filename="src/naive-store/naive-impl/common.lisp" line-rate="0.56" branch-rate="0.83" complexity="0.04" ></class>
+<class name="files" filename="src/naive-store/naive-impl/files.lisp" line-rate="0.64" branch-rate="0.00" complexity="0.00" ></class>
 <class name="logs" filename="src/naive-store/naive-impl/logs.lisp" line-rate="0.10" branch-rate="0.00" complexity="0.08" ></class>
 <class name="naive-core" filename="src/naive-store/naive-impl/naive-core.lisp" line-rate="0.00" branch-rate="0.00" complexity="0.00" ></class>
 <class name="package" filename="src/naive-store/naive-impl/package.lisp" line-rate="0.00" branch-rate="0.00" complexity="0.00" ></class>
-<class name="parse-document" filename="src/naive-store/naive-impl/parse-document.lisp" line-rate="0.18" branch-rate="0.11" complexity="0.13" ></class>
+<class name="parse-document" filename="src/naive-store/naive-impl/parse-document.lisp" line-rate="0.38" branch-rate="0.42" complexity="0.13" ></class>
 <class name="persist-document" filename="src/naive-store/naive-impl/persist-document.lisp" line-rate="0.23" branch-rate="0.45" complexity="0.16" ></class>
 <class name="packages" filename="src/naive-store/packages.lisp" line-rate="0.00" branch-rate="0.00" complexity="0.00" ></class>
 <class name="query" filename="src/naive-store/query.lisp" line-rate="0.27" branch-rate="0.21" complexity="0.06" ></class>
