@@ -163,11 +163,12 @@ to simplistic for you have a look at the code in the tests.
 - bordeaux-threads
 - cl-fad
 - cl-murmurhash
-- cl-getx
+- [[https://gitlab.com/Harag/cl-getx][cl-getx]]
 - cl-cpus
-- cl-naive-deprecation
-- cl-naive-ptrees
-- cl-naive-tests (for tests only)
+- [[https://gitlab.com/naive-x/cl-naive-deprecation][cl-naive-deprecation]]
+- [[https://gitlab.com/naive-x/cl-naive-ptrees][cl-naive-ptrees]]
+- [[https://gitlab.com/naive-x/cl-naive-sb-cover-ext][cl-naive-sb-cover-ext]] (only needed when running coverage jobs)
+- [[https://gitlab.com/naive-x/cl-naive-tests][cl-naive-tests]] (for tests only)
 - iron-clad
 - local-time
 - lparallel
@@ -177,6 +178,27 @@ to simplistic for you have a look at the code in the tests.
 ** Supported CL Implementations
 
 All tests pass on SBCL an CCL
+
+** Coverage
+
+**WARNING: Only works on SBCL!*
+
+You can refresh the coverage artefacts by running make.
+
+#+BEGIN_EXAMPLE
+make coverage
+#+END_EXAMPLE
+
+You can view coverage artefacts in src/tests/coverage/.
+
+The coverage.xml and coverage.txt files are produced to register
+coverage with gitlab.
+
+The src/tests/coverage/sb-core/ contains the sb-cover artifacts open
+the home.html and navigate from there.
+
+The coverage is aggressively trimmed to only show coverage for src/
+directory.
 
 ** Tests
 
