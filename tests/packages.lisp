@@ -7,6 +7,7 @@
    :cl-naive-tests
    :cl-naive-store.naive-core)
   (:export
+   :get-temp
    :get-universe-class
    :get-store-class
    :*multiverse*

@@ -1,6 +1,7 @@
 all: test
 
-.PHONY: test tests test-run-tests run-tests-ccl run-tests-sbcl docs documentation coverage echo
+.PHONY: test tests test-run-tests run-tests-ccl run-tests-sbcl docs documentation coverage echo-cover
+
 # default values:
 ARTDIR = tests/artifacts/
 DEPENDENCYDIR = $(abspath $(CURDIR)/..)/
@@ -24,20 +25,39 @@ QUIT ?= $(SBCL_QUIT)
 define WITH-COVER
 (cl-naive-sb-cover-ext:with-sb-cover (:cl-naive-store.tests) \
   (cl-naive-tests:run) \
- ;;(cl-naive-sb-cover-ext:report-ext \
- ;;  "$(THISDIR)/tests/coverage/sb-core/" \
- ;;  :base-directory "$(THISDIR)/src/") \
+  (cl-naive-sb-cover-ext:report-ext \
+    "$(THISDIR)tests/coverage/sb-core/" \
+    :base-directory "$(THISDIR)src/") \
   (let ((reports (cl-naive-sb-cover-ext:gitlab-reports \
                   (cl-naive-sb-cover-ext:summary-report \
                    (cl-naive-sb-cover-ext:report-stats \
-                    "$(THISDIR)/src/"))))) \
+                    "$(THISDIR)src/"))))) \
     (cl-naive-sb-cover-ext:save-gitlab-reports \
      reports \
-     "$(THISDIR)/tests/coverage/"))) 
+     "$(THISDIR)tests/coverage/"))) 
 endef
 
-echo:
-	echo '$(WITH-COVER)'
+define WITH-COVER-SHORT
+(cl-naive-sb-cover-ext:with-sb-cover (:cl-naive-store.tests) \
+  (cl-naive-tests:run) \
+  (let ((reports (cl-naive-sb-cover-ext:gitlab-reports \
+                  (cl-naive-sb-cover-ext:summary-report \
+                   (cl-naive-sb-cover-ext:report-stats \
+                    "$(THISDIR)src/"))))) \
+    (cl-naive-sb-cover-ext:save-gitlab-reports \
+     reports \
+     "$(THISDIR)tests/coverage/"))) 
+endef
+
+ifeq ('$(COVERAGE-TYPE)','SHORT')
+	COVER-EVAL= $(WITH-COVER-SHORT)
+else
+	COVER-EVAL= $(WITH-COVER)
+endif
+
+echo-cover:
+	echo '$(COVER-EVAL)'
+	echo '$(COVERAGE-TYPE)'
 
 test tests: test-run-tests 
 
@@ -64,16 +84,35 @@ test-run-tests:
 		--eval '(sb-ext:exit :code (if (cl-naive-tests:report) 0 200))' \
 		$(QUIT)
 
+coverage-short : coverage
+
 coverage:
 	sbcl \
 		--eval '(load #P"~/quicklisp/setup.lisp")' \
 		--eval '(push "$(DEPENDENCYDIR)" ql:*local-project-directories*)' \
 		--eval '(push #P"$(THISDIR)" asdf:*central-registry*)' \
+		--eval '(ql:quickload :bordeaux-threads)' \
+		--eval '(ql:quickload :cl-fad)' \
+		--eval '(ql:quickload :cl-getx)' \
+		--eval '(ql:quickload :cl-murmurhash)' \
+		--eval '(ql:quickload :cl-cpus)' \
+		--eval '(ql:quickload :cl-naive-ptrees)' \
+		--eval '(ql:quickload :cl-naive-deprecation)' \
+		--eval '(ql:quickload :cl-naive-tests)' \
+		--eval '(ql:quickload :ironclad)' \
+		--eval '(ql:quickload :local-time)' \
+		--eval '(ql:quickload :lparallel)' \
+		--eval '(ql:quickload :split-sequence)' \
+		--eval '(ql:quickload :uuid)' \
+                --eval '(ql:quickload :sb-cover)' \
 		--eval '(ql:quickload :cl-naive-tests)' \
                 --eval '(ql:quickload :cl-naive-sb-cover-ext)' \
-		--eval '$(WITH-COVER)' \
-		--eval '(sb-ext:exit :code 0)' \
+		--eval '$(COVER-EVAL)' \
+		--eval '(cl-naive-tests:write-results cl-naive-tests:*suites-results* :format :text)' \
+		--eval '(cl-naive-tests:save-results cl-naive-tests:*suites-results* :file "$(ARTDIR)junit-results.xml" :format :junit)' \
+		--eval '(sb-ext:exit :code (if (cl-naive-tests:report) 0 200))' \
 		$(QUIT)
+	cat < "$(THISDIR)tests/coverage/coverage.xml"
 
 docs:documentation
 documentation:
