@@ -12,6 +12,7 @@
   :components
   ((:file "tests/packages")
    (:file "tests/common" :depends-on ("tests/packages"))
+   (:file "tests/test-impl" :depends-on ("tests/common"))
    (:file "tests/test-definitions" :depends-on ("tests/common"))
    (:file "tests/test-basic" :depends-on ("tests/common"))
    (:file "tests/test-basic-persisted" :depends-on ("tests/common"))
