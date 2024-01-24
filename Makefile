@@ -91,19 +91,19 @@ coverage:
 		--eval '(load #P"~/quicklisp/setup.lisp")' \
 		--eval '(push "$(DEPENDENCYDIR)" ql:*local-project-directories*)' \
 		--eval '(push #P"$(THISDIR)" asdf:*central-registry*)' \
-		--eval '(ql:quick-load :bordeaux-threads') \
-		--eval '(ql:quick-load :cl-fad)' \
-		--eval '(ql:quick-load :cl-getx)' \
-		--eval '(ql:quick-load :cl-murmurhash)' \
-		--eval '(ql:quick-load :cl-cpus)' \
-		--eval '(ql:quick-load :cl-naive-ptrees)' \
-		--eval '(ql:quick-load :cl-naive-deprecation)' \
-		--eval '(ql:quick-load :cl-naive-tests)' \
-		--eval '(ql:quick-load :ironclad)' \
-		--eval '(ql:quick-load :local-time)' \
-		--eval '(ql:quick-load :lparallel)' \
-		--eval '(ql:quick-load :split-sequence)' \
-		--eval '(ql:quick-load :uuid)' \
+		--eval '(ql:quickload :bordeaux-threads)' \
+		--eval '(ql:quickload :cl-fad)' \
+		--eval '(ql:quickload :cl-getx)' \
+		--eval '(ql:quickload :cl-murmurhash)' \
+		--eval '(ql:quickload :cl-cpus)' \
+		--eval '(ql:quickload :cl-naive-ptrees)' \
+		--eval '(ql:quickload :cl-naive-deprecation)' \
+		--eval '(ql:quickload :cl-naive-tests)' \
+		--eval '(ql:quickload :ironclad)' \
+		--eval '(ql:quickload :local-time)' \
+		--eval '(ql:quickload :lparallel)' \
+		--eval '(ql:quickload :split-sequence)' \
+		--eval '(ql:quickload :uuid)' \
                 --eval '(ql:quickload :sb-cover)' \
 		--eval '(ql:quickload :cl-naive-tests)' \
                 --eval '(ql:quickload :cl-naive-sb-cover-ext)' \
