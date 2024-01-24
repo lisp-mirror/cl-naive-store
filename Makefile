@@ -94,6 +94,7 @@ coverage:
                 --eval '(ql:quickload :sb-cover)' \
 		--eval '(ql:quickload :cl-naive-tests)' \
                 --eval '(ql:quickload :cl-naive-sb-cover-ext)' \
+                --eval '(ql:quickload :cl-naive-store)' \
 		--eval '$(COVER-EVAL)' \
 		--eval '(cl-naive-tests:write-results cl-naive-tests:*suites-results* :format :text)' \
 		--eval '(cl-naive-tests:save-results cl-naive-tests:*suites-results* :file "$(ARTDIR)junit-results.xml" :format :junit)' \
