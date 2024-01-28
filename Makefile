@@ -7,6 +7,7 @@ ARTDIR = tests/artifacts/
 DEPENDENCYDIR = $(abspath $(CURDIR)/..)/
 THISDIR = $(abspath $(CURDIR))/
 
+PRESERVE_TEST_FILES = NIL # or T or a directory pathname
 
 CCL_LISP = ccl  --batch --quiet --no-init
 CCL_QUIT = --eval '(ccl:quit)'
@@ -78,6 +79,7 @@ test-run-tests:
 		--eval '(push "$(DEPENDENCYDIR)" ql:*local-project-directories*)' \
 		--eval '(push #P"$(THISDIR)" asdf:*central-registry*)' \
 		--eval '(ql:quickload :cl-naive-store.tests)' \
+		--eval '(setf cl-naive-store.tests::*keep-test-multiverse* '"$(PRESERVE_TEST_FILES)"')' \
 		--eval '(cl-naive-tests:run)' \
 		--eval '(cl-naive-tests:write-results cl-naive-tests:*suites-results* :format :text)' \
 		--eval '(cl-naive-tests:save-results cl-naive-tests:*suites-results* :file "$(ARTDIR)junit-results.xml" :format :junit)' \

@@ -22,10 +22,32 @@ To run a specific test, specify the test suite.
 (cl-naive-tests:run :suites :test-naive-documents)
 ;;or
 (cl-naive-tests:run :suites :test-sharding-simple)
-;;or
+;;or 
 (cl-naive-tests:run :suites :test-sharding-indexed)
 #+END_SRC
 
 * [[file:home.org][Home]] :noexport:                                                 
 * [[file:utils.org][Previous]] :noexport:
 * [[file:rough-bench-marks.org][Next]]  :noexport:
+
+* Test Options
+
+** Keep the test data store directories
+
+We can set the makefile variable =PRESERVE_TEST_FILES= to =T= or to a
+directory pathname (with corresponding shell/makefile escaping of
+double quotes).
+
+#+begin_src 
+make PRESERVE_TEST_FILES=T                                tests
+# or:
+make PRESERVE_TEST_FILES=\\\"$HOME/test-data-stores/\\\"  tests
+#+end_src
+
+When set to =T=, the test data-store directories are renamed (but kept
+in the original directory, which is by default a temporary directory).
+
+When set to a directory pathname, the test data-store directories are
+copied to the given directiory (and renamed), the original being
+deleted for the next test.
+

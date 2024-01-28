@@ -18,15 +18,48 @@
 
 (defparameter *multiverse* nil)
 
+(defvar *keep-test-multiverse* nil
+  "Set to true to keep (renaming them away) the multiverse data directory in tear-down-suite.
+If set to a pathname designator, moves them under the directory of this pathname.
+")
+
 (defmethod cl-naive-tests:tear-down-suite :around (test-name)
   "An :around method deletes the whole multiverse and sets multiverse and
 universe to nil."
-  (declare (ignore test-name))
-  (cl-fad:delete-directory-and-files
-   (if *multiverse*
-       (location *multiverse*)
-       (test-location))
-   :if-does-not-exist :ignore)
+  (let ((multiverse-directory (if *multiverse*
+                                  (location *multiverse*)
+                                  (test-location))))
+    (if (or (null test-name) (not *keep-test-multiverse*))
+        (cl-fad:delete-directory-and-files multiverse-directory :if-does-not-exist :ignore)
+        (let* ((destination (if (or (stringp *keep-test-multiverse*)
+                                    (pathnamep *keep-test-multiverse*))
+                                (pathname *keep-test-multiverse*)
+                                nil))
+               (new-directory
+                 (make-pathname
+                  :directory (append
+                              (if destination
+                                  (pathname-directory destination)
+                                  (butlast (pathname-directory multiverse-directory)))
+                              (list (concatenate
+                                     'string
+                                     (first (last (pathname-directory multiverse-directory)))
+                                     "-preserved-for-"
+                                     (string test-name))))
+                  :defaults multiverse-directory)))
+          ;; We cannot just preserve the data directory, since following tests expect to work on a clean slate.
+          ;; therefore we will rename it.
+          (handler-case (if destination
+                            (progn
+                              (cl-fad:delete-directory-and-files new-directory :if-does-not-exist :ignore)
+                              (ql-bundle::copy-directory-tree multiverse-directory new-directory)
+                              (cl-fad:delete-directory-and-files multiverse-directory :if-does-not-exist :ignore))
+                            (ql-impl-util:rename-directory  multiverse-directory new-directory))
+            (:no-error (&rest ignored)
+              (declare (ignore ignored))
+              (format *terminal-io* "~&Preserved test multiverse: ~S as ~S~%" multiverse-directory new-directory)
+              (finish-output *terminal-io*))
+            (error () nil)))))
   (setf *universe* nil)
   (setf *multiverse* nil)
   (call-next-method))
