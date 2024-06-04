@@ -33,6 +33,7 @@ new file and then replacing the old file."))
 
     (fad:copy-file log-file old-file :overwrite t)
 
+    (clear-collection collection)
     (when documents
       (dolist (document documents)
         (cl-naive-store.naive-core::persist-document collection  document

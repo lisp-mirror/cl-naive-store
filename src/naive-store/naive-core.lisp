@@ -31,6 +31,7 @@
           :initform nil
           :documentation "The store that this collection belongs to.")
    (name :initarg :name
+         :initform nil
          :accessor name
          :documentation "The collection name.")
    (location :initarg :location
@@ -76,6 +77,7 @@ For collections that use cl-naive-document-type there is a fallback the document
              :initform nil
              :documentation "The universe the store belongs to.")
    (name :initarg :name
+         :initform "store"
          :accessor name
          :documentation "Store name.")
    (collection-class :initarg :collection-class
@@ -144,6 +146,7 @@ about this.)")
 
 (defclass multiverse ()
   ((name :initarg :name
+         :initform "multiverse"
          :accessor name
          :documentation "Universe name.")
    (universes :initarg :universes

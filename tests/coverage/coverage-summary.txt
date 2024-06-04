@@ -1,7 +1,7 @@
 
 
 coverage-stats:
-  line-rate: 44.06%
+  line-rate: 44.19%
   branch-rate: 27.44%
-  expression-rate: 44.06%
+  expression-rate: 44.19%
 

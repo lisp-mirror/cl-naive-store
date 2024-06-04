@@ -34,17 +34,19 @@ The convention is to append %% to these accessors, for two reasons. First to sho
               (store (document-collection document))
               (universe (store (document-collection document))))))
     (:document-type~
-     (if (stringp (document-document-type document))
-         (or
-          (and (document-collection document)
-               (get-multiverse-element
-                :document-type
-                (store (document-collection document))
-                (document-document-type document)))
-          (document-type (document-collection document)))
-         (or
-          (document-document-type document)
-          (document-type (document-collection document)))))
+     (let ((doc-type (or
+                      (document-document-type document)
+                      (and (document-collection document)
+                           (document-type (document-collection document))))))
+       (when doc-type
+         (if (stringp doc-type)
+             (if (document-collection document)
+                 (get-multiverse-element
+                  :document-type
+                  (store (document-collection document))
+                  doc-type)
+                 doc-type)
+             doc-type))))
     (:elements~
      (document-elements document))
     (:changes~

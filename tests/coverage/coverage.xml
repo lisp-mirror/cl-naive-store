@@ -1,9 +1,9 @@
 <coverage line-rate="0.44" branch-rate="0.27"
   expression-rate="0.44"
-  lines-covered="2359.00"
+  lines-covered="2368.00"
   lines-valid="5671.00" branches-covered="214" branches-valid="780"
-  expressions-covered="3118.00" expressions-valid="7076.00"
-  complexity="0.11" version="0" timestamp="1701772725">
+  expressions-covered="3127.00" expressions-valid="7076.00"
+  complexity="0.11" version="0" timestamp="1701852673">
 <sources>
 </sources>
 <packages>
@@ -38,7 +38,7 @@
 <class name="load" filename="src/naive-store/load.lisp" line-rate="0.67" branch-rate="0.47" complexity="0.09" ></class>
 <class name="maintenance" filename="src/naive-store/maintenance.lisp" line-rate="0.71" branch-rate="0.50" complexity="0.02" ></class>
 <class name="naive-core" filename="src/naive-store/naive-core.lisp" line-rate="0.45" branch-rate="0.26" complexity="0.13" ></class>
-<class name="common" filename="src/naive-store/naive-impl/common.lisp" line-rate="0.53" branch-rate="0.83" complexity="0.04" ></class>
+<class name="common" filename="src/naive-store/naive-impl/common.lisp" line-rate="0.56" branch-rate="0.83" complexity="0.04" ></class>
 <class name="files" filename="src/naive-store/naive-impl/files.lisp" line-rate="0.64" branch-rate="0.00" complexity="0.00" ></class>
 <class name="logs" filename="src/naive-store/naive-impl/logs.lisp" line-rate="0.10" branch-rate="0.00" complexity="0.08" ></class>
 <class name="naive-core" filename="src/naive-store/naive-impl/naive-core.lisp" line-rate="0.00" branch-rate="0.00" complexity="0.00" ></class>
